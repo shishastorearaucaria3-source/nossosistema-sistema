@@ -8,7 +8,7 @@ Objetivo: um sistema mais funcional, com mais controle, mais relatórios e catá
 
 ## O que é / o que não é
 
-**É:** sistema desktop (Windows) para uso no balcão da loja + catálogo público em `catalogo.shishastore.com.br` (GitHub Pages), que é o único canal de delivery para clientes.
+**É:** sistema desktop (Windows) para uso no balcão da loja + catálogo online (produtos, imagens e pedidos por WhatsApp) para clientes.
 
 **Não é (por enquanto):** integração com NFC-e, SAT, TEF/pagamento em maquininha, emissão de nota fiscal. Isso entra numa fase futura, desenhado para ser plugável.
 
@@ -44,13 +44,13 @@ Objetivo: um sistema mais funcional, com mais controle, mais relatórios e catá
 - PDV usa as formas ativas cadastradas
 
 ### Catálogo público (site)
-- Catálogo online em `catalogo.shishastore.com.br` com produtos, categorias, preços, imagens e estoque
+- Catálogo online com produtos, categorias, preços, imagens e estoque
 - Carrinho com checkout no próprio site: nome, WhatsApp, endereço/CEP e modalidade (entrega ou retirada)
 - Zonas de entrega publicadas no site: taxa calculada pela zona do endereço (via CEP + geolocalização) ou pela taxa padrão
 - Pedido montado com endereço, zona e taxa e enviado pelo WhatsApp do cliente
 - **Botão de manutenção** no app: quando ativado, o site público mostra uma página de "em manutenção"; ao desativar, volta ao catálogo
 - **Toggle de pedidos ativos**: quando desativado, o site esconde o carrinho e desabilita os botões de pedido
-- Sincronização automática pelo app (GitHub Pages) publica essas mudanças no site
+- A publicação das mudanças no site é feita pela infraestrutura própria do catálogo (nova arquitetura em implantação, substituindo o GitHub Pages)
 
 ### Controle de estoque avançado
 - Cadastro de produtos (categorias, marca, código de barras, preço de custo/venda, lucro)
@@ -97,7 +97,7 @@ Objetivo: um sistema mais funcional, com mais controle, mais relatórios e catá
 | Interface | React + TypeScript | Componentes reutilizáveis |
 | Banco de dados | SQLite (better-sqlite3) | Arquivo único local, rápido, sem servidor externo — dados ficam na loja |
 | API local | Express | Servidor interno que o Electron usa (localhost:3210), só para o sistema desktop |
-| Catálogo público | GitHub Pages | Site estático com produtos/imagens; único canal de delivery |
+| Catálogo público | Infraestrutura própria (em implantação) | Publicação do catálogo online; substitui o antigo GitHub Pages |
 | Build | Vite + Electron Forge / electron-builder | Empacota o app em .exe instalável |
 | Estado (front) | Zustand | Leve, simples |
 
@@ -136,7 +136,7 @@ SISTEMA PÚBLICO (clientes)
 - **PC da loja** roda o Electron: PVD no balcão + API interna (porta 3210) + SQLite.
 - **API na rede**: o servidor escuta em `0.0.0.0` e fica acessível na rede local pelo IP da máquina (ex.: `http://26.168.12.169:3210`), como o Nex. Se a porta padrão estiver ocupada, ele sobe na próxima livre automaticamente.
 - **Servidor inicia com o Windows**: registrado na pasta de Inicializar (`servidor:instalar`), sobe sozinho ao ligar o PC, sem janela. O app apenas conecta a ele.
-- **Catálogo público** é um site estático no GitHub Pages, sincronizado automaticamente pelo app.
+- **Catálogo público** é publicado pela infraestrutura própria do sistema; a arquitetura nova (substituindo o GitHub Pages) está em implantação.
 - O cliente final usa **somente** `catalogo.shishastore.com.br` — nunca acessa o IP do PC nem `localhost:3210`.
 - O delivery local (servido pela porta 3210) foi removido: existe um único canal de delivery para o cliente.
 
@@ -200,7 +200,7 @@ sistema-loja-tabacaria/
 - API local + site de delivery
 - Pedidos do site caem no PVD em tempo real
 - Status do pedido, taxa de entrega, checkout
-- ✅ **Catálogo público implementado** (GitHub Pages + WhatsApp): `catalogo.shishastore.com.br`
+- ✅ **Catálogo público implementado** (checkout por WhatsApp): `catalogo.shishastore.com.br` — publicação via infraestrutura própria em implantação (fim do GitHub Pages)
 - ✅ **Checkout completo no catálogo** (carrinho → endereço/CEP → zona → taxa → pedido WhatsApp)
 - ✅ **Zonas de entrega integradas ao catálogo** (publicadas e calculadas no site)
 - ✅ **Manutenção + pedidos ativos** publicados no site (página de manutenção e toggle de pedidos do app refletem no catálogo)

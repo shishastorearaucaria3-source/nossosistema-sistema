@@ -1,0 +1,22 @@
+{
+  "name": "catalogo-worker",
+  "version": "0.0.0-homologacao",
+  "private": true,
+  "type": "module",
+  "description": "Worker de borda do catálogo (homologação — backend mock sintético, sem Cloudflare).",
+  "scripts": {
+    "dev": "wrangler dev --port 8787",
+    "typecheck": "tsc --noEmit",
+    "build": "wrangler deploy --dry-run --outdir dist",
+    "test": "node tests/teste-worker.mjs"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "latest",
+    "typescript": "^5.7.3",
+    "wrangler": "^4.0.0"
+  },
+  "allowScripts": {
+    "esbuild@0.28.1": true,
+    "workerd@1.20260828.1": true
+  }
+}

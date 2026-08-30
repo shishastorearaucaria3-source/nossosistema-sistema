@@ -19,6 +19,8 @@ nexbackuptotal/
 *.crt
 *token*
 credentials*.json
+catalogo-relay.token
+*relay*.token
 
 # dados locais / sensíveis
 MEMORIA.md

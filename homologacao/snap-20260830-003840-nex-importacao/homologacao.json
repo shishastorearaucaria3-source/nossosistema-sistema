@@ -1,0 +1,44 @@
+{
+  "ds": "CIRCUITO_AUDITORIA_1",
+  "criado_em": "2026-08-30T03:38:45.425Z",
+  "producao_db_sha256": "c4935a3b9eced56dbb9218f713d464c306bca144002ef57634f4f9d512eb509b",
+  "backups_sha256": {
+    "nx:Tran.nx1": "9e5c73405a6a0afd056307e51e537ee1afd2189e5801fdaf1f2c5138e9bbcdc1",
+    "nx:MovEst.nx1": "486aba481efecf58eae70f4c16d4ce96e9da29c785a22fe4c4987b631a1e7a0a",
+    "nx:PagEspecies.nx1": "aa6476ea6f5f17758e81894ca4c92f61677ca8b9ab4bca1258b92fd7a8f5cb5d",
+    "nx:Cliente.nx1": "54c2727be2ed0c67abc9da04038f2e53dc9dc4a7c02663a892062d8e033c5f05",
+    "nx:Caixa.nx1": "93d90f497a0e8ce04b5decfe9443554302b1a6a2b0f2dfd913f7df89c14eb781",
+    "nx:ITran.nx1": "22f58f0342594537c676f545d0c2bc57b850739e53cadf962ce042b10339328f",
+    "nx:Especie.nx1": "7517c4148885f1222d5732805f1cdcf44fe2217c39b0bb25206541f7425f3f9b",
+    "nx:Recebiveis.nx1": "82ca8bfe7c4f8c8ec56d8362ec97c2ec4bfb5fd8c7e4e4586d4bd731be77471a",
+    "nx:catalogo_json.nx1": "7afcdc14944dac77683dd7cfaf22a16425782999efe02c0fe4106d4f6774c1c2",
+    "xls:Exportar1jan202331122023.xls": "87d293f3c975378212e596b15fe9710f7013b3cd18aa7e25c967ac0d85978077",
+    "xls:Exportar1jan202431122024.xls": "e890751b9133effb519e535df6eb21140341c4260ff9881c0b18cff2a0831203",
+    "xls:Exportarcaixa1jan202531122025.xls": "3e10f38dbd6be3092177946749abe128ed08ee35fb4e8183b806627f3782ba61",
+    "xls:Exportarcaixas.xls": "586e0b905d2dacb93223cd586a0f0321a5848d58c18b81e7e90227f7ac9680c8",
+    "xls:Exportarcaixas1jan202630082026.xls": "d45133b4e2f07ebf331feae9a8b5c65a867b11d27bad4432b3b6ae3bd32343a3",
+    "xls:Exportarcatalogoonline.xls": "53286bb1e5051424ed36ef9cb02cbfb2092f0ece372018574ed5947be8fbed68",
+    "xls:Exportarclientes.xls": "3a71caf201f81ada6d7bc8d825277a0f0ad584fbc9530f2d8bac9e283058fa61",
+    "xls:Exportarestoqueporproduto.xls": "f78933334740c253755d3b1f60a3dc6a5e798d164f1426dd48afce04213b14c9",
+    "xls:Exportarestoquetransaçoes.xls": "7ae27687e180030b9f2ae73071ed1201dbcd2c5cff09b17ec6944568c7e85cab",
+    "xls:Exportarprodutosfornecedores.xls": "86f00c05d927f22c6608c1f4fbefca81e354fdee9b4e377396549e1a84994b7b",
+    "xls:Exportarrelatorio lucratividade receitasdespesas.xls": "cf377ad03a6820a9d063cbe902ec33e5f75f0e15bea0fcad49fc4897270cfaf5",
+    "xls:Exportarrelatorio por produto.xls": "097b7521fec794bc8885f03136420191415b31f35e7880e98990ee93b16c0ea7",
+    "xls:Exportarrelatoriovisaogeralresumo.xls": "c5426bf3fc7f70dfe6c11e863a4a69822f040fc7191220be26e28104330dfe4f",
+    "xls:Exportarvendas.xls": "95cf285bdec0644f9465e88a8c594c9f77c20314574a3ecc9c354102f2e7b354"
+  },
+  "snapshot": {
+    "origem": "C:/NossoSistema/sistema-loja-tabacaria/tabacaria.sqlite",
+    "criado_por_snapshot": "2026-08-30T03:38:45.515Z",
+    "bytes": 25923584
+  },
+  "passos": [
+    "preparacao servidor: 37082 vendas NX, 93445 registros PagEspecies",
+    "importacao: 0 inseridas, 0 duplicadas, 0 caso-C, 0 ambíguas, 0 sem correlação",
+    "importacao: 0 inseridas, 0 duplicadas, 0 caso-C, 0 ambíguas, 0 sem correlação",
+    "preparacao servidor: 37082 vendas NX, 93445 registros PagEspecies",
+    "importacao: 4142 inseridas, 0 duplicadas, 0 caso-C, 0 ambíguas, 0 sem correlação",
+    "importacao: 0 inseridas, 4142 duplicadas, 0 caso-C, 0 ambíguas, 0 sem correlação"
+  ],
+  "ultimo_passo_em": "2026-08-30T03:40:13.856Z"
+}

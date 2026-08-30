@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { getDbApi, getCatalogoApi, getAuthApi, getPedidosCancelApi } from '../../shared/db'
+import { getDbApi, getAuthApi, getPedidosCancelApi } from '../../shared/db'
 import EditarPedido from './EditarPedido'
 
 interface Pedido {
@@ -42,7 +42,6 @@ const LABEL: Record<string, string> = {
 export default function Delivery() {
   const [pedidos, setPedidos] = useState<Pedido[]>([])
   const [itens, setItens] = useState<Record<number, PedidoItem[]>>({})
-  const [catalogoUrl, setCatalogoUrl] = useState('')
   const [mensagem, setMensagem] = useState('')
   const [editandoId, setEditandoId] = useState<number | null>(null)
   const novosRef = useRef<Set<number>>(new Set())
@@ -98,10 +97,6 @@ export default function Delivery() {
     const t = setInterval(carregar, 5000)
     return () => clearInterval(t)
   }, [carregar])
-
-  useEffect(() => {
-    getCatalogoApi().getConfig().then((c) => setCatalogoUrl(c.site_url || '')).catch(() => {})
-  }, [])
 
   const avancarStatus = async (p: Pedido) => {
     const proximo = PROXIMOS[p.status]
@@ -227,11 +222,6 @@ export default function Delivery() {
       <div className="page-header">
         <h2>Delivery</h2>
         <div className="page-acoes">
-          {catalogoUrl && (
-            <a className="delivery-url" href={catalogoUrl} target="_blank" rel="noreferrer">
-              Catálogo do cliente: {catalogoUrl}
-            </a>
-          )}
           <button className="btn-primario" onClick={simularPedido}>Simular pedido</button>
         </div>
       </div>

@@ -3,7 +3,7 @@ import { networkInterfaces, hostname } from 'node:os'
 import { join } from 'node:path'
 import { existsSync, readdirSync, statSync, mkdirSync, copyFileSync, rmSync } from 'node:fs'
 import { getDb, getDefaultDbPath, getPorta, reabrirBanco, seed } from './index'
-import { getStatus, temInternet } from './catalogo'
+import { getStatus } from './catalogo'
 
 export interface LogServidor {
   hora: string
@@ -461,8 +461,4 @@ export function restaurarBackup(arquivo: string): { ok: boolean; erro?: string }
     return { ok: false, erro: `Backup copiado, mas falha ao reabrir o banco: ${(e as Error).message}` }
   }
   return { ok: true }
-}
-
-export async function checarInternet(): Promise<boolean> {
-  return temInternet()
 }

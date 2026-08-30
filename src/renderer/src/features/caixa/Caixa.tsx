@@ -123,7 +123,7 @@ export default function Caixa({ usuarioId, usuarioNome, onAbrirCaixa }: { usuari
          AND EXISTS (SELECT 1 FROM vendas v WHERE v.caixa_id = c.id AND v.status != 'cancelada')
          ${soComQuebra ? `AND (c.quebra IS NOT NULL AND ABS(c.quebra) > 0.005)` : ''}
          ${periodoSql}
-       ORDER BY c.id DESC LIMIT ?`,
+       ORDER BY COALESCE(c.aberto_em, c.fechado_em, '') DESC, c.id DESC LIMIT ?`,
       [...periodoParams, limiteHistorico]
     )) as unknown as Caixa[]
     setHistorico(hist)

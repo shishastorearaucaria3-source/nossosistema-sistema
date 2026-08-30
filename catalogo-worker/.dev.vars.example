@@ -1,0 +1,10 @@
+# Origens extras do CORS (somente homologação/dev). Para produção a origem
+# https://catalogo.shishastore.com.br já vem embutida no código.
+# Separe múltiplas origens por vírgula.
+CATALOGO_CORS_ORIGEM=http://localhost:5173,http://127.0.0.1:5173
+
+# Backend da homologação: mock | erro | timeout
+CATALOGO_BACKEND_MODE=mock
+
+# Tempo limite da chamada ao backend em ms (opcional, default 3000)
+#CATALOGO_BACKEND_TIMEOUT_MS=3000

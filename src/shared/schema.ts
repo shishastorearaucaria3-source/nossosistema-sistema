@@ -1,4 +1,4 @@
-export const SCHEMA_VERSION = 41
+export const SCHEMA_VERSION = 42
 
 export const migrations: Record<number, string> = {
   1: `
@@ -813,5 +813,19 @@ export const migrations: Record<number, string> = {
 
     ALTER TABLE vendas ADD COLUMN taxa_entrega REAL NOT NULL DEFAULT 0;
     ALTER TABLE vendas ADD COLUMN cliente_endereco TEXT;
+  `,
+  42: `
+    -- ============================================================
+    -- MIGRATION 42: Remoção da integração antiga do catálogo (GitHub Pages)
+    -- Remove o token/repo/branch do GitHub armazenados em catalogo_sync.config
+    -- (token ficava em texto puro). Nenhuma coluna/tabela de produto é alterada.
+    -- ============================================================
+
+    UPDATE catalogo_sync
+    SET valor = json_remove(valor, '$.github_token', '$.github_repo', '$.github_branch')
+    WHERE chave = 'config' AND json_valid(valor)
+      AND (json_extract(valor, '$.github_token') IS NOT NULL
+           OR json_extract(valor, '$.github_repo') IS NOT NULL
+           OR json_extract(valor, '$.github_branch') IS NOT NULL);
   `
 }

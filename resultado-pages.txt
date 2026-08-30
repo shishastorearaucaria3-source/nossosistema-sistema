@@ -1,0 +1,22 @@
+OK pages-root :: GET / -> 200 html com #root
+OK pages-asset :: asset assets/index-CK-GgLIu.js -> 200
+OK publico-origem :: GET publico -> 200 ACAO=https://catalogo-shishastore.pages.dev produtos=692 categorias=18
+OK imagem-origem :: imagem 13 -> 200 image/jpeg 37704B ACAO ok
+OK preflight :: OPTIONS -> 204 ACAO ok
+OK origin-evil :: origin estranha -> 403
+OK metodo-post :: POST publico -> 405
+OK rota-proibida-/api/db/run :: /api/db/run -> GET 404 / POST 404
+OK rota-proibida-/api/db/get :: /api/db/get -> GET 404 / POST 404
+OK rota-proibida-/api/db/exec :: /api/db/exec -> GET 404 / POST 404
+OK rota-proibida-/api/servidor/status :: /api/servidor/status -> GET 404 / POST 404
+OK rota-proibida-/api/imagem/definir :: /api/imagem/definir -> GET 404 / POST 404
+OK rota-proibida-/proxy :: /proxy -> GET 404 / POST 404
+OK rota-proibida-/fetch :: /fetch -> GET 404 / POST 404
+OK rota-proibida-/api/imagem/14 :: /api/imagem/14 -> GET 404 / POST 404
+OK ssrf-?url=http://127.0.0.1:3210 :: ?url=http://127.0.0.1:3210 -> 404 idêntico ao sem params (destino não muda)
+OK ssrf-?host=127.0.0.1 :: ?host=127.0.0.1 -> 404 idêntico ao sem params (destino não muda)
+OK ssrf-?target=192.168.0.1 :: ?target=192.168.0.1 -> 404 idêntico ao sem params (destino não muda)
+OK ssrf-?port=3210 :: ?port=3210 -> 404 idêntico ao sem params (destino não muda)
+FAIL ssrf-publico :: publico com params SSRF -> payload DIFERE
+OK scan-local-pages :: assets/index-CK-GgLIu.js sem 127.0.0.1/localhost/3210/3211
+OK rota-publica :: pages /api/catalogo/publico -> 200 (SPA fallback) / worker -> 200

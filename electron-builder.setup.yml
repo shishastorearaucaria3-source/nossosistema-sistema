@@ -69,7 +69,6 @@ extraResources:
     to: servidor-panel
 win:
   icon: build/icones/sistema.png
-  signExecutable: false
   target:
     - nsis
 nsis:

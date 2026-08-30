@@ -84,6 +84,10 @@ ipcMain.on('janela:fechar', () => {
   if (janela) janela.close()
 })
 
+ipcMain.on('janela:encerrar', () => {
+  app.quit()
+})
+
 app.whenReady().then(() => {
   try {
     initDb()

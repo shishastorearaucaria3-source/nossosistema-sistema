@@ -289,34 +289,6 @@ export function registerDbHandlers(): void {
     }
   })
 
-  ipcMain.handle('catalogo:status', async () => {
-    try {
-      return await servidorClient.catalogoStatus()
-    } catch {
-      return { status: 'erro', ultimo_erro: 'Servidor indisponível.' }
-    }
-  })
-
-  ipcMain.handle('catalogo:config', async (_e, dados: Record<string, string | undefined>) => {
-    return servidorClient.catalogoConfig(dados ?? {})
-  })
-
-  ipcMain.handle('catalogo:getConfig', async () => {
-    try {
-      return await servidorClient.catalogoGetConfig()
-    } catch {
-      return {}
-    }
-  })
-
-  ipcMain.handle('catalogo:sync', async () => {
-    return servidorClient.catalogoSync()
-  })
-
-  ipcMain.handle('catalogo:testar', async () => {
-    return servidorClient.catalogoTestar()
-  })
-
   ipcMain.handle('catalogo:getExibicao', async () => {
     try {
       return await servidorClient.catalogoGetExibicao()

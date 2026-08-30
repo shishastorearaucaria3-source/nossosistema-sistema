@@ -16,6 +16,13 @@ let mainWindow: BrowserWindow | null = null
 let bandeja: Tray | null = null
 let janelaServidor: BrowserWindow | null = null
 let modoServidor = false
+let encerrando = false
+let supervisorRelay: SupervisorRelayInstancia | null = null
+
+interface SupervisorRelayInstancia {
+  iniciar: () => { ok: boolean; motivo?: string }
+  parar: () => Promise<void>
+}
 
 // Captura qualquer erro de processo principal para o log e (em produção)
 // mostra um aviso — senão o app "não abre" e ninguém sabe o motivo.
@@ -53,18 +60,29 @@ function validarAtualizacaoPendente(): void {
   } catch { /* ignore */ }
 }
 
-// Remove atalhos, autostart, registro e a pasta de instalação (via cmd
-// destacado, pois não dá para apagar o próprio exe em execução).
+// Remove atalhos, autostart, firewall, registro e a pasta de instalação (via
+// cmd destacado, pois não dá para apagar o próprio exe em execução). Os dados
+// do sistema (sistema-loja-tabacaria: banco, backups, configurações e token
+// do catálogo) são SEMPRE preservados quando o usuário escolhe "Manter dados" —
+// nunca são apagados silenciosamente.
 function desinstalar(): void {
   try {
-    // Mata somente processos deste executável (por caminho), nunca outras
-    // instalações com o mesmo nome de arquivo.
-    const ps = `$alvo='${resolve(process.execPath).replace(/'/g, "''")}';Get-Process -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq $alvo } | Stop-Process -Force`
+    // Mata TODOS os processos desta instalação (Por caminho, nunca outras
+    // instalações): o NossoSistema.exe e a cópia NossoSistema-Servidor.exe.
+    // O réle do catálogo encerra sozinho ao perceber a queda do supervisor
+    // (canal IPC 'disconnect') — sem órfãos, sem matar PID de terceiros.
+    const dirUninstall = dirname(resolve(process.execPath)).replace(/'/g, "''")
+    const ps = `$dir='${dirUninstall}';Get-Process -ErrorAction SilentlyContinue | Where-Object { $_.Path -and $_.Path.StartsWith($dir, [System.StringComparison]::OrdinalIgnoreCase) } | Stop-Process -Force`
     spawn('powershell.exe', ['-NoProfile', '-Command', ps], { stdio: 'ignore', windowsHide: true })
   } catch { /* ignore */ }
   try {
     try {
       execSync(`reg delete "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run" /v "${PRODUTO} Servidor" /f`, { windowsHide: true })
+    } catch { /* ignore */ }
+    // Remove SOMENTE a regra de firewall criada pelo NossoSistema. Nunca
+    // regras/serviços de outros programas (nem Cloudflare/WARP/túneis).
+    try {
+      execSync(`netsh advfirewall firewall delete rule name="${PRODUTO} Servidor"`, { windowsHide: true })
     } catch { /* ignore */ }
     const menu = join(process.env.APPDATA || '', 'Microsoft', 'Windows', 'Start Menu', 'Programs', PRODUTO)
     if (existsSync(menu)) rmSync(menu, { recursive: true, force: true })
@@ -80,13 +98,41 @@ function desinstalar(): void {
   try {
     const dir = dirname(resolve(process.execPath))
     if (dir && existsSync(dir)) {
-      // Apaga a pasta via cmd destacado que espera o app sair (o exe em
-      // execução trava os arquivos — o cmd dá tempo e apaga por cima).
+      const dadosDir = join(dir, 'sistema-loja-tabacaria')
+      const temDados = existsSync(dadosDir)
+      let apagarDados = !temDados
+      if (temDados) {
+        // Pergunta SEMPRE quando existe pasta de dados. Por segurança, qualquer
+        // erro no diálogo mantém os dados (nunca apagar silenciosamente).
+        try {
+          const r = dialog.showMessageBoxSync({
+            type: 'question',
+            buttons: ['Manter dados', 'Apagar dados'],
+            defaultId: 0,
+            cancelId: 0,
+            title: `${PRODUTO} — desinstalação`,
+            message: 'Deseja manter os dados do sistema?',
+            detail: `Banco (tabacaria.sqlite), backups, configurações e token do catálogo:\n${dadosDir}`
+          })
+          apagarDados = r === 1
+        } catch { /* mantém dados */ }
+      }
+      // Apaga a pasta via cmd destacado (o exe em execução trava os arquivos).
+      // "Manter dados": remove a aplicação mas preserva sistema-loja-tabacaria\
+      // (banco, backups\ e catalogo-relay.token). "Apagar dados": remove tudo.
       const bat = join(tmpdir(), `desinstalar-${Date.now()}.bat`)
       const linhas = [
         '@echo off',
-        `timeout /t 5 /nobreak >nul`,
-        `rmdir /s /q "${dir}"`,
+        // Aguarda o app encerrar (timeout não funciona com stdin fechado).
+        `>nul ping -n 3 127.0.0.1`,
+        `set "DIR=${dir}"`,
+        `if /I "${apagarDados}"=="true" goto :apagar_tudo`,
+        `for /d %%D in ("%DIR%\\*") do if /I not "%%~nxD"=="sistema-loja-tabacaria" rmdir /s /q "%%~D" >nul 2>&1`,
+        `for %%F in ("%DIR%\\*") do del /q /f "%%~F" >nul 2>&1`,
+        `goto :fim`,
+        `:apagar_tudo`,
+        `rmdir /s /q "%DIR%" >nul 2>&1`,
+        `:fim`,
         `del "%~f0"`
       ].join('\r\n')
       writeFileSync(bat, linhas, 'utf8')
@@ -228,8 +274,68 @@ async function iniciarServidorSeNecessario(): Promise<boolean> {
       return true
     }
   }
-  gravarLogServidor('tempo esgotado aguardando servidor')
+gravarLogServidor('tempo esgotado aguardando servidor')
   return false
+}
+
+// ---------- Supervisor do Réle (Fase 9C-1) ----------
+// Mantém o réle do catálogo (:3211) vivo dentro da instalação SERVIDOR.
+// O réle é um processo à parte (spawnado com ELECTRON_RUN_AS_NODE=1); aqui só
+// carregamos o módulo compilado e ligamos/desligamos o supervisor. Em
+// instalações cliente o supervisor NUNCA inicia (o réle também não, via
+// fail-closed no próprio relay.js).
+
+function caminhoSupervisorRelay(): string | null {
+  const candidatos: string[] = []
+  if (app.isPackaged) {
+    candidatos.push(join(process.resourcesPath, 'app.asar', 'out', 'server', 'server', 'relay-supervisao.js'))
+    candidatos.push(join(process.resourcesPath, 'app.asar.unpacked', 'out', 'server', 'server', 'relay-supervisao.js'))
+  }
+  candidatos.push(
+    // Desenvolvimento: compilado pelo tsc ao lado do node_modules do projeto.
+    join(__dirname, '..', '..', 'server', 'server', 'relay-supervisao.js'),
+    join(process.cwd(), 'out', 'server', 'server', 'relay-supervisao.js')
+  )
+  for (const c of candidatos) {
+    if (existsSync(c)) return c
+  }
+  return null
+}
+
+function iniciarSupervisorRelay(): void {
+  try {
+    if (tipoInstalacaoAtual() === 'cliente') {
+      gravarLogServidor('[relay] instalação cliente — supervisor não iniciado (exclusivo de servidor)')
+      return
+    }
+    const caminho = caminhoSupervisorRelay()
+    if (!caminho) {
+      gravarLogServidor('[relay] relay-supervisao.js não encontrado — supervisor pulado')
+      return
+    }
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const mod = require(caminho) as {
+      SupervisorRelay: new (opcoes: { log?: (linha: string) => void }) => SupervisorRelayInstancia
+    }
+    const sup = new mod.SupervisorRelay({ log: (linha: string) => gravarLogServidor(`[relay] ${linha}`) })
+    const r = sup.iniciar()
+    if (!r.ok) {
+      gravarLogServidor(`[relay] supervisor não iniciou: ${r.motivo ?? 'desconhecido'}`)
+      return
+    }
+    supervisorRelay = sup
+    gravarLogServidor('[relay] supervisor iniciado (réle :3211 monitorado)')
+  } catch (e) {
+    gravarLogServidor(`[relay] ERRO supervisor: ${e instanceof Error ? e.message : String(e)}`)
+  }
+}
+
+function pararSupervisorRelay(): void {
+  const sup = supervisorRelay
+  supervisorRelay = null
+  if (sup) {
+    sup.parar().catch(() => {})
+  }
 }
 
 // Inicia o servidor como PROCESSO SEPARADO (--servidor, com bandeja própria).
@@ -357,6 +463,14 @@ function caminhoPainelServidor(): { html: string; preload: string } {
   }
 }
 
+function encerrarApp(): void {
+  // Libera o preventDefault do close da janela do servidor — senão app.quit()
+  // é abortado (a janela "recusa" fechar) e o processo fica preso no tray,
+  // obrigando o usuário a matar no Gerenciador de Tarefas.
+  encerrando = true
+  app.quit()
+}
+
 function criarJanelaServidor(): void {
   if (janelaServidor && !janelaServidor.isDestroyed()) {
     janelaServidor.show()
@@ -386,7 +500,7 @@ function criarJanelaServidor(): void {
     janelaServidor?.focus()
   })
   janelaServidor.on('close', (e) => {
-    if (modoServidor) {
+    if (modoServidor && !encerrando) {
       e.preventDefault()
       janelaServidor?.hide()
     }
@@ -439,7 +553,7 @@ function registrarIpc(): void {
     }
   })
   ipcMain.on('janela:encerrar', () => {
-    app.quit()
+    encerrarApp()
   })
 }
 
@@ -474,7 +588,7 @@ function criarBandejaServidor(): void {
     { label: 'Servidor online', enabled: false },
     { type: 'separator' },
     { label: 'Abrir servidor', click: () => { criarJanelaServidor() } },
-    { label: 'Encerrar servidor', click: () => app.quit() }
+    { label: 'Encerrar servidor', click: () => encerrarApp() }
   ])
   bandeja.setContextMenu(menu)
 }
@@ -533,6 +647,7 @@ app.whenReady().then(async () => {
       gravarLogServidor('bandeja criada')
       criarJanelaServidor()
       gravarLogServidor('painel aberto')
+      iniciarSupervisorRelay()
       app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) createWindow()
       })
@@ -600,4 +715,7 @@ app.on('window-all-closed', () => {
 app.on('will-quit', () => {
   // O servidor roda em processo próprio (--servidor); no modo cliente ele
   // é encerrado separadamente pela bandeja.
+  // Encerra o réle de forma graciosa (IPC); se o processo morrer sem passar
+  // aqui, o próprio réle detecta o 'disconnect' e sai sozinho (sem órfãos).
+  pararSupervisorRelay()
 })

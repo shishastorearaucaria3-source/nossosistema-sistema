@@ -11,7 +11,6 @@ export interface DadosCard {
 
 export default function RightPanel({
   nomeLoja,
-  subdominio,
   naoPublicados,
   dados,
   dadosLoja,
@@ -19,7 +18,6 @@ export default function RightPanel({
   onAbrirCard
 }: {
   nomeLoja: string
-  subdominio: string
   naoPublicados: number
   dados: DadosCard
   dadosLoja: DadosLoja
@@ -53,7 +51,7 @@ export default function RightPanel({
 
   return (
     <aside className="rp-painel">
-      <StoreInfo nomeLoja={nomeLoja} subdominio={subdominio} />
+      <StoreInfo nomeLoja={nomeLoja} />
       <div className="rp-cards">
         {cards.map((c) => (
           <button key={c.titulo} className="rp-card" onClick={() => onAbrirCard(c.titulo)}>

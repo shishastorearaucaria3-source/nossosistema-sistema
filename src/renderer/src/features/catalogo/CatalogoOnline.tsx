@@ -176,13 +176,7 @@ export default function CatalogoOnline({
     setConfigPedidos(c)
     setAtivo(c.pedidosAtivos)
     setModalPedidos(false)
-    setMensagem('Configuração de pedidos salva — publicando...')
-    try {
-      const r = await getCatalogoApi().sync()
-      setMensagem(r.ok ? 'Configuração de pedidos salva e publicada.' : `Configuração salva, mas a publicação falhou: ${r.erro}`)
-    } catch (e) {
-      setMensagem(`Configuração salva, mas a publicação falhou: ${(e as Error).message}`)
-    }
+    setMensagem('Configuração de pedidos salva.')
   }
 
   const salvarPagamento = async (nova: FormaConfig[]) => {
@@ -231,13 +225,7 @@ export default function CatalogoOnline({
     if (novo && !confirm('Ativar manutenção? O catálogo público ficará fora do ar até desativar.')) return
     await salvarConfig('manutencao_ativos', novo ? '1' : '0')
     setManutencao(novo)
-    setMensagem(novo ? 'Manutenção ativada — publicando página de manutenção...' : 'Manutenção desativada — publicando catálogo...')
-    try {
-      const r = await getCatalogoApi().sync()
-      setMensagem(r.ok ? (novo ? 'Manutenção ativada — catálogo em manutenção no site.' : 'Manutenção desativada — catálogo no ar.') : `Manutenção salva, mas a publicação falhou: ${r.erro}`)
-    } catch (e) {
-      setMensagem(`Manutenção salva, mas a publicação falhou: ${(e as Error).message}`)
-    }
+    setMensagem(novo ? 'Manutenção ativada.' : 'Manutenção desativada.')
   }
 
   const publicarTodos = async () => {
@@ -264,8 +252,6 @@ export default function CatalogoOnline({
     setFiltros((prev) => ({ ...prev, publicacao: 'Todos' }))
     setMensagem(`${qtd} produto(s) despublicado(s).`)
   }
-
-  const subdominio = 'shishastoretabacaria'
 
   return (
     <div className="cat-online">
@@ -307,7 +293,6 @@ export default function CatalogoOnline({
 
       <RightPanel
         nomeLoja={nomeLoja}
-        subdominio={subdominio}
         naoPublicados={naoPublicados}
         dados={{
           pedidosAtivos: configPedidos.pedidosAtivos,

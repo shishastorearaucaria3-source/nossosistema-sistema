@@ -126,8 +126,8 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
     <button class="menu-item" data-tela="corrigir"><span class="ico">🛠️</span> Corrigir</button>
     <button class="menu-item" data-tela="zerar"><span class="ico">🧹</span> Zerar</button>
     <button class="menu-item" data-tela="importar"><span class="ico">📥</span> Importar Dados</button>
+    <button class="menu-item" data-tela="nex"><span class="ico">🧾</span> Importação / Migração Nex</button>
     <div class="menu-titulo">Sistema</div>
-    <button class="menu-item" data-tela="catalogo"><span class="ico">🌐</span> Catálogo (GitHub)</button>
     <button class="menu-item" data-tela="info"><span class="ico">ℹ️</span> Informações</button>
     <button class="menu-item" data-tela="logs"><span class="ico">📄</span> Logs</button>
   </nav>
@@ -183,7 +183,7 @@ function fecharModal(){ document.getElementById('modalOverlay').style.display='n
 function navegar(tela){
   telaAtual=tela
   document.querySelectorAll('.menu-item').forEach(b=>b.classList.toggle('ativa', b.dataset.tela===tela))
-  const nomes={suporte:'Suporte',backup:'Copiar (Backup)',restaurar:'Restaurar',corrigir:'Corrigir',zerar:'Zerar',importar:'Importar Dados',catalogo:'Catálogo (GitHub)',info:'Informações do Sistema',logs:'Log do Servidor'}
+  const nomes={suporte:'Suporte',backup:'Copiar (Backup)',restaurar:'Restaurar',corrigir:'Corrigir',zerar:'Zerar',importar:'Importar Dados',nex:'Importação / Migração Nex',info:'Informações do Sistema',logs:'Log do Servidor'}
   document.getElementById('tituloTela').textContent=nomes[tela]||'Servidor'
   renderizar()
 }
@@ -201,10 +201,10 @@ function renderizar(){
   else if(telaAtual==='restaurar') renderRestaurar(c)
   else if(telaAtual==='corrigir') renderCorrigir(c)
   else if(telaAtual==='zerar') renderZerar(c)
-  else if(telaAtual==='catalogo') renderCatalogo(c)
   else if(telaAtual==='info') renderInfo(c)
   else if(telaAtual==='logs') renderLogs(c)
   else if(telaAtual==='importar') renderImportar(c)
+  else if(telaAtual==='nex') renderNex(c)
   else renderSuporte(c)
 }
 
@@ -268,14 +268,11 @@ async function enviarNex(input){
   if(!arquivo) return
   const st=document.getElementById('impStatus')
   if(st) st.textContent='Enviando backup Nex '+arquivo.name+' ('+fmtBytes(arquivo.size)+')...'
-  iniciarPollingNex()
+  const ini=Date.now()
   try{
-    const r=await fetch(baseUrl+'/api/importar/nex',{
-      method:'POST',
-      headers:{'Content-Type':'application/octet-stream','x-zip-nome':encodeURIComponent(arquivo.name)},
-      body:arquivo
-    })
-    const d=await r.json()
+    const d=await enviaArquivo('/api/importar/nex', arquivo, arquivo.name,
+      (l,t)=>mostrarBarraUpload('Enviando backup Nex... '+fmtBytes(l)+' de '+fmtBytes(t),l,t,ini),
+      ()=>iniciarPollingNex())
     mostrarProgresso({ativo:false})
     if(d.ok&&d.resumo){
       if(st) st.innerHTML='<span style="color:var(--green)">✅ Importação Nex concluída: '+d.resumo.produtosCriados+' produto(s) criado(s), '+d.resumo.produtosAtualizados+' atualizado(s), '+d.resumo.clientesCriados+' cliente(s), '+d.resumo.categorias+' categoria(s), '+d.resumo.marcas+' marca(s)</span>'
@@ -288,6 +285,9 @@ async function enviarNex(input){
   }catch(e){
     mostrarProgresso({ativo:false})
     if(st) st.innerHTML='<span style="color:var(--red)">Erro ao enviar: '+esc(e.message)+'</span>'
+  }finally{
+    pararPollingNex()
+    pararPollingProgresso()
   }
 }
 
@@ -299,7 +299,6 @@ function iniciarPollingNex(){
     try{
       const d=await api('/api/importar/nex/progresso')
       mostrarProgresso(d)
-      if(!d.ativo&&nexPolling){ clearInterval(nexPolling); nexPolling=null }
     }catch{}
   },400)
 }
@@ -309,14 +308,11 @@ async function analisarNexFile(input){
   if(!arquivo) return
   const st=document.getElementById('impStatus')
   if(st) st.textContent='Analisando '+arquivo.name+'...'
-  iniciarPollingNex()
+  const ini=Date.now()
   try{
-    const r=await fetch(baseUrl+'/api/importar/nex/analisar',{
-      method:'POST',
-      headers:{'Content-Type':'application/octet-stream','x-zip-nome':encodeURIComponent(arquivo.name)},
-      body:arquivo
-    })
-    const d=await r.json()
+    const d=await enviaArquivo('/api/importar/nex/analisar', arquivo, arquivo.name,
+      (l,t)=>mostrarBarraUpload('Analisando backup... '+fmtBytes(l)+' de '+fmtBytes(t),l,t,ini),
+      ()=>iniciarPollingNex())
     mostrarProgresso({ativo:false})
     if(d.ok&&d.relatorio){
       const rel=d.relatorio
@@ -337,6 +333,9 @@ async function analisarNexFile(input){
   }catch(e){
     mostrarProgresso({ativo:false})
     if(st) st.innerHTML='<span style="color:var(--red)">Erro: '+esc(e.message)+'</span>'
+  }finally{
+    pararPollingNex()
+    pararPollingProgresso()
   }
 }
 
@@ -359,15 +358,62 @@ async function carregarArquivosImportacao(){
 
 let impPolling=null
 
+function fmtTempo(ms){
+  if(typeof ms!=='number'||ms<0) return ''
+  const s=Math.floor(ms/1000)
+  if(s<60) return s+'s'
+  const m=Math.floor(s/60)
+  if(m<60) return m+'m'+String(s%60).padStart(2,'0')+'s'
+  const h=Math.floor(m/60)
+  return h+'h'+String(m%60).padStart(2,'0')+'m'
+}
+
+function pararPollingNex(){ if(nexPolling){ clearInterval(nexPolling); nexPolling=null } }
+function pararPollingProgresso(){ if(impPolling){ clearInterval(impPolling); impPolling=null } }
+
+function mostrarBarraUpload(msg, atual, total, iniMs){
+  const box=document.getElementById('impProgresso')
+  if(!box) return
+  box.style.display='block'
+  const tempo=fmtTempo(Date.now()-(iniMs||Date.now()))
+  const elm=document.getElementById('impProgMsg'); if(elm) elm.textContent=(msg||'Processando...')+(tempo?' · '+tempo:'')
+  const porc=Math.min(100,Math.round((atual||0)/Math.max(1,total||1)*100))
+  const elp=document.getElementById('impProgPct'); if(elp) elp.textContent=porc+'%'
+  const elb=document.getElementById('impProgBar'); if(elb) elb.style.width=porc+'%'
+}
+
+function enviaArquivo(uploadUrl, arquivo, nomeZip, onProgresso, onCorpoEnviado){
+  return new Promise((resolve,reject)=>{
+    const xhr=new XMLHttpRequest()
+    xhr.open('POST',baseUrl+uploadUrl,true)
+    xhr.setRequestHeader('Content-Type','application/octet-stream')
+    if(nomeZip) xhr.setRequestHeader('x-zip-nome',encodeURIComponent(nomeZip))
+    let corpoIniciado=false
+    xhr.upload.onprogress=(e)=>{ if(e.lengthComputable&&onProgresso) onProgresso(e.loaded,e.total) }
+    xhr.upload.onload=()=>{ if(!corpoIniciado){ corpoIniciado=true; if(onCorpoEnviado) onCorpoEnviado() } }
+    xhr.onload=()=>{
+      if(xhr.status>=200&&xhr.status<300){ resolve(xhr.response||{}); return }
+      const body=xhr.response||{}
+      reject(new Error(body&&body.erro?body.erro:'HTTP '+xhr.status))
+    }
+    xhr.onerror=()=>reject(new Error('Falha de rede'))
+    xhr.send(arquivo)
+  })
+}
+
 function mostrarProgresso(p){
   const box=document.getElementById('impProgresso')
   if(!box) return
-  if(!p||!p.ativo){ box.style.display='none'; if(impPolling){ clearInterval(impPolling); impPolling=null }; return }
+  if(!p||!p.ativo){ box.style.display='none'; return }
   box.style.display='block'
   const msg=document.getElementById('impProgMsg')
   const pct=document.getElementById('impProgPct')
   const bar=document.getElementById('impProgBar')
-  if(msg) msg.textContent=p.mensagem||'Processando...'
+  if(msg){
+    const txt=p.mensagem||'Processando...'
+    const tempo=fmtTempo(p.decorrido)
+    msg.textContent=tempo?txt+' · '+tempo:txt
+  }
   const total=Math.max(1,p.total||1)
   const porc=Math.min(100,Math.round((p.atual||0)/total*100))
   if(pct) pct.textContent=porc+'%'
@@ -380,7 +426,6 @@ function iniciarPollingProgresso(){
     try{
       const d=await api('/api/importar/progresso')
       mostrarProgresso(d)
-      if(!d.ativo&&impPolling){ clearInterval(impPolling); impPolling=null }
     }catch{}
   },400)
 }
@@ -390,26 +435,22 @@ async function enviarZip(input){
   if(!arquivo) return
   const st=document.getElementById('impStatus')
   if(st) st.textContent='Enviando '+arquivo.name+' ('+fmtBytes(arquivo.size)+')...'
-  iniciarPollingProgresso()
+  const ini=Date.now()
   try{
-    const r=await fetch(baseUrl+'/api/importar/zip',{
-      method:'POST',
-      headers:{'Content-Type':'application/octet-stream','x-zip-nome':encodeURIComponent(arquivo.name)},
-      body:arquivo
-    })
-    if(!r.ok){
-      let msg='HTTP '+r.status
-      try{ const d=await r.json(); if(d&&d.erro) msg=d.erro }catch{}
-      if(st) st.innerHTML='<span style="color:var(--red)">Erro: '+esc(msg)+'</span>'
-      input.value=''
-      return
-    }
-    const d=await r.json()
+    const d=await enviaArquivo('/api/importar/zip', arquivo, arquivo.name,
+      (l,t)=>mostrarBarraUpload('Enviando '+arquivo.name+' '+fmtBytes(l)+' de '+fmtBytes(t),l,t,ini),
+      ()=>iniciarPollingProgresso())
+    mostrarProgresso({ativo:false})
+    if(d.erro){ if(st) st.innerHTML='<span style="color:var(--red)">Erro: '+esc(d.erro)+'</span>'; input.value=''; return }
     if(st) st.innerHTML='<span style="color:var(--green)">ZIP enviado e extraído!</span> '+(d.arquivos&&d.arquivos.length?d.arquivos.length+' arquivo(s) de dados encontrados.':'Nenhum arquivo de dados encontrado.')
     input.value=''
     carregarArquivosImportacao()
   }catch(e){
     if(st) st.innerHTML='<span style="color:var(--red)">Erro ao enviar: '+esc(e.message)+'</span>'
+  }finally{
+    pararPollingNex()
+    pararPollingProgresso()
+    mostrarProgresso({ativo:false})
   }
 }
 
@@ -430,6 +471,8 @@ async function importarArquivo(nomeArquivo){
       if(r.erros&&r.erros.length) mostrarMsg(r.erros.length+' erro(s) na importação',false)
       else mostrarMsg('Produtos importados com sucesso!',true)
     }finally{
+      pararPollingNex()
+      pararPollingProgresso()
       mostrarProgresso({ativo:false})
     }
   }catch(e){
@@ -454,109 +497,6 @@ function renderInfo(c){
 function renderLogs(c){
   c.innerHTML='<div class="secao"><h3>Log do Servidor</h3><div style="margin-bottom:12px"><button onclick="limparLogs()" style="padding:8px 14px;border-radius:8px;border:1px solid var(--line);background:var(--card2);color:var(--text);font-size:12px;cursor:pointer;font-family:inherit">Limpar logs</button></div><div class="logs" id="logs"></div></div>'
   carregarLogs()
-}
-
-// ---------- Catálogo (GitHub) ----------
-async function renderCatalogo(c){
-  c.innerHTML='<div class="secao"><h3>Catálogo Online (GitHub)</h3>'+
-    '<p style="font-size:13px;color:var(--muted);margin-bottom:14px">Configure o token e o repositório para publicar o catálogo no GitHub Pages. A sincronização é feita por este servidor.</p>'+
-    '<div class="grid-info" style="grid-template-columns:1fr">'+
-    '<div class="fld"><label>Token do GitHub (ghp_...)</label><input id="cat-token" type="password" placeholder="Cole seu token aqui" autocomplete="off" style="width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card2);color:var(--text);font-size:13px;margin-bottom:10px"/></div>'+
-    '<div class="fld"><label>Repositório (usuário/repo)</label><input id="cat-repo" placeholder="seu-usuario/seu-repositorio" autocomplete="off" style="width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card2);color:var(--text);font-size:13px;margin-bottom:10px"/></div>'+
-    '<div class="fld"><label>Branch (padrão: gh-pages)</label><input id="cat-branch" placeholder="gh-pages" autocomplete="off" style="width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card2);color:var(--text);font-size:13px;margin-bottom:10px"/></div>'+
-    '<div class="fld"><label>Nome da loja (opcional)</label><input id="cat-nome" placeholder="Nome exibido no catálogo" autocomplete="off" style="width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card2);color:var(--text);font-size:13px;margin-bottom:10px"/></div>'+
-    '</div>'+
-    '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px">'+
-    '<button class="primario" style="padding:10px 18px;border-radius:8px;border:none;background:var(--green);color:#052e16;font-size:13px;font-weight:700;cursor:pointer" onclick="salvarCatalogo()">Salvar</button>'+
-    '<button style="padding:10px 18px;border-radius:8px;border:1px solid var(--line);background:var(--card2);color:var(--text);font-size:13px;font-weight:600;cursor:pointer" onclick="testarCatalogo()">Testar conexão</button>'+
-    '<button style="padding:10px 18px;border-radius:8px;border:1px solid var(--line);background:var(--card2);color:var(--text);font-size:13px;font-weight:600;cursor:pointer" onclick="sincronizarCatalogo()">Sincronizar agora</button>'+
-    '</div>'+
-    '<div id="cat-status" style="margin-top:14px;font-size:13px;color:var(--muted)">Carregando...</div>'+
-    '<div class="secao" style="margin-top:18px;border-top:1px solid var(--line)">'+
-    '<h3 style="margin-top:14px">Backup dos códigos do catálogo</h3>'+
-    '<p style="font-size:13px;color:var(--muted);margin-bottom:12px">Salve os dados de configuração (token, repositório, branch e nome da loja) num arquivo no servidor para restaurar depois se precisar.</p>'+
-    '<div id="cat-bkp-status" style="font-size:13px;color:var(--muted);margin-bottom:10px">Verificando backup...</div>'+
-    '<div style="display:flex;gap:10px;flex-wrap:wrap">'+
-    '<button style="padding:10px 18px;border-radius:8px;border:1px solid var(--line);background:var(--card2);color:var(--text);font-size:13px;font-weight:600;cursor:pointer" onclick="salvarBackupCatalogo()">💾 Salvar códigos (backup)</button>'+
-    '<button style="padding:10px 18px;border-radius:8px;border:1px solid var(--line);background:var(--card2);color:var(--text);font-size:13px;font-weight:600;cursor:pointer" onclick="restaurarBackupCatalogo()">↩️ Restaurar códigos salvos</button>'+
-    '</div></div></div>'
-  await carregarCatalogoConfig()
-  carregarBackupCatalogoStatus()
-}
-
-async function carregarCatalogoConfig(){
-  try{
-    const cfg=await api('/api/catalogo/config')
-    document.getElementById('cat-token').value=cfg.github_token||''
-    document.getElementById('cat-repo').value=cfg.github_repo||''
-    document.getElementById('cat-branch').value=cfg.github_branch||'gh-pages'
-    document.getElementById('cat-nome').value=cfg.nome_loja||''
-    const st=await api('/api/catalogo/status')
-    const s=document.getElementById('cat-status')
-    s.innerHTML='<strong>'+esc(st.status||'')+'</strong> · Configurado: '+(st.configurado?'✅':'❌')+
-      ' · Última sync: '+esc(st.ultima_sync||'Nunca')+'<br><span style="color:var(--muted)">Pendentes: '+st.pendentes+' · Produtos publicados: '+st.produtos_publicados+'</span>'+
-      (st.ultimo_erro?'<br><span style="color:var(--red)">'+esc(st.ultimo_erro)+'</span>':'')
-  }catch(e){ const s=document.getElementById('cat-status'); if(s) s.textContent='Falha ao carregar: '+e.message }
-}
-
-async function salvarCatalogo(){
-  try{
-    const token=document.getElementById('cat-token').value.trim()
-    const repo=document.getElementById('cat-repo').value.trim()
-    const branch=document.getElementById('cat-branch').value.trim()||'gh-pages'
-    const nome=document.getElementById('cat-nome').value.trim()
-    const r=await api('/api/catalogo/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({github_token:token,github_repo:repo,github_branch:branch,nome_loja:nome})})
-    mostrarMsg('Configuração salva!',true)
-    await carregarCatalogoConfig()
-  }catch(e){ mostrarMsg('Erro: '+e.message,false) }
-}
-
-async function testarCatalogo(){
-  try{
-    const r=await api('/api/catalogo/testar',{method:'POST'})
-    mostrarMsg(r.mensagem||(r.ok?'Conexão OK':'Falha'), r.ok)
-  }catch(e){ mostrarMsg('Erro: '+e.message,false) }
-}
-
-async function sincronizarCatalogo(){
-  try{
-    const s=document.getElementById('cat-status'); if(s) s.textContent='Sincronizando... Aguarde.'
-    const r=await api('/api/catalogo/sync',{method:'POST'})
-    mostrarMsg(r.ok?'Sincronizado com sucesso!':'Falha: '+(r.erro||'erro'), r.ok)
-    await carregarCatalogoConfig()
-  }catch(e){ mostrarMsg('Erro: '+e.message,false) }
-}
-
-async function carregarBackupCatalogoStatus(){
-  try{
-    const b=await api('/api/catalogo/backup-config')
-    const el=document.getElementById('cat-bkp-status')
-    if(!el) return
-    if(b.existe){
-      el.innerHTML='✅ Backup salvo em: <strong>'+esc(b.data?new Date(b.data).toLocaleString('pt-BR'):'')+'</strong> — token: '+(b.config&&b.config.github_token?'presente':'ausente')+' · repo: '+esc((b.config&&b.config.github_repo)||'—')
-    }else{
-      el.textContent='Nenhum backup salvo ainda.'
-    }
-  }catch(e){ const el=document.getElementById('cat-bkp-status'); if(el) el.textContent='Falha ao verificar backup: '+e.message }
-}
-
-async function salvarBackupCatalogo(){
-  try{
-    const r=await api('/api/catalogo/backup-config',{method:'POST'})
-    mostrarMsg(r.ok?'Códigos do catálogo salvos com sucesso!':'Falha ao salvar backup', r.ok)
-    carregarBackupCatalogoStatus()
-  }catch(e){ mostrarMsg('Erro: '+e.message,false) }
-}
-
-async function restaurarBackupCatalogo(){
-  try{
-    const b=await api('/api/catalogo/backup-config')
-    if(!b.existe){ mostrarMsg('Nenhum backup salvo para restaurar.',false); return }
-    if(!confirm('Restaurar a configuração do catálogo do backup salvo? Token, repositório, branch e nome da loja serão restaurados.')) return
-    const r=await api('/api/catalogo/restaurar-backup-config',{method:'POST'})
-    mostrarMsg(r.ok?'Configuração do catálogo restaurada!':'Falha: '+(r.erro||'erro'), r.ok)
-    if(r.ok){ await carregarCatalogoConfig(); carregarBackupCatalogoStatus() }
-  }catch(e){ mostrarMsg('Erro: '+e.message,false) }
 }
 
 // ---------- Status ----------
@@ -721,6 +661,271 @@ async function carregarLogs(){
 async function limparLogs(){
   try{ await api('/api/servidor/logs/limpar',{method:'POST'}) }catch(e){}
   carregarLogs()
+}
+
+// ---------- Importação / Migração Nex ----------
+let nexSelecionado=null
+let nexOcupado=false
+let nexBusyPoll=null
+
+function fmtMoeda(v){ return Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) }
+
+async function apiNex(path, opts){
+  const r=await fetch(baseUrl+path, opts)
+  let d=null
+  try{ d=await r.json() }catch(e){}
+  if(!r.ok) throw new Error((d&&d.erro)||('HTTP '+r.status))
+  return d
+}
+
+function renderNex(c){
+  c.innerHTML='<div class="secao"><h3>Importação / Migração Nex</h3>'+
+    '<p style="font-size:13px;color:var(--muted);margin-bottom:14px">Importa vendas do backup do Nex para uma cópia de homologação. <strong>Nenhum dado de produção é alterado.</strong> Fluxo: Selecionar arquivo → Analisar → Preparar base → Pré-visualizar → Importar.</p>'+
+    '<div id="nexEstado" style="margin-bottom:14px"></div>'+
+    '<div id="nexProgresso" style="display:none;margin-bottom:14px">'+
+      '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:6px"><span id="nexProgMsg">...</span><span id="nexProgTempo">0s</span></div>'+
+      '<div style="height:10px;background:var(--card2);border:1px solid var(--line);border-radius:6px;overflow:hidden"><div id="nexProgBar" style="height:100%;width:100%;background:var(--amber);transition:width .2s"></div></div>'+
+    '</div>'+
+    '<div class="grid-info" style="margin-bottom:14px">'+
+      '<div class="item"><span>Arquivo .xls/.xlsx</span><strong id="nexArqInfo">carregando...</strong></div>'+
+      '<div class="item"><span>Pasta</span><strong id="nexDirInfo">—</strong></div>'+
+    '</div>'+
+    '<div class="fld" style="margin-bottom:8px"><label>1. Selecionar arquivo exportado do Nex (vendas)</label></div>'+
+    '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">'+
+      '<select id="nexArquivoSel" style="flex:1;min-width:220px;padding:9px 10px;border-radius:8px;border:1px solid var(--line);background:var(--card2);color:var(--text);font-size:13px;font-family:inherit">'+
+        '<option value="">Selecione o arquivo...</option>'+
+      '</select>'+
+      '<button onclick="carregarArquivosNex(false)" style="padding:8px 12px;border-radius:8px;border:1px solid var(--line);background:var(--card2);color:var(--text);font-size:12px;cursor:pointer;font-family:inherit">Atualizar lista</button>'+
+      '<button class="primario" onclick="analisarNex()" style="padding:9px 18px;border-radius:8px;border:none;background:var(--green);color:#052e16;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">2. Analisar</button>'+
+    '</div>'+
+    '<div id="nexAnalise" style="margin-top:14px"></div>'+
+    '<div style="margin-top:14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">'+
+      '<button class="primario" onclick="prepararNex()" style="padding:9px 18px;border-radius:8px;border:none;background:var(--green);color:#052e16;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">3. Preparar base (snapshot + índices NX)</button>'+
+      '<label style="display:flex;gap:6px;align-items:center;font-size:12px;color:var(--muted)"><input type="checkbox" id="nexReusar" checked> reutilizar snapshot mais recente</label>'+
+    '</div>'+
+    '<div id="nexPreparado" style="margin-top:14px"></div>'+
+    '<div style="margin-top:14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">'+
+      '<select id="nexConfianca" style="padding:9px 10px;border-radius:8px;border:1px solid var(--line);background:var(--card2);color:var(--text);font-size:13px;font-family:inherit">'+
+        '<option value="EXATA">Somente EXATA (recomendado)</option>'+
+        '<option value="ALTA CONFIANÇA">EXATA + ALTA CONFIANÇA</option>'+
+      '</select>'+
+      '<button onclick="previewNex()" style="padding:9px 18px;border-radius:8px;border:1px solid var(--line);background:var(--card2);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">4. Pré-visualizar</button>'+
+      '<button class="perigo" onclick="importarNex()" style="padding:9px 18px;border-radius:8px;border:none;background:var(--red);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">5. Importar p/ homologação</button>'+
+    '</div>'+
+    '<div id="nexPreview" style="margin-top:14px"></div>'+
+    '<div id="nexResultado" style="margin-top:14px"></div>'+
+    '<div class="secao" style="margin-top:16px;border:none;background:transparent;padding:0"><h3 style="font-size:14px">Histórico de importações (snapshots de homologação)</h3>'+
+      '<div id="nexHistorico" style="display:flex;flex-direction:column;gap:6px;max-height:260px;overflow-y:auto"></div>'+
+      '<div style="display:flex;gap:8px;margin-top:10px"><button onclick="carregarHistoricoNex()" style="padding:8px 14px;border-radius:8px;border:1px solid var(--line);background:var(--card2);color:var(--text);font-size:12px;cursor:pointer;font-family:inherit">Atualizar histórico</button>'+
+      '<button onclick="liberarNex()" style="padding:8px 14px;border-radius:8px;border:1px solid var(--line);background:var(--card2);color:var(--text);font-size:12px;cursor:pointer;font-family:inherit">Liberar memória (descartar base preparada)</button></div>'+
+    '</div></div>'
+  carregarArquivosNex(true)
+  carregarEstadoNex()
+  carregarHistoricoNex()
+}
+
+function setNexOcupado(v){
+  nexOcupado=v
+  carregarEstadoNex()
+}
+
+async function guardaNex(fn, tag){
+  if(nexOcupado){ mostrarMsg('Já existe uma operação Nex em andamento. Aguarde.',false); return }
+  nexOcupado=true
+  iniciarPollingNexBusy()
+  try{
+    const d=await fn()
+    mostrarMsg((tag&&d&&d.snapshotDir?'Operação concluída em '+tag+'. ': '')||'Operação concluída!', true)
+    return d
+  }catch(e){
+    mostrarMsg('Erro: '+e.message,false)
+    return null
+  }finally{
+    nexOcupado=false
+    pararPollingNexBusy()
+    carregarEstadoNex()
+  }
+}
+
+function iniciarPollingNexBusy(){
+  if(nexBusyPoll) clearInterval(nexBusyPoll)
+  const prog=document.getElementById('nexProgresso')
+  if(prog) prog.style.display='block'
+  nexBusyPoll=setInterval(()=>{
+    apiNex('/api/nex/progresso',{method:'POST'}).then(d=>{
+      const m=document.getElementById('nexProgMsg')
+      const t=document.getElementById('nexProgTempo')
+      if(m) m.textContent=(d.etapa?d.etapa:'...')+(d.detalhe?' — '+d.detalhe:'')
+      if(t) t.textContent=d.decorridoS+'s'
+    }).catch(()=>{})
+  },500)
+}
+function pararPollingNexBusy(){
+  if(nexBusyPoll){ clearInterval(nexBusyPoll); nexBusyPoll=null }
+  const prog=document.getElementById('nexProgresso')
+  if(prog) prog.style.display='none'
+}
+
+async function carregarArquivosNex(silencioso){
+  try{
+    const d=await apiNex('/api/nex/arquivos')
+    const sel=document.getElementById('nexArquivoSel')
+    const inf=document.getElementById('nexDirInfo')
+    const arq=document.getElementById('nexArqInfo')
+    if(inf) inf.textContent=d.dir||'—'
+    if(sel){
+      const opcoes=(d.arquivos||[]).map(a=>{
+        const selOpt=(nexSelecionado&&nexSelecionado.nome===a.nome)?'selected':''
+        return '<option value="'+esc(a.caminho)+'" '+selOpt+'>'+esc(a.nome)+' ('+fmtBytes(a.tamanho)+')</option>'
+      }).join('')
+      sel.innerHTML=opcoes || '<option value="">Nenhum arquivo .xls/.xlsx encontrado</option>'
+      if(!nexSelecionado&&d.arquivos&&d.arquivos.length){
+        nexSelecionado=d.arquivos.sort((a,b)=>a.nome.localeCompare(b.nome)).find(a=>/venda/i.test(a.nome))||d.arquivos[0]
+        sel.value=nexSelecionado.caminho
+      }
+    }
+    if(arq) arq.textContent=nexSelecionado?nexSelecionado.nome:'—'
+  }catch(e){
+    if(arq) document.getElementById('nexArqInfo').textContent='Falha: '+e.message
+    if(!silencioso) mostrarMsg('Erro ao listar arquivos: '+e.message,false)
+  }
+}
+
+function arquivoDoSelect(){
+  const sel=document.getElementById('nexArquivoSel')
+  const caminho=sel&&sel.value
+  if(!caminho){ mostrarMsg('Selecione um arquivo de vendas exportado do Nex.',false); return null }
+  return caminho
+}
+
+async function analisarNex(){
+  const arquivo=arquivoDoSelect()
+  if(!arquivo) return
+  const d=await guardaNex(async ()=>apiNex('/api/nex/analisar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({arquivo})}))
+  if(!d) return
+  const area=document.getElementById('nexAnalise')
+  const mapLinha=d.mapeamento.filter(x=>x.coluna).map(x=>'<div class="item"><span>'+esc(x.campo)+'</span><strong>'+esc(x.coluna)+'</strong></div>').join('')
+  area.innerHTML='<div class="secao" style="background:var(--card2)"><h3 style="font-size:14px">Análise: '+esc(d.arquivo.split(/[\\/]/).pop())+'</h3>'+
+    '<div class="cards" style="margin-bottom:12px">'+
+      '<div class="card"><div class="titulo">Tipo identificado</div><div class="valor" style="font-size:14px">'+esc(d.tipo.tipo)+'</div><div class="sub">'+(d.tipo.motivo||[]).map(esc).join(' · ')+'</div></div>'+
+      '<div class="card"><div class="titulo">Vendas</div><div class="valor">'+d.vendas+'</div><div class="sub">'+d.outras+' outras linhas</div></div>'+
+      '<div class="card"><div class="titulo">Inválidas</div><div class="valor '+(d.invalidas?'erro':'ok')+'">'+d.invalidas+'</div></div>'+
+      '<div class="card"><div class="titulo">Duplicadas (no arquivo)</div><div class="valor '+(d.duplicadas?'warn':'ok')+'">'+d.duplicadas+'</div></div>'+
+      '<div class="card"><div class="titulo">Soma Total Final</div><div class="valor">R$ '+fmtMoeda(d.somaTotal)+'</div></div>'+
+      '<div class="card"><div class="titulo">Soma Valor Pago</div><div class="valor">R$ '+fmtMoeda(d.somaPago)+'</div></div>'+
+    '</div>'+
+    '<div class="grid-info" style="grid-template-columns:1fr">'+mapLinha+'</div>'+
+    '<div style="font-size:12px;color:var(--muted);margin-top:10px">'+d.linhas+' linha(s) no livro, '+d.sheets+' planilha(s).</div></div>'
+}
+
+async function prepararNex(){
+  const reusar=document.getElementById('nexReusar')&&document.getElementById('nexReusar').checked
+  const d=await guardaNex(async ()=>apiNex('/api/nex/preparar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({reusar})}))
+  if(!d) return
+  const area=document.getElementById('nexPreparado')
+  const porAno=Object.entries(d.recon&&d.recon.porAno||{}).map(([k,v])=>k+'='+v).join(', ')
+  area.innerHTML='<div class="secao" style="background:var(--card2);border-color:var(--green)"><h3 style="font-size:14px;color:var(--green)">Base preparada</h3>'+
+    '<div class="grid-info" style="grid-template-columns:1fr 1fr">'+
+      '<div class="item"><span>Snapshot de homologação</span><strong>'+esc(d.snapshotDir)+'</strong></div>'+
+      '<div class="item"><span>Vendas no Tran.nx1 (TranNome=Venda)</span><strong>'+d.recon.vendasNX+'</strong></div>'+
+      '<div class="item"><span>Registros Tran lidos</span><strong>'+d.recon.totalRegistrosTran+'</strong></div>'+
+      '<div class="item"><span>Vendas por ano</span><strong>'+esc(porAno)+'</strong></div>'+
+      '<div class="item"><span>Soma total (itens MovEst)</span><strong>R$ '+fmtMoeda(d.recon.somaValorMovEst)+'</strong></div>'+
+      '<div class="item"><span>Montado em</span><strong>'+esc(fmtData(d.montadoEm))+'</strong></div>'+
+    '</div></div>'
+}
+
+async function previewNex(){
+  const arquivo=arquivoDoSelect()
+  if(!arquivo) return
+  const confiancaMin=document.getElementById('nexConfianca').value
+  const d=await guardaNex(async ()=>apiNex('/api/nex/preview',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({arquivo,confiancaMin})}))
+  if(!d) return
+  const area=document.getElementById('nexPreview')
+  const rc=d.porConfianca||{}
+  const p=d.preview||{}
+  const amostra=(d.amostra||[]).slice(0,8).map(a=>'<div class="log-linha"><span style="color:var(--muted);font-family:Consolas,monospace">'+esc(a.xlsId)+'</span><span class="log-nivel '+(a.confianca.indexOf('EXAT')>=0?'ok':a.confianca.indexOf('AMBÍGUA')>=0?'aviso':'erro')+'">'+esc(a.confianca)+'</span><span style="font-size:11px;color:var(--muted)">'+(a.nxId!=null?'NX '+a.nxId+' — ':'')+esc((a.criterios||[]).join(' · '))+'</span></div>').join('')
+  const amostraHtml=amostra?'<div style="font-size:12px;color:var(--muted);margin:10px 0 4px">Amostra de correlação</div><div class="logs" style="max-height:180px">'+amostra+'</div>':''
+  area.innerHTML='<div class="secao" style="background:var(--card2)"><h3 style="font-size:14px">Pré-visualização da importação</h3>'+
+    '<div class="cards" style="margin-bottom:12px">'+
+      '<div class="card"><div class="titulo">EXATA</div><div class="valor ok">'+rc['EXATA']+'</div></div>'+
+      '<div class="card"><div class="titulo">ALTA CONFIANÇA</div><div class="valor">'+(rc['ALTA CONFIANÇA']||0)+'</div></div>'+
+      '<div class="card"><div class="titulo">PROVÁVEL</div><div class="valor warn">'+(rc['PROVÁVEL']||0)+'</div></div>'+
+      '<div class="card"><div class="titulo">AMBÍGUA</div><div class="valor warn">'+(rc['AMBÍGUA']||0)+'</div></div>'+
+      '<div class="card"><div class="titulo">NÃO ENCONTRADA</div><div class="valor erro">'+(rc['NÃO ENCONTRADA']||0)+'</div></div>'+
+      '<div class="card"><div class="titulo">Prontas para importar</div><div class="valor ok">'+p.prontas+'</div><div class="sub">duplicadas já no snapshot: '+(p.duplicadasEncontradas||0)+'</div></div>'+
+    '</div>'+
+    '<div style="font-size:12px;color:var(--muted)">Caso "-C": '+p.casoC+' · Ambíguas: '+p.ambiguas+' · Sem correlação: '+p.semCorrelacao+' · Sem itens: '+p.semItens+'</div>'+
+    (p.erros&&p.erros.length?'<div style="font-size:12px;color:var(--red);margin-top:8px">'+(p.erros.map(esc).join('<br>'))+'</div>':'')+
+    amostraHtml+'</div>'
+}
+
+async function importarNex(){
+  const arquivo=arquivoDoSelect()
+  if(!arquivo) return
+  const confiancaMin=document.getElementById('nexConfianca').value
+  abrirModal('<h3>Importar para homologação</h3><p>As vendas correlacionadas ('+esc(confiancaMin)+') serão gravadas no SNAPSHOT de homologação. Produção não é alterada. Confirmar importação?</p>'+
+    '<div class="modal-acoes"><button data-cancela>Cancelar</button><button data-confirma class="primario">Confirmar e importar</button></div>',
+    async ()=>{
+      const d=await guardaNex(async ()=>apiNex('/api/nex/importar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({arquivo,confiancaMin})}))
+      if(!d||!d.resultado) return
+      const r=d.resultado
+      const area=document.getElementById('nexResultado')
+      const porArquivo=(r.resumoPorArquivo||[]).map(a=>'<div class="log-linha"><span style="flex:1;font-family:Consolas,monospace;font-size:11px">'+esc(a.arquivo.split(/[\\/]/).pop())+'</span><span style="color:var(--green)">+'+a.inseridas+'</span><span style="color:var(--amber)">dup '+a.duplicadas+'</span></div>').join('')
+      area.innerHTML='<div class="secao" style="background:var(--card2);border-color:'+(r.ok?'var(--green)':'var(--red)')+'"><h3 style="font-size:14px;color:'+(r.ok?'var(--green)':'var(--red)')+'">Resultado da importação</h3>'+
+        '<div class="cards" style="margin-bottom:12px">'+
+          '<div class="card"><div class="titulo">Inseridas</div><div class="valor ok">'+r.inseridas+'</div></div>'+
+          '<div class="card"><div class="titulo">Duplicadas (ignoradas)</div><div class="valor '+(r.duplicadas?'warn':'ok')+'">'+r.duplicadas+'</div></div>'+
+          '<div class="card"><div class="titulo">Pagamentos</div><div class="valor">'+r.pagamentos+'</div></div>'+
+          '<div class="card"><div class="titulo">Caso "-C"</div><div class="valor '+(r.naoImportadasCasoC?'warn':'ok')+'">'+r.naoImportadasCasoC+'</div></div>'+
+          '<div class="card"><div class="titulo">Ambíguas / sem corr.</div><div class="valor">'+r.ambiguas+' / '+r.semCorrelacao+'</div></div>'+
+          '<div class="card"><div class="titulo">"NÃO DETERMINADO"</div><div class="valor" style="font-size:13px">valores de pagamento não estimados</div></div>'+
+        '</div>'+
+        (r.erros&&r.erros.length?'<div style="font-size:12px;color:var(--red);margin-bottom:10px">'+(r.erros.map(esc).join('<br>'))+'</div>':'')+
+        (porArquivo?'<div style="font-size:12px;color:var(--muted);margin-bottom:6px">Por arquivo</div><div class="logs">'+porArquivo+'</div>':'')+
+        '<div style="font-size:12px;color:var(--muted);margin-top:10px">Snapshot: '+esc(d.snapshotDir)+'</div></div>'
+      carregarHistoricoNex()
+    })
+}
+
+async function carregarEstadoNex(){
+  const el=document.getElementById('nexEstado')
+  if(!el) return
+  try{
+    const d=await apiNex('/api/nex/estado')
+    const n=d.progresso&&d.progresso.ativo?'operações Nex em andamento...':'livre'
+    el.innerHTML='<div style="font-size:12px;color:var(--muted)">Estado: <span style="color:'+(d.ocupado?'var(--amber)':'var(--green)')+'">'+(d.ocupado?'Ocupado':'Livre')+'</span> · '+esc(n)+
+      (d.preparado?' · base: '+esc(d.preparado.snapshotDir):'')+'</div>'
+  }catch(e){ el.innerHTML='<div style="font-size:12px;color:var(--red)">Erro ao consultar estado: '+esc(e.message)+'</div>' }
+}
+
+async function carregarHistoricoNex(){
+  const el=document.getElementById('nexHistorico')
+  if(!el) return
+  try{
+    const d=await apiNex('/api/nex/historico')
+    if(!d.snapshots||d.snapshots.length===0){ el.innerHTML='<div style="font-size:12px;color:var(--muted)">Nenhum snapshot de homologação ainda.</div>'; return }
+    el.innerHTML=d.snapshots.map(s=>'<div class="backup-linha" style="flex-wrap:wrap">'+
+      '<span class="nome">'+esc(s.nome)+'</span>'+
+      '<span>'+fmtData(s.criado_por_snapshot||s.criado_em)+' · '+fmtBytes(s.bytes)+'</span>'+
+      '<span style="color:var(--green)">'+s.origens+' origens de importação</span>'+
+      '<button onclick="mostrarPassosHistorico(\''+esc(s.nome)+'\')" style="padding:4px 10px;border-radius:6px;border:1px solid var(--line);background:var(--card);color:var(--text);font-size:11px;cursor:pointer;font-family:inherit">passos</button>'+
+      '</div>').join('')
+    window.__nexHistorico=d.snapshots
+  }catch(e){ el.innerHTML='<div style="font-size:12px;color:var(--red)">Erro: '+esc(e.message)+'</div>' }
+}
+function mostrarPassosHistorico(nome){
+  const s=(window.__nexHistorico||[]).find(x=>x.nome===nome)
+  if(!s) return
+  const passos=(s.passos||[]).length?s.passos.map(p=>'• '+esc(p)).join('\n'):'Nenhum passo registrado.'
+  alert('Snapshot '+nome+'\n\nPassos:\n'+passos)
+}
+async function liberarNex(){
+  try{
+    await apiNex('/api/nex/liberar',{method:'POST'})
+    mostrarMsg('Base preparada descartada da memória.',true)
+    carregarEstadoNex()
+  }catch(e){ mostrarMsg('Erro: '+e.message,false) }
 }
 
 // ---------- Início ----------

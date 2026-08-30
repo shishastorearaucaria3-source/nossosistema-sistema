@@ -75,11 +75,6 @@ const api = {
     importar: () => ipcRenderer.invoke('caixas:importar')
   },
   catalogo: {
-    status: () => ipcRenderer.invoke('catalogo:status'),
-    config: (dados: Record<string, string | undefined>) => ipcRenderer.invoke('catalogo:config', dados),
-    getConfig: () => ipcRenderer.invoke('catalogo:getConfig'),
-    sync: () => ipcRenderer.invoke('catalogo:sync'),
-    testar: () => ipcRenderer.invoke('catalogo:testar'),
     getExibicao: () => ipcRenderer.invoke('catalogo:getExibicao'),
     salvarExibicao: (dados: Record<string, unknown>) => ipcRenderer.invoke('catalogo:salvarExibicao', dados)
   },

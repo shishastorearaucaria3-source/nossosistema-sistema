@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { getServidorApi, getCatalogoApi, getDbApi, getImportarApi, fazerBackupManual, getUpdateApi } from '../../shared/db'
+import { getServidorApi, getDbApi, getImportarApi, fazerBackupManual, getUpdateApi } from '../../shared/db'
 
 interface ChaveApi {
   api_key: string
@@ -12,9 +12,6 @@ interface StatusServidor {
   banco: string
   banco_tamanho: number
   sincronizacao: string
-  ultima_sync: string
-  proxima_sync: string
-  ultimo_erro_sync: string
   uptime: string
   porta: number
   ip_local: string
@@ -67,7 +64,6 @@ export default function Servidor() {
   const [mensagem, setMensagem] = useState('')
   const [erro, setErro] = useState('')
   const [ocupado, setOcupado] = useState(false)
-  const [sincronizando, setSincronizando] = useState(false)
   const [diag, setDiag] = useState<ItemDiag[] | null>(null)
   const [diagRodando, setDiagRodando] = useState(false)
   const [mostrarZerar, setMostrarZerar] = useState(false)
@@ -80,6 +76,7 @@ export default function Servidor() {
   const [linhasImportar, setLinhasImportar] = useState<Record<string, unknown>[]>([])
   const [mapColunas, setMapColunas] = useState<Record<string, string>>({})
   const [impMsg, setImpMsg] = useState('')
+  const [importarProg, setImportarProg] = useState<{ atual: number; total: number } | null>(null)
   const [updateUrl, setUpdateUrl] = useState('')
   const [updateMsg, setUpdateMsg] = useState('')
   const [updateDisponivel, setUpdateDisponivel] = useState<{ atual: string; nova: string; notas: string[] } | null>(null)
@@ -191,20 +188,6 @@ export default function Servidor() {
     if (logsRef.current) logsRef.current.scrollTop = logsRef.current.scrollHeight
   }, [logs])
 
-  const syncAgora = async () => {
-    setSincronizando(true)
-    setMensagem('Sincronizando...')
-    try {
-      const r = await getCatalogoApi().sync()
-      setMensagem(r.ok ? 'Sincronização concluída com sucesso.' : `Falha na sincronização: ${r.erro}`)
-    } catch (e) {
-      setMensagem(`Erro: ${(e as Error).message}`)
-    } finally {
-      setSincronizando(false)
-      carregar()
-    }
-  }
-
   const criarBackup = async () => {
     if (!confirm('Criar um backup completo dos dados do sistema agora?')) return
     setOcupado(true)
@@ -300,6 +283,7 @@ export default function Servidor() {
 
   const selecionarArquivo = async () => {
     setImpMsg('')
+    setImportarProg(null)
     try {
       const res = await getImportarApi().lerArquivo()
       if (!res) return
@@ -324,11 +308,14 @@ export default function Servidor() {
     }
     if (!confirm(`Importar ${linhasImportar.length} registro(s)?`)) return
     setOcupado(true)
+    setImpMsg('')
+    setImportarProg({ atual: 0, total: linhasImportar.length })
     try {
       const db = getDbApi()
       let importados = 0
       let erros = 0
-      for (const linha of linhasImportar) {
+      for (let li = 0; li < linhasImportar.length; li++) {
+        const linha = linhasImportar[li]
         try {
           const nome = String(linha[mapColunas.nome] ?? '').trim()
           if (!nome) {
@@ -359,7 +346,9 @@ export default function Servidor() {
         } catch {
           erros++
         }
+        if ((li + 1) % 20 === 0) setImportarProg({ atual: li + 1, total: linhasImportar.length })
       }
+      setImportarProg(null)
       setImpMsg(`Importação concluída: ${importados} importado(s), ${erros} com erro.`)
       setImportarPasso(2)
       setMensagem(`Importação concluída: ${importados} produto(s) importado(s).`)
@@ -406,7 +395,6 @@ export default function Servidor() {
         <h2>Servidor</h2>
         <div className="page-acoes">
           <button className="btn-secundario" onClick={rodarDiagnostico} disabled={diagRodando}>Diagnóstico</button>
-          <button className="btn-primario" onClick={syncAgora} disabled={sincronizando || !online}>{sincronizando ? 'Sincronizando...' : 'Sincronizar agora'}</button>
         </div>
       </div>
 
@@ -421,12 +409,10 @@ export default function Servidor() {
           <div className="srv-status-grid">
             <span><b>API:</b> <em className={status?.api === 'conectada' ? 'srv-ok' : 'srv-erro'}>{status?.api === 'conectada' ? 'Conectada' : 'Desconectada'}</em></span>
             <span><b>Banco de dados:</b> <em className="srv-ok">{status?.banco === 'conectado' ? 'Conectado' : '—'}</em></span>
-            <span><b>Sincronização:</b> <em className={status?.sincronizacao === 'ativa' ? 'srv-ok' : 'srv-aviso'}>{status?.sincronizacao ?? '—'}</em></span>
             <span><b>IP local:</b> {status?.ip_local ?? '—'}</span>
             <span><b>Computador:</b> {status?.computador ?? '—'}</span>
             <span><b>Uptime:</b> {status?.uptime ?? '—'}</span>
             <span><b>Porta:</b> {status?.porta ?? '—'}</span>
-            <span><b>Última sincronização:</b> {status?.ultima_sync || 'Nunca'}</span>
           </div>
         </div>
       </div>
@@ -549,21 +535,6 @@ export default function Servidor() {
           </div>
         </section>
       </div>
-
-      {/* Sincronização */}
-      <section className="rp-tabela-card">
-        <h4>Sincronização</h4>
-        <div className="srv-sync-itens">
-          {ITENS_SYNC.map((nome) => (
-            <div key={nome} className="srv-sync-item">
-              <span>{nome}</span>
-              <em className="srv-ok">Sincronizado</em>
-            </div>
-          ))}
-        </div>
-        {status?.ultimo_erro_sync && <p className="nota-config" style={{ color: '#dc2626' }}>Último erro: {status.ultimo_erro_sync}</p>}
-        {status?.proxima_sync && status.proxima_sync !== '—' && <p className="nota-config">Próxima sincronização automática: {status.proxima_sync}</p>}
-      </section>
 
       {/* Atualizações */}
       <section className="rp-tabela-card">
@@ -747,6 +718,24 @@ export default function Servidor() {
                     <div key={i} className="srv-previa-linha">{JSON.stringify(l)}</div>
                   ))}
                 </div>
+                {importarProg && (
+                  <div style={{ marginTop: 14 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 6 }}>
+                      <span>Importando produtos... {importarProg.atual} de {importarProg.total}</span>
+                      <span>{importarProg.total ? Math.round((importarProg.atual / importarProg.total) * 100) : 0}%</span>
+                    </div>
+                    <div style={{ height: 10, borderRadius: 5, overflow: 'hidden', background: 'var(--borda)' }}>
+                      <div
+                        style={{
+                          width: `${importarProg.total ? Math.round((importarProg.atual / importarProg.total) * 100) : 0}%`,
+                          height: '100%',
+                          background: 'var(--verde)',
+                          transition: 'width .15s ease'
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
                 <div className="modal-acoes">
                   <button className="btn-secundario" onClick={() => setImportarPasso(0)}>Voltar</button>
                   <button className="btn-primario" onClick={importarDados} disabled={ocupado}>Confirmar importação</button>

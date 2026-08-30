@@ -18,7 +18,8 @@ import AlterarPrecos from './features/precos/AlterarPrecos'
 import AtendimentoWhatsApp from './features/whatsapp/AtendimentoWhatsApp'
 import Home from './features/inicio/Home'
 import Login from './features/login/Login'
-import { getDbApi, hasDbApi, getAuthApi, Usuario, fazerBackupManual, setFullscreen, getCatalogoApi, getServidorApi } from './shared/db'
+import { getDbApi, hasDbApi, getAuthApi, Usuario, fazerBackupManual, setFullscreen, getServidorApi } from './shared/db'
+import Toasts from './components/ui/Toast'
 
 type Tela = 'inicio' | 'pdv' | 'produtos' | 'clientes' | 'vendas' | 'estoque' | 'financeiro' | 'comissoes' | 'relatorios' | 'usuarios' | 'delivery' | 'zonas' | 'catalogo' | 'caixa' | 'formaspagamento' | 'precos' | 'nfe' | 'sobre' | 'whatsapp'
 
@@ -56,6 +57,7 @@ interface MenuItem {
 }
 
 const MENU_PRINCIPAL: MenuItem[] = [
+  { id: 'inicio', label: 'Início', icon: 'inicio' },
   { id: 'vendas', label: 'Vendas', icon: 'vendas' },
   { id: 'clientes', label: 'Clientes', icon: 'clientes' },
   { id: 'produtos', label: 'Produtos', icon: 'produtos' },
@@ -76,11 +78,10 @@ const MENU_GESTAO: MenuItem[] = [
 
 export default function App() {
   const [loja, setLoja] = useState('Carregando...')
-  const [tela, setTela] = useState<Tela>('vendas')
+  const [tela, setTela] = useState<Tela>('inicio')
   const [usuario, setUsuario] = useState<Usuario | null>(null)
   const [carregado, setCarregado] = useState(false)
   const [msgBackup, setMsgBackup] = useState('')
-  const [catalogoUrl, setCatalogoUrl] = useState('')
   const [pdvFocado, setPdvFocado] = useState(false)
   const [sidebarRecolhida, setSidebarRecolhida] = useState(false)
   const [caixaTransacoesId, setCaixaTransacoesId] = useState<number | null>(null)
@@ -131,11 +132,6 @@ export default function App() {
     verificar()
     const t = setInterval(verificar, 6000)
     return () => clearInterval(t)
-  }, [usuario])
-
-  useEffect(() => {
-    if (!hasDbApi() || !usuario) return
-    getCatalogoApi().getConfig().then((c) => setCatalogoUrl(c.site_url || '')).catch(() => {})
   }, [usuario])
 
   useEffect(() => {
@@ -221,6 +217,7 @@ export default function App() {
   // menu, nos atalhos F3/F4/F5 e em toda navegação para não haver meio de burlar.
   const temModulo = useCallback(
     (mod: Tela) => {
+      if (mod === 'inicio') return true
       if (usuario?.perfil === 'admin') return true
       if (mod === 'usuarios') return usuario?.perfil === 'gerente' || (permissoes?.has('usuarios') ?? false)
       if (!permissoes) return false
@@ -480,11 +477,6 @@ export default function App() {
         </div>
         <div className="header-direita">
           <span className="loja-nome">{loja}</span>
-          {catalogoUrl && (
-            <a className="delivery-url" href={catalogoUrl} target="_blank" rel="noreferrer" title="Abrir catálogo público">
-              Catálogo público: {catalogoUrl}
-            </a>
-          )}
           <span className="usuario-logado">
             {usuario.nome}
             {usuario.perfil === 'admin' ? (
@@ -518,6 +510,7 @@ export default function App() {
         </nav>
         <main className="main">{renderTela()}</main>
       </div>
+      <Toasts />
     </div>
   )
 }

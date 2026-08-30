@@ -127,7 +127,6 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
     <button class="menu-item" data-tela="zerar"><span class="ico">🧹</span> Zerar</button>
     <button class="menu-item" data-tela="importar"><span class="ico">📥</span> Importar Dados</button>
     <div class="menu-titulo">Sistema</div>
-    <button class="menu-item" data-tela="catalogo"><span class="ico">🌐</span> Catálogo (GitHub)</button>
     <button class="menu-item" data-tela="info"><span class="ico">ℹ️</span> Informações</button>
     <button class="menu-item" data-tela="logs"><span class="ico">📄</span> Logs</button>
   </nav>
@@ -183,7 +182,7 @@ function fecharModal(){ document.getElementById('modalOverlay').style.display='n
 function navegar(tela){
   telaAtual=tela
   document.querySelectorAll('.menu-item').forEach(b=>b.classList.toggle('ativa', b.dataset.tela===tela))
-  const nomes={suporte:'Suporte',backup:'Copiar (Backup)',restaurar:'Restaurar',corrigir:'Corrigir',zerar:'Zerar',importar:'Importar Dados',catalogo:'Catálogo (GitHub)',info:'Informações do Sistema',logs:'Log do Servidor'}
+  const nomes={suporte:'Suporte',backup:'Copiar (Backup)',restaurar:'Restaurar',corrigir:'Corrigir',zerar:'Zerar',importar:'Importar Dados',info:'Informações do Sistema',logs:'Log do Servidor'}
   document.getElementById('tituloTela').textContent=nomes[tela]||'Servidor'
   renderizar()
 }
@@ -191,7 +190,7 @@ document.querySelectorAll('.menu-item').forEach(b=>b.addEventListener('click',()
 document.getElementById('btnMinimizar').addEventListener('click',()=>{ try { window.servidorJanela.minimizar() } catch {} })
 document.getElementById('btnSair').addEventListener('click',()=>{
   abrirModal('<h3>Encerrar servidor</h3><p>Tem certeza que deseja encerrar o servidor? O sistema ficará sem conexão.</p><div class="modal-acoes"><button data-cancela>Cancelar</button><button data-confirma class="perigo">Encerrar</button></div>',
-    async ()=>{ try{ await fetch(baseUrl+'/api/servidor/encerrar',{method:'POST'}) }catch(e){} ; try { window.servidorJanela.fechar() } catch(e2) { window.close() } })
+    async ()=>{ try{ await fetch(baseUrl+'/api/servidor/encerrar',{method:'POST'}) }catch(e){} ; try { window.servidorJanela.encerrar() } catch(e2) { window.close() } })
 })
 
 // ---------- Telas ----------
@@ -201,7 +200,6 @@ function renderizar(){
   else if(telaAtual==='restaurar') renderRestaurar(c)
   else if(telaAtual==='corrigir') renderCorrigir(c)
   else if(telaAtual==='zerar') renderZerar(c)
-  else if(telaAtual==='catalogo') renderCatalogo(c)
   else if(telaAtual==='info') renderInfo(c)
   else if(telaAtual==='logs') renderLogs(c)
   else if(telaAtual==='importar') renderImportar(c)
@@ -270,14 +268,11 @@ async function enviarNex(input){
   if(!arquivo) return
   const st=document.getElementById('impStatus')
   if(st) st.textContent='Enviando backup Nex '+arquivo.name+' ('+fmtBytes(arquivo.size)+')...'
-  iniciarPollingNex()
+  const ini=Date.now()
   try{
-    const r=await fetch(baseUrl+'/api/importar/nex',{
-      method:'POST',
-      headers:{'Content-Type':'application/octet-stream','x-zip-nome':encodeURIComponent(arquivo.name)},
-      body:arquivo
-    })
-    const d=await r.json()
+    const d=await enviaArquivo('/api/importar/nex', arquivo, arquivo.name,
+      (l,t)=>mostrarBarraUpload('Enviando backup Nex... '+fmtBytes(l)+' de '+fmtBytes(t),l,t,ini),
+      ()=>iniciarPollingNex())
     mostrarProgresso({ativo:false})
     if(d.ok&&d.resumo){
       if(st) st.innerHTML='<span style="color:var(--green)">✅ Importação Nex concluída: '+d.resumo.produtosCriados+' produto(s) criado(s), '+d.resumo.produtosAtualizados+' atualizado(s), '+d.resumo.clientesCriados+' cliente(s), '+d.resumo.categorias+' categoria(s), '+d.resumo.marcas+' marca(s)</span>'
@@ -290,6 +285,9 @@ async function enviarNex(input){
   }catch(e){
     mostrarProgresso({ativo:false})
     if(st) st.innerHTML='<span style="color:var(--red)">Erro ao enviar: '+esc(e.message)+'</span>'
+  }finally{
+    pararPollingNex()
+    pararPollingProgresso()
   }
 }
 
@@ -301,7 +299,6 @@ function iniciarPollingNex(){
     try{
       const d=await api('/api/importar/nex/progresso')
       mostrarProgresso(d)
-      if(!d.ativo&&nexPolling){ clearInterval(nexPolling); nexPolling=null }
     }catch{}
   },400)
 }
@@ -311,14 +308,11 @@ async function analisarNexFile(input){
   if(!arquivo) return
   const st=document.getElementById('impStatus')
   if(st) st.textContent='Analisando '+arquivo.name+'...'
-  iniciarPollingNex()
+  const ini=Date.now()
   try{
-    const r=await fetch(baseUrl+'/api/importar/nex/analisar',{
-      method:'POST',
-      headers:{'Content-Type':'application/octet-stream','x-zip-nome':encodeURIComponent(arquivo.name)},
-      body:arquivo
-    })
-    const d=await r.json()
+    const d=await enviaArquivo('/api/importar/nex/analisar', arquivo, arquivo.name,
+      (l,t)=>mostrarBarraUpload('Analisando backup... '+fmtBytes(l)+' de '+fmtBytes(t),l,t,ini),
+      ()=>iniciarPollingNex())
     mostrarProgresso({ativo:false})
     if(d.ok&&d.relatorio){
       const rel=d.relatorio
@@ -347,14 +341,12 @@ async function simularNex(input){
   if(!arquivo) return
   const st=document.getElementById('impStatus')
   if(st) st.textContent='Simulando importação de '+arquivo.name+' (nada será gravado)...'
-  iniciarPollingNex()
+  const ini=Date.now()
   try{
-    const r=await fetch(baseUrl+'/api/importar/nex',{
-      method:'POST',
-      headers:{'Content-Type':'application/octet-stream','x-zip-nome':encodeURIComponent(arquivo.name),'x-simular':'1'},
-      body:arquivo
-    })
-    const d=await r.json()
+    const d=await enviaArquivo('/api/importar/nex', arquivo, arquivo.name,
+      (l,t)=>mostrarBarraUpload('Simulando importação... '+fmtBytes(l)+' de '+fmtBytes(t),l,t,ini),
+      ()=>iniciarPollingNex(),
+      {'x-simular':'1'})
     mostrarProgresso({ativo:false})
     if(d.ok&&d.resumo){
       const s=d.resumo
@@ -367,6 +359,9 @@ async function simularNex(input){
   }catch(e){
     mostrarProgresso({ativo:false})
     if(st) st.innerHTML='<span style="color:var(--red)">Erro: '+esc(e.message)+'</span>'
+  }finally{
+    pararPollingNex()
+    pararPollingProgresso()
   }
 }
 
@@ -389,15 +384,63 @@ async function carregarArquivosImportacao(){
 
 let impPolling=null
 
+function fmtTempo(ms){
+  if(typeof ms!=='number'||ms<0) return ''
+  const s=Math.floor(ms/1000)
+  if(s<60) return s+'s'
+  const m=Math.floor(s/60)
+  if(m<60) return m+'m'+String(s%60).padStart(2,'0')+'s'
+  const h=Math.floor(m/60)
+  return h+'h'+String(m%60).padStart(2,'0')+'m'
+}
+
+function pararPollingNex(){ if(nexPolling){ clearInterval(nexPolling); nexPolling=null } }
+function pararPollingProgresso(){ if(impPolling){ clearInterval(impPolling); impPolling=null } }
+
+function mostrarBarraUpload(msg, atual, total, iniMs){
+  const box=document.getElementById('impProgresso')
+  if(!box) return
+  box.style.display='block'
+  const tempo=fmtTempo(Date.now()-(iniMs||Date.now()))
+  const elm=document.getElementById('impProgMsg'); if(elm) elm.textContent=(msg||'Processando...')+(tempo?' · '+tempo:'')
+  const porc=Math.min(100,Math.round((atual||0)/Math.max(1,total||1)*100))
+  const elp=document.getElementById('impProgPct'); if(elp) elp.textContent=porc+'%'
+  const elb=document.getElementById('impProgBar'); if(elb) elb.style.width=porc+'%'
+}
+
+function enviaArquivo(uploadUrl, arquivo, nomeZip, onProgresso, onCorpoEnviado, headersExtras){
+  return new Promise((resolve,reject)=>{
+    const xhr=new XMLHttpRequest()
+    xhr.open('POST',baseUrl+uploadUrl,true)
+    xhr.setRequestHeader('Content-Type','application/octet-stream')
+    if(nomeZip) xhr.setRequestHeader('x-zip-nome',encodeURIComponent(nomeZip))
+    if(headersExtras) for(const k in headersExtras) xhr.setRequestHeader(k,headersExtras[k])
+    let corpoIniciado=false
+    xhr.upload.onprogress=(e)=>{ if(e.lengthComputable&&onProgresso) onProgresso(e.loaded,e.total) }
+    xhr.upload.onload=()=>{ if(!corpoIniciado){ corpoIniciado=true; if(onCorpoEnviado) onCorpoEnviado() } }
+    xhr.onload=()=>{
+      if(xhr.status>=200&&xhr.status<300){ resolve(xhr.response||{}); return }
+      const body=xhr.response||{}
+      reject(new Error(body&&body.erro?body.erro:'HTTP '+xhr.status))
+    }
+    xhr.onerror=()=>reject(new Error('Falha de rede'))
+    xhr.send(arquivo)
+  })
+}
+
 function mostrarProgresso(p){
   const box=document.getElementById('impProgresso')
   if(!box) return
-  if(!p||!p.ativo){ box.style.display='none'; if(impPolling){ clearInterval(impPolling); impPolling=null }; return }
+  if(!p||!p.ativo){ box.style.display='none'; return }
   box.style.display='block'
   const msg=document.getElementById('impProgMsg')
   const pct=document.getElementById('impProgPct')
   const bar=document.getElementById('impProgBar')
-  if(msg) msg.textContent=p.mensagem||'Processando...'
+  if(msg){
+    const txt=p.mensagem||'Processando...'
+    const tempo=fmtTempo(p.decorrido)
+    msg.textContent=tempo?txt+' · '+tempo:txt
+  }
   const total=Math.max(1,p.total||1)
   const porc=Math.min(100,Math.round((p.atual||0)/total*100))
   if(pct) pct.textContent=porc+'%'
@@ -410,7 +453,6 @@ function iniciarPollingProgresso(){
     try{
       const d=await api('/api/importar/progresso')
       mostrarProgresso(d)
-      if(!d.ativo&&impPolling){ clearInterval(impPolling); impPolling=null }
     }catch{}
   },400)
 }
@@ -420,26 +462,21 @@ async function enviarZip(input){
   if(!arquivo) return
   const st=document.getElementById('impStatus')
   if(st) st.textContent='Enviando '+arquivo.name+' ('+fmtBytes(arquivo.size)+')...'
-  iniciarPollingProgresso()
+  const ini=Date.now()
   try{
-    const r=await fetch(baseUrl+'/api/importar/zip',{
-      method:'POST',
-      headers:{'Content-Type':'application/octet-stream','x-zip-nome':encodeURIComponent(arquivo.name)},
-      body:arquivo
-    })
-    if(!r.ok){
-      let msg='HTTP '+r.status
-      try{ const d=await r.json(); if(d&&d.erro) msg=d.erro }catch{}
-      if(st) st.innerHTML='<span style="color:var(--red)">Erro: '+esc(msg)+'</span>'
-      input.value=''
-      return
-    }
-    const d=await r.json()
+    const d=await enviaArquivo('/api/importar/zip', arquivo, arquivo.name,
+      (l,t)=>mostrarBarraUpload('Enviando '+arquivo.name+' '+fmtBytes(l)+' de '+fmtBytes(t),l,t,ini),
+      ()=>iniciarPollingProgresso())
+    mostrarProgresso({ativo:false})
     if(st) st.innerHTML='<span style="color:var(--green)">ZIP enviado e extraído!</span> '+(d.arquivos&&d.arquivos.length?d.arquivos.length+' arquivo(s) de dados encontrados.':'Nenhum arquivo de dados encontrado.')
     input.value=''
     carregarArquivosImportacao()
   }catch(e){
     if(st) st.innerHTML='<span style="color:var(--red)">Erro ao enviar: '+esc(e.message)+'</span>'
+  }finally{
+    pararPollingNex()
+    pararPollingProgresso()
+    mostrarProgresso({ativo:false})
   }
 }
 
@@ -460,6 +497,8 @@ async function importarArquivo(nomeArquivo){
       if(r.erros&&r.erros.length) mostrarMsg(r.erros.length+' erro(s) na importação',false)
       else mostrarMsg('Produtos importados com sucesso!',true)
     }finally{
+      pararPollingNex()
+      pararPollingProgresso()
       mostrarProgresso({ativo:false})
     }
   }catch(e){
@@ -484,109 +523,6 @@ function renderInfo(c){
 function renderLogs(c){
   c.innerHTML='<div class="secao"><h3>Log do Servidor</h3><div style="margin-bottom:12px"><button onclick="limparLogs()" style="padding:8px 14px;border-radius:8px;border:1px solid var(--line);background:var(--card2);color:var(--text);font-size:12px;cursor:pointer;font-family:inherit">Limpar logs</button></div><div class="logs" id="logs"></div></div>'
   carregarLogs()
-}
-
-// ---------- Catálogo (GitHub) ----------
-async function renderCatalogo(c){
-  c.innerHTML='<div class="secao"><h3>Catálogo Online (GitHub)</h3>'+
-    '<p style="font-size:13px;color:var(--muted);margin-bottom:14px">Configure o token e o repositório para publicar o catálogo no GitHub Pages. A sincronização é feita por este servidor.</p>'+
-    '<div class="grid-info" style="grid-template-columns:1fr">'+
-    '<div class="fld"><label>Token do GitHub (ghp_...)</label><input id="cat-token" type="password" placeholder="Cole seu token aqui" autocomplete="off" style="width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card2);color:var(--text);font-size:13px;margin-bottom:10px"/></div>'+
-    '<div class="fld"><label>Repositório (usuário/repo)</label><input id="cat-repo" placeholder="seu-usuario/seu-repositorio" autocomplete="off" style="width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card2);color:var(--text);font-size:13px;margin-bottom:10px"/></div>'+
-    '<div class="fld"><label>Branch (padrão: gh-pages)</label><input id="cat-branch" placeholder="gh-pages" autocomplete="off" style="width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card2);color:var(--text);font-size:13px;margin-bottom:10px"/></div>'+
-    '<div class="fld"><label>Nome da loja (opcional)</label><input id="cat-nome" placeholder="Nome exibido no catálogo" autocomplete="off" style="width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card2);color:var(--text);font-size:13px;margin-bottom:10px"/></div>'+
-    '</div>'+
-    '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px">'+
-    '<button class="primario" style="padding:10px 18px;border-radius:8px;border:none;background:var(--green);color:#052e16;font-size:13px;font-weight:700;cursor:pointer" onclick="salvarCatalogo()">Salvar</button>'+
-    '<button style="padding:10px 18px;border-radius:8px;border:1px solid var(--line);background:var(--card2);color:var(--text);font-size:13px;font-weight:600;cursor:pointer" onclick="testarCatalogo()">Testar conexão</button>'+
-    '<button style="padding:10px 18px;border-radius:8px;border:1px solid var(--line);background:var(--card2);color:var(--text);font-size:13px;font-weight:600;cursor:pointer" onclick="sincronizarCatalogo()">Sincronizar agora</button>'+
-    '</div>'+
-    '<div id="cat-status" style="margin-top:14px;font-size:13px;color:var(--muted)">Carregando...</div>'+
-    '<div class="secao" style="margin-top:18px;border-top:1px solid var(--line)">'+
-    '<h3 style="margin-top:14px">Backup dos códigos do catálogo</h3>'+
-    '<p style="font-size:13px;color:var(--muted);margin-bottom:12px">Salve os dados de configuração (token, repositório, branch e nome da loja) num arquivo no servidor para restaurar depois se precisar.</p>'+
-    '<div id="cat-bkp-status" style="font-size:13px;color:var(--muted);margin-bottom:10px">Verificando backup...</div>'+
-    '<div style="display:flex;gap:10px;flex-wrap:wrap">'+
-    '<button style="padding:10px 18px;border-radius:8px;border:1px solid var(--line);background:var(--card2);color:var(--text);font-size:13px;font-weight:600;cursor:pointer" onclick="salvarBackupCatalogo()">💾 Salvar códigos (backup)</button>'+
-    '<button style="padding:10px 18px;border-radius:8px;border:1px solid var(--line);background:var(--card2);color:var(--text);font-size:13px;font-weight:600;cursor:pointer" onclick="restaurarBackupCatalogo()">↩️ Restaurar códigos salvos</button>'+
-    '</div></div></div>'
-  await carregarCatalogoConfig()
-  carregarBackupCatalogoStatus()
-}
-
-async function carregarCatalogoConfig(){
-  try{
-    const cfg=await api('/api/catalogo/config')
-    document.getElementById('cat-token').value=cfg.github_token||''
-    document.getElementById('cat-repo').value=cfg.github_repo||''
-    document.getElementById('cat-branch').value=cfg.github_branch||'gh-pages'
-    document.getElementById('cat-nome').value=cfg.nome_loja||''
-    const st=await api('/api/catalogo/status')
-    const s=document.getElementById('cat-status')
-    s.innerHTML='<strong>'+esc(st.status||'')+'</strong> · Configurado: '+(st.configurado?'✅':'❌')+
-      ' · Última sync: '+esc(st.ultima_sync||'Nunca')+'<br><span style="color:var(--muted)">Pendentes: '+st.pendentes+' · Produtos publicados: '+st.produtos_publicados+'</span>'+
-      (st.ultimo_erro?'<br><span style="color:var(--red)">'+esc(st.ultimo_erro)+'</span>':'')
-  }catch(e){ const s=document.getElementById('cat-status'); if(s) s.textContent='Falha ao carregar: '+e.message }
-}
-
-async function salvarCatalogo(){
-  try{
-    const token=document.getElementById('cat-token').value.trim()
-    const repo=document.getElementById('cat-repo').value.trim()
-    const branch=document.getElementById('cat-branch').value.trim()||'gh-pages'
-    const nome=document.getElementById('cat-nome').value.trim()
-    const r=await api('/api/catalogo/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({github_token:token,github_repo:repo,github_branch:branch,nome_loja:nome})})
-    mostrarMsg('Configuração salva!',true)
-    await carregarCatalogoConfig()
-  }catch(e){ mostrarMsg('Erro: '+e.message,false) }
-}
-
-async function testarCatalogo(){
-  try{
-    const r=await api('/api/catalogo/testar',{method:'POST'})
-    mostrarMsg(r.mensagem||(r.ok?'Conexão OK':'Falha'), r.ok)
-  }catch(e){ mostrarMsg('Erro: '+e.message,false) }
-}
-
-async function sincronizarCatalogo(){
-  try{
-    const s=document.getElementById('cat-status'); if(s) s.textContent='Sincronizando... Aguarde.'
-    const r=await api('/api/catalogo/sync',{method:'POST'})
-    mostrarMsg(r.ok?'Sincronizado com sucesso!':'Falha: '+(r.erro||'erro'), r.ok)
-    await carregarCatalogoConfig()
-  }catch(e){ mostrarMsg('Erro: '+e.message,false) }
-}
-
-async function carregarBackupCatalogoStatus(){
-  try{
-    const b=await api('/api/catalogo/backup-config')
-    const el=document.getElementById('cat-bkp-status')
-    if(!el) return
-    if(b.existe){
-      el.innerHTML='✅ Backup salvo em: <strong>'+esc(b.data?new Date(b.data).toLocaleString('pt-BR'):'')+'</strong> — token: '+(b.config&&b.config.github_token?'presente':'ausente')+' · repo: '+esc((b.config&&b.config.github_repo)||'—')
-    }else{
-      el.textContent='Nenhum backup salvo ainda.'
-    }
-  }catch(e){ const el=document.getElementById('cat-bkp-status'); if(el) el.textContent='Falha ao verificar backup: '+e.message }
-}
-
-async function salvarBackupCatalogo(){
-  try{
-    const r=await api('/api/catalogo/backup-config',{method:'POST'})
-    mostrarMsg(r.ok?'Códigos do catálogo salvos com sucesso!':'Falha ao salvar backup', r.ok)
-    carregarBackupCatalogoStatus()
-  }catch(e){ mostrarMsg('Erro: '+e.message,false) }
-}
-
-async function restaurarBackupCatalogo(){
-  try{
-    const b=await api('/api/catalogo/backup-config')
-    if(!b.existe){ mostrarMsg('Nenhum backup salvo para restaurar.',false); return }
-    if(!confirm('Restaurar a configuração do catálogo do backup salvo? Token, repositório, branch e nome da loja serão restaurados.')) return
-    const r=await api('/api/catalogo/restaurar-backup-config',{method:'POST'})
-    mostrarMsg(r.ok?'Configuração do catálogo restaurada!':'Falha: '+(r.erro||'erro'), r.ok)
-    if(r.ok){ await carregarCatalogoConfig(); carregarBackupCatalogoStatus() }
-  }catch(e){ mostrarMsg('Erro: '+e.message,false) }
 }
 
 // ---------- Status ----------

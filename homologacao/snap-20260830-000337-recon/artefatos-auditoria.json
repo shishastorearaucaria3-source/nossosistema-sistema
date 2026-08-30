@@ -1,0 +1,6073 @@
+{
+  "recon": {
+    "totalRegistrosTran": 54671,
+    "vendasNX": 37082,
+    "porTipo": {
+      "SEM_TRANNOME": 17589,
+      "Venda": 37082
+    },
+    "porAno": {
+      "2020": 3359,
+      "2021": 11511,
+      "2022": 5591,
+      "2023": 4401,
+      "2024": 4878,
+      "2025": 4596,
+      "2026": 2746
+    },
+    "idsComItem": 36425,
+    "itensTotais": 124324,
+    "itensSemVenda": 14953,
+    "somaValorMovEst": 3333374.3,
+    "porAnoValor": {
+      "2020": 157074.76,
+      "2021": 560001.6,
+      "2022": 320761.15,
+      "2023": 329703.7,
+      "2024": 345818.83,
+      "2025": 422614.69,
+      "2026": 222557.5
+    }
+  },
+  "pagEspecies": {
+    "totalTriplasValidas": 94970,
+    "vinculadasAVenda": 37603,
+    "naoVinculadas": 57367,
+    "formas": [
+      [
+        1,
+        18060
+      ],
+      [
+        3,
+        15580
+      ],
+      [
+        6,
+        12933
+      ],
+      [
+        2,
+        7119
+      ],
+      [
+        4,
+        1688
+      ],
+      [
+        9,
+        1672
+      ],
+      [
+        18,
+        1672
+      ],
+      [
+        16,
+        1650
+      ],
+      [
+        8,
+        1628
+      ],
+      [
+        17,
+        1606
+      ],
+      [
+        20,
+        1606
+      ],
+      [
+        22,
+        1606
+      ],
+      [
+        27,
+        1606
+      ],
+      [
+        5,
+        1586
+      ],
+      [
+        11,
+        1584
+      ],
+      [
+        12,
+        1584
+      ],
+      [
+        19,
+        1584
+      ],
+      [
+        24,
+        1584
+      ],
+      [
+        15,
+        1584
+      ],
+      [
+        21,
+        1584
+      ],
+      [
+        25,
+        1584
+      ],
+      [
+        7,
+        1562
+      ],
+      [
+        10,
+        1562
+      ],
+      [
+        13,
+        1562
+      ],
+      [
+        26,
+        1562
+      ],
+      [
+        28,
+        1540
+      ],
+      [
+        29,
+        1540
+      ],
+      [
+        0,
+        1521
+      ],
+      [
+        14,
+        1496
+      ],
+      [
+        23,
+        1496
+      ]
+    ]
+  },
+  "correlacao": {
+    "EXATA": 63,
+    "ALTA CONFIANÇA": 0,
+    "PROVÁVEL": 176,
+    "AMBÍGUA": 17473,
+    "NÃO ENCONTRADA": 769
+  },
+  "xls": {
+    "arquivos": [
+      "D:\\backup nex\\backupnex json xml\\29-08-2026\\Exportar1jan202331122023.xls",
+      "D:\\backup nex\\backupnex json xml\\29-08-2026\\Exportar1jan202431122024.xls",
+      "D:\\backup nex\\backupnex json xml\\29-08-2026\\Exportarcaixa1jan202531122025.xls",
+      "D:\\backup nex\\backupnex json xml\\29-08-2026\\Exportarcaixas.xls",
+      "D:\\backup nex\\backupnex json xml\\29-08-2026\\Exportarcaixas1jan202630082026.xls",
+      "D:\\backup nex\\backupnex json xml\\29-08-2026\\Exportarcatalogoonline.xls",
+      "D:\\backup nex\\backupnex json xml\\29-08-2026\\Exportarclientes.xls",
+      "D:\\backup nex\\backupnex json xml\\29-08-2026\\Exportarestoqueporproduto.xls",
+      "D:\\backup nex\\backupnex json xml\\29-08-2026\\Exportarestoquetransaçoes.xls",
+      "D:\\backup nex\\backupnex json xml\\29-08-2026\\Exportarprodutosfornecedores.xls",
+      "D:\\backup nex\\backupnex json xml\\29-08-2026\\Exportarrelatorio lucratividade receitasdespesas.xls",
+      "D:\\backup nex\\backupnex json xml\\29-08-2026\\Exportarrelatorio por produto.xls",
+      "D:\\backup nex\\backupnex json xml\\29-08-2026\\Exportarrelatoriovisaogeralresumo.xls",
+      "D:\\backup nex\\backupnex json xml\\29-08-2026\\Exportarvendas.xls"
+    ],
+    "linhas": 18481
+  },
+  "reconciliacao": {
+    "lucratividade": {
+      "receitas": null,
+      "troco": null,
+      "receitasMenosPendencias": null,
+      "despesas": 0,
+      "origem": "lucratividade"
+    },
+    "porProduto": {
+      "totalVendas": 2389608.43,
+      "valorPago": 2325963.47,
+      "descontos": 63624.55,
+      "quantVendida": null,
+      "origem": "Sheet1@Exportarrelatorio por produto.xls"
+    },
+    "nossoSistema": {
+      "vendas": 54671,
+      "soma": 3185862.86,
+      "canceladas": 0,
+      "somaCanceladas": 0,
+      "itens": 117796,
+      "pagamentos": 89700,
+      "origem": "snapshot do banco de produção"
+    },
+    "divergencias": [
+      {
+        "rotulo": "Lucratividade (Receitas) × Relatório por produto (Total Vendas)",
+        "valorA": null,
+        "valorB": 2389608.43,
+        "diferenca": null,
+        "causasProvaveis": [
+          "critérios de vendas diferentes (transações vs movimentos de produto)",
+          "filtro de período/default dos arquivos diferentes",
+          "descontos lançados dentro do total",
+          "vendas sem item de estoque (serviços/frete)",
+          "devoluções"
+        ],
+        "pendente": true
+      },
+      {
+        "rotulo": "Lucratividade (Receitas−pendências) × Relatório por produto (Total Vendas)",
+        "valorA": null,
+        "valorB": 2389608.43,
+        "diferenca": null,
+        "causasProvaveis": [
+          "troco (116.199,90) deduzido em um relatório apenas",
+          "pendências (créditos/links) contadas em só um lado",
+          "descontos 63.624,55 distribuídos de forma diferente"
+        ],
+        "pendente": true
+      },
+      {
+        "rotulo": "Relatório por produto: Total Vendas × Valor Pago",
+        "valorA": 2389608.43,
+        "valorB": 2325963.47,
+        "diferenca": 63644.96,
+        "causasProvaveis": [
+          "descontos 63.624,55",
+          "troco concedido",
+          "crédito utilizado",
+          "cancelamentos (1.668 em 2023; 185 em 2024)"
+        ],
+        "pendente": true
+      },
+      {
+        "rotulo": "Nosso sistema (soma vendas) × NX reconstruído (soma itens MovEst, apenas TranNome=Venda)",
+        "valorA": 3185862.86,
+        "valorB": null,
+        "diferenca": null,
+        "causasProvaveis": [
+          "54.671 registros incluem COMPRAS/AJUSTES/SANGRIAS; a regra correta é TranNome=Venda",
+          "histórico importado com a regra antiga (total>0 + quantidade de registros)",
+          "itens duplicados/ausentes no MovEst"
+        ],
+        "pendente": true
+      },
+      {
+        "rotulo": "Despesas (relatório lucratividade)",
+        "valorA": null,
+        "valorB": 0,
+        "diferenca": null,
+        "causasProvaveis": [
+          "CP.nx1 vazio; Nex reporta despesas = 0 → registro = NÃO DETERMINADO (não inventar)",
+          "lucro próprio calculado sem despesas fica comprometido"
+        ],
+        "pendente": true
+      }
+    ]
+  },
+  "correlacoes": [
+    {
+      "id": "0060-C",
+      "nx": null,
+      "conf": "NÃO ENCONTRADA",
+      "criterios": [
+        "sem candidato em Tran.nx1 (data 2023-01-04, total 62.50, PIX)"
+      ]
+    },
+    {
+      "id": "32015",
+      "nx": 32015,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32015 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 120.00 ≠ 123.50",
+        "data XLS 2023-01-04 vs Tran 2023-01-05",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32021",
+      "nx": 32021,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32021 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 75.00 ≠ 82.50",
+        "data XLS 2023-01-04 vs Tran 2023-01-05",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32022",
+      "nx": 32022,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32022 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 24.00 ≠ 5.50",
+        "data XLS 2023-01-04 vs Tran 2023-01-05",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32023",
+      "nx": 32023,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32023 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 22.00 ≈ Total Final 22.00",
+        "data XLS 2023-01-04 vs Tran 2023-01-05",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32024",
+      "nx": 32024,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32024 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 25.00 ≈ Total Final 25.00",
+        "data XLS 2023-01-04 vs Tran 2023-01-05",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32025",
+      "nx": 32025,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32025 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 94.00 ≈ Total Final 94.00",
+        "data XLS 2023-01-04 vs Tran 2023-01-05",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32026",
+      "nx": 32026,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32026 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 72.00 ≈ Total Final 72.00",
+        "data XLS 2023-01-04 vs Tran 2023-01-05",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32027",
+      "nx": 32027,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32027 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 6.00 ≈ Total Final 6.00",
+        "data XLS 2023-01-04 vs Tran 2023-01-05",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32028",
+      "nx": 32028,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32028 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 49.90 ≈ Total Final 49.90",
+        "data XLS 2023-01-04 vs Tran 2023-01-05",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32029",
+      "nx": 32029,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32029 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 12.00 ≈ Total Final 12.00",
+        "data XLS 2023-01-04 vs Tran 2023-01-05",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32030",
+      "nx": 32030,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32030 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 40.50 ≠ 50.00",
+        "data XLS 2023-01-04 vs Tran 2023-01-05",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32031",
+      "nx": 32031,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32031 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 63.80 ≠ 71.30",
+        "data XLS 2023-01-04 vs Tran 2023-01-05",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32034",
+      "nx": 32034,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32034 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 108.50 ≠ 116.00",
+        "data XLS 2023-01-04 vs Tran 2023-01-05",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32035",
+      "nx": 32035,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32035 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 27.80 ≠ 33.30",
+        "data XLS 2023-01-04 vs Tran 2023-01-05",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32036",
+      "nx": 32036,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32036 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 13.90 ≈ Total Final 13.90",
+        "data XLS 2023-01-04 vs Tran 2023-01-05",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32037",
+      "nx": 32037,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32037 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 17.40 ≈ Total Final 17.40",
+        "data XLS 2023-01-04 vs Tran 2023-01-05",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32033",
+      "nx": 32033,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32033 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 13.90 ≈ Total Final 13.90",
+        "data XLS 2023-01-04 vs Tran 2023-01-05",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32038",
+      "nx": 32038,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32038 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 10.50 ≠ 10.00",
+        "data XLS 2023-01-04 vs Tran 2023-01-05",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32032",
+      "nx": 32032,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32032 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 20.00 ≠ 28.50",
+        "data XLS 2023-01-04 vs Tran 2023-01-05",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32044",
+      "nx": 32044,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32044 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 18.50 ≈ Total Final 18.50",
+        "data XLS 2023-01-05 vs Tran 2023-01-06",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32045",
+      "nx": 32045,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32045 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 41.50 ≈ Total Final 41.50",
+        "data XLS 2023-01-05 vs Tran 2023-01-06",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32046",
+      "nx": 32046,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32046 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 7.00 ≈ Total Final 7.00",
+        "data XLS 2023-01-05 vs Tran 2023-01-06",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32047",
+      "nx": 32047,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32047 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 8.50 ≈ Total Final 8.50",
+        "data XLS 2023-01-05 vs Tran 2023-01-06",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32050",
+      "nx": 32050,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32050 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 120.00 ≠ 115.00",
+        "data XLS 2023-01-05 vs Tran 2023-01-06",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32048",
+      "nx": 32048,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32048 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 51.00 ≈ Total Final 51.00",
+        "data XLS 2023-01-05 vs Tran 2023-01-06",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32052",
+      "nx": 32052,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32052 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 109.40 ≠ 119.40",
+        "data XLS 2023-01-05 vs Tran 2023-01-06",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32053",
+      "nx": 32053,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32053 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 70.00 ≠ 78.50",
+        "data XLS 2023-01-05 vs Tran 2023-01-06",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32054",
+      "nx": 32054,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32054 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 60.00 ≠ 55.00",
+        "data XLS 2023-01-05 vs Tran 2023-01-06",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32055",
+      "nx": 32055,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32055 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 104.00 ≈ Total Final 104.00",
+        "data XLS 2023-01-05 vs Tran 2023-01-06",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32056",
+      "nx": 32056,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32056 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 2.70 ≈ Total Final 2.70",
+        "data XLS 2023-01-05 vs Tran 2023-01-06",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32057",
+      "nx": 32057,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32057 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 3.50 ≈ Total Final 3.50",
+        "data XLS 2023-01-05 vs Tran 2023-01-06",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32051",
+      "nx": 32051,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32051 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 59.90 ≈ Total Final 59.90",
+        "data XLS 2023-01-05 vs Tran 2023-01-06",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32058",
+      "nx": 32058,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32058 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 40.00 ≈ Total Final 40.00",
+        "data XLS 2023-01-05 vs Tran 2023-01-06",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32060",
+      "nx": 32060,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32060 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 71.00 ≠ 76.50",
+        "data XLS 2023-01-05 vs Tran 2023-01-06",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32061",
+      "nx": 32061,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32061 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 201.00 ≠ 200.00",
+        "data XLS 2023-01-05 vs Tran 2023-01-06",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32063",
+      "nx": 32063,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32063 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 112.50 ≈ Total Final 112.50",
+        "data XLS 2023-01-05 vs Tran 2023-01-06",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32064",
+      "nx": 32064,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32064 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 53.90 ≠ 65.90",
+        "data XLS 2023-01-05 vs Tran 2023-01-06",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32062",
+      "nx": 32062,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32062 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 275.50 ≈ Total Final 275.50",
+        "data XLS 2023-01-05 vs Tran 2023-01-06",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32065",
+      "nx": 32065,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32065 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 126.00 ≈ Total Final 126.00",
+        "data XLS 2023-01-05 vs Tran 2023-01-06",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32066",
+      "nx": 32066,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32066 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 48.40 ≈ Total Final 48.40",
+        "data XLS 2023-01-05 vs Tran 2023-01-06",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32067",
+      "nx": 32067,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32067 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 110.00 ≠ 118.50",
+        "data XLS 2023-01-05 vs Tran 2023-01-06",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32068",
+      "nx": 32068,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32068 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 104.50 ≠ 99.90",
+        "data XLS 2023-01-05 vs Tran 2023-01-06",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32069",
+      "nx": 32069,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32069 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 55.50 ≈ Total Final 55.50",
+        "data XLS 2023-01-05 vs Tran 2023-01-06",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32070",
+      "nx": 32070,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32070 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 10.00 ≈ Total Final 10.00",
+        "data XLS 2023-01-05 vs Tran 2023-01-06",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32071",
+      "nx": 32071,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32071 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 32.50 ≈ Total Final 32.50",
+        "data XLS 2023-01-05 vs Tran 2023-01-06",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32072",
+      "nx": 32072,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32072 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 10.00 ≈ Total Final 10.00",
+        "data XLS 2023-01-05 vs Tran 2023-01-06",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32073",
+      "nx": 32073,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32073 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 119.40 ≈ Total Final 119.40",
+        "data XLS 2023-01-05 vs Tran 2023-01-06",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32059",
+      "nx": 32059,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32059 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 20.50 ≠ 32.50",
+        "data XLS 2023-01-05 vs Tran 2023-01-06",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "0061-C",
+      "nx": null,
+      "conf": "NÃO ENCONTRADA",
+      "criterios": [
+        "hora próxima (21:10, dif 64min)",
+        "total diverge (10.50) — marcada cancelada",
+        "melhor candidato abaixo do limiar"
+      ]
+    },
+    {
+      "id": "32078",
+      "nx": 32078,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32078 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 344.00 ≠ 328.00",
+        "data XLS 2023-01-06 vs Tran 2023-01-07",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32079",
+      "nx": 32079,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32079 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 16.50 ≈ Total Final 16.50",
+        "data XLS 2023-01-06 vs Tran 2023-01-07",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32080",
+      "nx": 32080,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32080 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 33.60 ≈ Total Final 33.60",
+        "data XLS 2023-01-06 vs Tran 2023-01-07",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32081",
+      "nx": 32081,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32081 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 40.00 ≈ Total Final 40.00",
+        "data XLS 2023-01-06 vs Tran 2023-01-07",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32082",
+      "nx": 32082,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32082 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 83.00 ≈ Total Final 83.00",
+        "data XLS 2023-01-06 vs Tran 2023-01-07",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32085",
+      "nx": 32085,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32085 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 254.90 ≠ 208.50",
+        "data XLS 2023-01-06 vs Tran 2023-01-07",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32084",
+      "nx": 32084,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32084 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 23.40 ≠ 30.40",
+        "data XLS 2023-01-06 vs Tran 2023-01-07",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32086",
+      "nx": 32086,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32086 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 114.50 ≠ 120.00",
+        "data XLS 2023-01-06 vs Tran 2023-01-07",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32087",
+      "nx": 32087,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32087 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 99.90 ≠ 78.50",
+        "data XLS 2023-01-06 vs Tran 2023-01-07",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32083",
+      "nx": 32083,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32083 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 62.00 ≈ Total Final 62.00",
+        "data XLS 2023-01-06 vs Tran 2023-01-07",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32090",
+      "nx": 32090,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32090 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 589.00 ≈ Total Final 589.00",
+        "data XLS 2023-01-06 vs Tran 2023-01-07",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "0062-C",
+      "nx": null,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "hora próxima (16:00, dif 89min)",
+        "total diverge (70.00) — marcada cancelada",
+        "5 candidatos empatados"
+      ]
+    },
+    {
+      "id": "32075",
+      "nx": 32075,
+      "conf": "EXATA",
+      "criterios": [
+        "id numérico 32075 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 890.00 ≠ 820.00",
+        "data coincide",
+        "chave numérica única + data"
+      ]
+    },
+    {
+      "id": "32091",
+      "nx": 32091,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32091 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 55.00 ≠ 60.50",
+        "data XLS 2023-01-06 vs Tran 2023-01-07",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32093",
+      "nx": 32093,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32093 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 19.60 ≈ Total Final 19.60",
+        "data XLS 2023-01-06 vs Tran 2023-01-07",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32095",
+      "nx": 32095,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32095 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 135.00 ≈ Total Final 135.00",
+        "data XLS 2023-01-06 vs Tran 2023-01-07",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32097",
+      "nx": 32097,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32097 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 44.20 ≈ Total Final 44.20",
+        "data XLS 2023-01-06 vs Tran 2023-01-07",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32098",
+      "nx": 32098,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32098 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 89.00 ≈ Total Final 89.00",
+        "data XLS 2023-01-06 vs Tran 2023-01-07",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32100",
+      "nx": 32100,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32100 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 18.40 ≈ Total Final 18.40",
+        "data XLS 2023-01-06 vs Tran 2023-01-07",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32101",
+      "nx": 32101,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32101 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 9.90 ≈ Total Final 9.90",
+        "data XLS 2023-01-06 vs Tran 2023-01-07",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32102",
+      "nx": 32102,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32102 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 7.50 ≈ Total Final 7.50",
+        "data XLS 2023-01-06 vs Tran 2023-01-07",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32103",
+      "nx": 32103,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32103 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 22.00 ≈ Total Final 22.00",
+        "data XLS 2023-01-06 vs Tran 2023-01-07",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32104",
+      "nx": 32104,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32104 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 3.00 ≈ Total Final 3.00",
+        "data XLS 2023-01-06 vs Tran 2023-01-07",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32105",
+      "nx": 32105,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32105 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 72.10 ≈ Total Final 72.10",
+        "data XLS 2023-01-06 vs Tran 2023-01-07",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32107",
+      "nx": 32107,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32107 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 115.00 ≈ Total Final 115.00",
+        "data XLS 2023-01-06 vs Tran 2023-01-07",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "0063-C",
+      "nx": null,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "hora próxima (18:09, dif 76min)",
+        "total diverge (20.50) — marcada cancelada",
+        "5 candidatos empatados"
+      ]
+    },
+    {
+      "id": "32096",
+      "nx": 32096,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32096 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 422.40 ≠ 406.90",
+        "data XLS 2023-01-06 vs Tran 2023-01-07",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "0065-C",
+      "nx": null,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "hora próxima (18:09, dif 80min)",
+        "total diverge (20.50) — marcada cancelada",
+        "5 candidatos empatados"
+      ]
+    },
+    {
+      "id": "32109",
+      "nx": 32109,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32109 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 22.00 ≈ Total Final 22.00",
+        "data XLS 2023-01-06 vs Tran 2023-01-07",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "0064-C",
+      "nx": 32067,
+      "conf": "PROVÁVEL",
+      "criterios": [
+        "hora quase igual (19:36)",
+        "total diverge (110.00) — marcada cancelada"
+      ]
+    },
+    {
+      "id": "32110",
+      "nx": 32110,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32110 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 123.00 ≈ Total Final 123.00",
+        "data XLS 2023-01-06 vs Tran 2023-01-07",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32111",
+      "nx": 32111,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32111 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 103.50 ≈ Total Final 103.50",
+        "data XLS 2023-01-06 vs Tran 2023-01-07",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32112",
+      "nx": 32112,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32112 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 9.00 ≈ Total Final 9.00",
+        "data XLS 2023-01-06 vs Tran 2023-01-07",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32113",
+      "nx": 32113,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32113 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 15.00 ≈ Total Final 15.00",
+        "data XLS 2023-01-06 vs Tran 2023-01-07",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32115",
+      "nx": 32115,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32115 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 34.70 ≠ 42.20",
+        "data XLS 2023-01-06 vs Tran 2023-01-07",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32116",
+      "nx": 32116,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32116 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 16.20 ≈ Total Final 16.20",
+        "data XLS 2023-01-06 vs Tran 2023-01-07",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32117",
+      "nx": 32117,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32117 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 4.50 ≈ Total Final 4.50",
+        "data XLS 2023-01-06 vs Tran 2023-01-07",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32114",
+      "nx": 32114,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32114 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 22.00 ≠ 27.50",
+        "data XLS 2023-01-06 vs Tran 2023-01-07",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32118",
+      "nx": 32118,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32118 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 20.00 ≈ Total Final 20.00",
+        "data XLS 2023-01-06 vs Tran 2023-01-07",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32119",
+      "nx": 32119,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32119 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 61.90 ≈ Total Final 61.90",
+        "data XLS 2023-01-06 vs Tran 2023-01-07",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32120",
+      "nx": 32120,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32120 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 63.90 ≠ 73.90",
+        "data XLS 2023-01-06 vs Tran 2023-01-07",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32092",
+      "nx": 32092,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32092 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 54.40 ≠ 61.90",
+        "data XLS 2023-01-06 vs Tran 2023-01-07",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32122",
+      "nx": 32122,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32122 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 35.80 ≈ Total Final 35.80",
+        "data XLS 2023-01-06 vs Tran 2023-01-07",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32123",
+      "nx": 32123,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32123 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 27.00 ≈ Total Final 27.00",
+        "data XLS 2023-01-06 vs Tran 2023-01-07",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32126",
+      "nx": 32126,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32126 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 18.50 ≈ Total Final 18.50",
+        "data XLS 2023-01-06 vs Tran 2023-01-07",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32133",
+      "nx": 32133,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32133 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 120.00 ≠ 101.90",
+        "data XLS 2023-01-07 vs Tran 2023-01-08",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32135",
+      "nx": 32135,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32135 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 44.90 ≈ Total Final 44.90",
+        "data XLS 2023-01-07 vs Tran 2023-01-08",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32137",
+      "nx": 32137,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32137 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 40.00 ≈ Total Final 40.00",
+        "data XLS 2023-01-07 vs Tran 2023-01-08",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32138",
+      "nx": 32138,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32138 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 33.00 ≈ Total Final 33.00",
+        "data XLS 2023-01-07 vs Tran 2023-01-08",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32139",
+      "nx": 32139,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32139 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 19.00 ≈ Total Final 19.00",
+        "data XLS 2023-01-07 vs Tran 2023-01-08",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32140",
+      "nx": 32140,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32140 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 118.30 ≈ Total Final 118.30",
+        "data XLS 2023-01-07 vs Tran 2023-01-08",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32141",
+      "nx": 32141,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32141 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 189.90 ≠ 149.90",
+        "data XLS 2023-01-07 vs Tran 2023-01-08",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32143",
+      "nx": 32143,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32143 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 29.30 ≈ Total Final 29.30",
+        "data XLS 2023-01-07 vs Tran 2023-01-08",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32142",
+      "nx": 32142,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32142 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 93.00 ≈ Total Final 93.00",
+        "data XLS 2023-01-07 vs Tran 2023-01-08",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32144",
+      "nx": 32144,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32144 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 86.00 ≈ Total Final 86.00",
+        "data XLS 2023-01-07 vs Tran 2023-01-08",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32145",
+      "nx": 32145,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32145 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 115.00 ≈ Total Final 115.00",
+        "data XLS 2023-01-07 vs Tran 2023-01-08",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32147",
+      "nx": 32147,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32147 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 162.30 ≠ 156.50",
+        "data XLS 2023-01-07 vs Tran 2023-01-08",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "0066-C",
+      "nx": null,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "hora próxima (14:53, dif 75min)",
+        "total diverge (40.00) — marcada cancelada",
+        "5 candidatos empatados"
+      ]
+    },
+    {
+      "id": "32148",
+      "nx": 32148,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32148 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 89.00 ≠ 94.50",
+        "data XLS 2023-01-07 vs Tran 2023-01-08",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32149",
+      "nx": 32149,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32149 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 60.00 ≠ 70.00",
+        "data XLS 2023-01-07 vs Tran 2023-01-08",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32150",
+      "nx": 32150,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32150 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 99.80 ≈ Total Final 99.80",
+        "data XLS 2023-01-07 vs Tran 2023-01-08",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32151",
+      "nx": 32151,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32151 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 29.90 ≈ Total Final 29.90",
+        "data XLS 2023-01-07 vs Tran 2023-01-08",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32152",
+      "nx": 32152,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32152 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 36.00 ≈ Total Final 36.00",
+        "data XLS 2023-01-07 vs Tran 2023-01-08",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32154",
+      "nx": 32154,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32154 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 20.80 ≈ Total Final 20.80",
+        "data XLS 2023-01-07 vs Tran 2023-01-08",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32155",
+      "nx": 32155,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32155 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 19.60 ≈ Total Final 19.60",
+        "data XLS 2023-01-07 vs Tran 2023-01-08",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32156",
+      "nx": 32156,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32156 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 55.00 ≠ 64.50",
+        "data XLS 2023-01-07 vs Tran 2023-01-08",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32157",
+      "nx": 32157,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32157 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 17.50 ≈ Total Final 17.50",
+        "data XLS 2023-01-07 vs Tran 2023-01-08",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32162",
+      "nx": 32162,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32162 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 20.00 ≠ 32.00",
+        "data XLS 2023-01-07 vs Tran 2023-01-08",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32161",
+      "nx": 32161,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32161 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 92.00 ≠ 99.50",
+        "data XLS 2023-01-07 vs Tran 2023-01-08",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32163",
+      "nx": 32163,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32163 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 41.20 ≈ Total Final 41.20",
+        "data XLS 2023-01-07 vs Tran 2023-01-08",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32164",
+      "nx": 32164,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32164 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 40.50 ≈ Total Final 40.50",
+        "data XLS 2023-01-07 vs Tran 2023-01-08",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32165",
+      "nx": 32165,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32165 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 72.50 ≈ Total Final 72.50",
+        "data XLS 2023-01-07 vs Tran 2023-01-08",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32166",
+      "nx": 32166,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32166 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 7.50 ≈ Total Final 7.50",
+        "data XLS 2023-01-07 vs Tran 2023-01-08",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32167",
+      "nx": 32167,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32167 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 37.00 ≠ 33.50",
+        "data XLS 2023-01-07 vs Tran 2023-01-08",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32169",
+      "nx": 32169,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32169 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 90.00 ≈ Total Final 90.00",
+        "data XLS 2023-01-07 vs Tran 2023-01-08",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32168",
+      "nx": 32168,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32168 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 81.00 ≠ 93.00",
+        "data XLS 2023-01-07 vs Tran 2023-01-08",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32170",
+      "nx": 32170,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32170 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 46.90 ≈ Total Final 46.90",
+        "data XLS 2023-01-07 vs Tran 2023-01-08",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32171",
+      "nx": 32171,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32171 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 79.00 ≠ 70.50",
+        "data XLS 2023-01-07 vs Tran 2023-01-08",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32172",
+      "nx": 32172,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32172 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 35.50 ≈ Total Final 35.50",
+        "data XLS 2023-01-07 vs Tran 2023-01-08",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32173",
+      "nx": 32173,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32173 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 26.00 ≈ Total Final 26.00",
+        "data XLS 2023-01-07 vs Tran 2023-01-08",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32176",
+      "nx": 32176,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32176 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 11.70 ≈ Total Final 11.70",
+        "data XLS 2023-01-07 vs Tran 2023-01-08",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32174",
+      "nx": 32174,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32174 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 21.80 ≠ 27.30",
+        "data XLS 2023-01-07 vs Tran 2023-01-08",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32175",
+      "nx": 32175,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32175 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 278.30 ≠ 250.40",
+        "data XLS 2023-01-07 vs Tran 2023-01-08",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32177",
+      "nx": 32177,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32177 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 57.00 ≈ Total Final 57.00",
+        "data XLS 2023-01-07 vs Tran 2023-01-08",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32178",
+      "nx": 32178,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32178 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 20.00 ≈ Total Final 20.00",
+        "data XLS 2023-01-07 vs Tran 2023-01-08",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32179",
+      "nx": 32179,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32179 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 20.10 ≠ 20.00",
+        "data XLS 2023-01-07 vs Tran 2023-01-08",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32180",
+      "nx": 32180,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32180 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 49.00 ≠ 54.50",
+        "data XLS 2023-01-07 vs Tran 2023-01-08",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32181",
+      "nx": 32181,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32181 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 41.80 ≈ Total Final 41.80",
+        "data XLS 2023-01-07 vs Tran 2023-01-08",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32183",
+      "nx": 32183,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32183 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 23.80 ≈ Total Final 23.80",
+        "data XLS 2023-01-07 vs Tran 2023-01-08",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32188",
+      "nx": 32188,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32188 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 65.00 ≠ 73.50",
+        "data XLS 2023-01-10 vs Tran 2023-01-11",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32189",
+      "nx": 32189,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32189 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 40.00 ≈ Total Final 40.00",
+        "data XLS 2023-01-10 vs Tran 2023-01-11",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32190",
+      "nx": 32190,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32190 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 23.40 ≈ Total Final 23.40",
+        "data XLS 2023-01-10 vs Tran 2023-01-11",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32192",
+      "nx": 32192,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32192 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 89.50 ≠ 99.00",
+        "data XLS 2023-01-10 vs Tran 2023-01-11",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32193",
+      "nx": 32193,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32193 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 120.00 ≠ 98.40",
+        "data XLS 2023-01-10 vs Tran 2023-01-11",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32194",
+      "nx": 32194,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32194 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 61.00 ≈ Total Final 61.00",
+        "data XLS 2023-01-10 vs Tran 2023-01-11",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32195",
+      "nx": 32195,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32195 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 62.00 ≈ Total Final 62.00",
+        "data XLS 2023-01-10 vs Tran 2023-01-11",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32197",
+      "nx": 32197,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32197 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 18.10 ≈ Total Final 18.10",
+        "data XLS 2023-01-10 vs Tran 2023-01-11",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32191",
+      "nx": 32191,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32191 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 379.80 ≠ 279.80",
+        "data XLS 2023-01-10 vs Tran 2023-01-11",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32196",
+      "nx": 32196,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32196 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 149.00 ≈ Total Final 149.00",
+        "data XLS 2023-01-10 vs Tran 2023-01-11",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32198",
+      "nx": 32198,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32198 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 199.90 ≠ 157.50",
+        "data XLS 2023-01-10 vs Tran 2023-01-11",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32200",
+      "nx": 32200,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32200 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 10.80 ≈ Total Final 10.80",
+        "data XLS 2023-01-10 vs Tran 2023-01-11",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32201",
+      "nx": 32201,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32201 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 16.60 ≈ Total Final 16.60",
+        "data XLS 2023-01-10 vs Tran 2023-01-11",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32202",
+      "nx": 32202,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32202 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 14.90 ≈ Total Final 14.90",
+        "data XLS 2023-01-10 vs Tran 2023-01-11",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32203",
+      "nx": 32203,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32203 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 49.00 ≠ 45.00",
+        "data XLS 2023-01-10 vs Tran 2023-01-11",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32204",
+      "nx": 32204,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32204 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 149.90 ≠ 158.40",
+        "data XLS 2023-01-10 vs Tran 2023-01-11",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32206",
+      "nx": 32206,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32206 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 15.00 ≈ Total Final 15.00",
+        "data XLS 2023-01-10 vs Tran 2023-01-11",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32207",
+      "nx": 32207,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32207 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 24.20 ≈ Total Final 24.20",
+        "data XLS 2023-01-10 vs Tran 2023-01-11",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32208",
+      "nx": 32208,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32208 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 17.60 ≈ Total Final 17.60",
+        "data XLS 2023-01-10 vs Tran 2023-01-11",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32209",
+      "nx": 32209,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32209 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 120.00 ≠ 95.40",
+        "data XLS 2023-01-10 vs Tran 2023-01-11",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32205",
+      "nx": 32205,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32205 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 20.00 ≈ Total Final 20.00",
+        "data XLS 2023-01-10 vs Tran 2023-01-11",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32210",
+      "nx": 32210,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32210 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 20.00 ≈ Total Final 20.00",
+        "data XLS 2023-01-10 vs Tran 2023-01-11",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32211",
+      "nx": 32211,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32211 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 48.50 ≈ Total Final 48.50",
+        "data XLS 2023-01-10 vs Tran 2023-01-11",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "0067-C",
+      "nx": null,
+      "conf": "NÃO ENCONTRADA",
+      "criterios": [
+        "sem candidato em Tran.nx1 (data 2023-01-10, total 128.30, pagto ∅)"
+      ]
+    },
+    {
+      "id": "32212",
+      "nx": 32212,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32212 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 8.50 ≈ Total Final 8.50",
+        "data XLS 2023-01-10 vs Tran 2023-01-11",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32213",
+      "nx": 32213,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32213 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 10.30 ≈ Total Final 10.30",
+        "data XLS 2023-01-10 vs Tran 2023-01-11",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "0068-C",
+      "nx": 32188,
+      "conf": "PROVÁVEL",
+      "criterios": [
+        "hora quase igual (13:24)",
+        "total diverge (65.00) — marcada cancelada"
+      ]
+    },
+    {
+      "id": "32221",
+      "nx": 32221,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32221 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 239.90 ≈ Total Final 239.90",
+        "data XLS 2023-01-11 vs Tran 2023-01-12",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32222",
+      "nx": 32222,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32222 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 40.00 ≈ Total Final 40.00",
+        "data XLS 2023-01-11 vs Tran 2023-01-12",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32223",
+      "nx": 32223,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32223 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst ∅ ",
+        "data XLS 2023-01-11 vs Tran 2023-01-12",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32224",
+      "nx": 32224,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32224 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 6.40 ≈ Total Final 6.40",
+        "data XLS 2023-01-11 vs Tran 2023-01-12",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32226",
+      "nx": 32226,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32226 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 4.50 ≈ Total Final 4.50",
+        "data XLS 2023-01-11 vs Tran 2023-01-12",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32227",
+      "nx": 32227,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32227 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 20.80 ≈ Total Final 20.80",
+        "data XLS 2023-01-11 vs Tran 2023-01-12",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32225",
+      "nx": 32225,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32225 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 80.00 ≠ 87.50",
+        "data XLS 2023-01-11 vs Tran 2023-01-12",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32228",
+      "nx": 32228,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32228 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 22.10 ≈ Total Final 22.10",
+        "data XLS 2023-01-11 vs Tran 2023-01-12",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32229",
+      "nx": 32229,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32229 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 2.30 ≈ Total Final 2.30",
+        "data XLS 2023-01-11 vs Tran 2023-01-12",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32231",
+      "nx": 32231,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32231 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 20.70 ≈ Total Final 20.70",
+        "data XLS 2023-01-11 vs Tran 2023-01-12",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32230",
+      "nx": 32230,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32230 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 116.00 ≠ 124.50",
+        "data XLS 2023-01-11 vs Tran 2023-01-12",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32232",
+      "nx": 32232,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32232 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 18.50 ≈ Total Final 18.50",
+        "data XLS 2023-01-11 vs Tran 2023-01-12",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32233",
+      "nx": 32233,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32233 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 53.00 ≈ Total Final 53.00",
+        "data XLS 2023-01-11 vs Tran 2023-01-12",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32234",
+      "nx": 32234,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32234 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 18.40 ≈ Total Final 18.40",
+        "data XLS 2023-01-11 vs Tran 2023-01-12",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32235",
+      "nx": 32235,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32235 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 57.00 ≈ Total Final 57.00",
+        "data XLS 2023-01-11 vs Tran 2023-01-12",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32236",
+      "nx": 32236,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32236 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 88.50 ≠ 98.00",
+        "data XLS 2023-01-11 vs Tran 2023-01-12",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32237",
+      "nx": 32237,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32237 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 15.40 ≈ Total Final 15.40",
+        "data XLS 2023-01-11 vs Tran 2023-01-12",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32239",
+      "nx": 32239,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32239 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 12.20 ≈ Total Final 12.20",
+        "data XLS 2023-01-11 vs Tran 2023-01-12",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "0069-C",
+      "nx": 32204,
+      "conf": "PROVÁVEL",
+      "criterios": [
+        "hora quase igual (19:43)",
+        "total diverge (149.90) — marcada cancelada"
+      ]
+    },
+    {
+      "id": "32240",
+      "nx": 32240,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32240 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 45.50 ≈ Total Final 45.50",
+        "data XLS 2023-01-11 vs Tran 2023-01-12",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32241",
+      "nx": 32241,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32241 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 120.00 ≠ 125.00",
+        "data XLS 2023-01-11 vs Tran 2023-01-12",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32242",
+      "nx": 32242,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32242 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 13.50 ≈ Total Final 13.50",
+        "data XLS 2023-01-11 vs Tran 2023-01-12",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32243",
+      "nx": 32243,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32243 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 12.00 ≈ Total Final 12.00",
+        "data XLS 2023-01-11 vs Tran 2023-01-12",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32244",
+      "nx": 32244,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32244 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 32.30 ≠ 32.00",
+        "data XLS 2023-01-11 vs Tran 2023-01-12",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32248",
+      "nx": 32248,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32248 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 55.00 ≈ Total Final 55.00",
+        "data XLS 2023-01-12 vs Tran 2023-01-13",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32249",
+      "nx": 32249,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32249 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 174.90 ≈ Total Final 174.90",
+        "data XLS 2023-01-12 vs Tran 2023-01-13",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32250",
+      "nx": 32250,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32250 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 22.50 ≈ Total Final 22.50",
+        "data XLS 2023-01-12 vs Tran 2023-01-13",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32254",
+      "nx": 32254,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32254 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 120.00 ≠ 89.90",
+        "data XLS 2023-01-12 vs Tran 2023-01-13",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32255",
+      "nx": 32255,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32255 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 13.90 ≈ Total Final 13.90",
+        "data XLS 2023-01-12 vs Tran 2023-01-13",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32256",
+      "nx": 32256,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32256 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 135.00 ≈ Total Final 135.00",
+        "data XLS 2023-01-12 vs Tran 2023-01-13",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32257",
+      "nx": 32257,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32257 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 6.40 ≈ Total Final 6.40",
+        "data XLS 2023-01-12 vs Tran 2023-01-13",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32258",
+      "nx": 32258,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32258 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 40.10 ≈ Total Final 40.10",
+        "data XLS 2023-01-12 vs Tran 2023-01-13",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32259",
+      "nx": 32259,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32259 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 79.90 ≈ Total Final 79.90",
+        "data XLS 2023-01-12 vs Tran 2023-01-13",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32260",
+      "nx": 32260,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32260 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 21.00 ≈ Total Final 21.00",
+        "data XLS 2023-01-12 vs Tran 2023-01-13",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32261",
+      "nx": 32261,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32261 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 258.90 ≠ 221.80",
+        "data XLS 2023-01-12 vs Tran 2023-01-13",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32262",
+      "nx": 32262,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32262 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 64.00 ≠ 73.50",
+        "data XLS 2023-01-12 vs Tran 2023-01-13",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32263",
+      "nx": 32263,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32263 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 122.00 ≈ Total Final 122.00",
+        "data XLS 2023-01-12 vs Tran 2023-01-13",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32265",
+      "nx": 32265,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32265 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 15.00 ≈ Total Final 15.00",
+        "data XLS 2023-01-12 vs Tran 2023-01-13",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32264",
+      "nx": 32264,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32264 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 119.50 ≠ 108.40",
+        "data XLS 2023-01-12 vs Tran 2023-01-13",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32266",
+      "nx": 32266,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32266 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 30.30 ≈ Total Final 30.30",
+        "data XLS 2023-01-12 vs Tran 2023-01-13",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32267",
+      "nx": 32267,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32267 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 3.20 ≈ Total Final 3.20",
+        "data XLS 2023-01-12 vs Tran 2023-01-13",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32268",
+      "nx": 32268,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32268 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 20.00 ≈ Total Final 20.00",
+        "data XLS 2023-01-12 vs Tran 2023-01-13",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32272",
+      "nx": 32272,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32272 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 45.00 ≈ Total Final 45.00",
+        "data XLS 2023-01-13 vs Tran 2023-01-14",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32273",
+      "nx": 32273,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32273 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 49.90 ≈ Total Final 49.90",
+        "data XLS 2023-01-13 vs Tran 2023-01-14",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32274",
+      "nx": 32274,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32274 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 29.90 ≈ Total Final 29.90",
+        "data XLS 2023-01-13 vs Tran 2023-01-14",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32275",
+      "nx": 32275,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32275 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 108.00 ≠ 117.50",
+        "data XLS 2023-01-13 vs Tran 2023-01-14",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32276",
+      "nx": 32276,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32276 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 141.00 ≈ Total Final 141.00",
+        "data XLS 2023-01-13 vs Tran 2023-01-14",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32281",
+      "nx": 32281,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32281 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 108.50 ≠ 99.90",
+        "data XLS 2023-01-13 vs Tran 2023-01-14",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32282",
+      "nx": 32282,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32282 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 52.00 ≈ Total Final 52.00",
+        "data XLS 2023-01-13 vs Tran 2023-01-14",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32283",
+      "nx": 32283,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32283 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 90.00 ≠ 95.50",
+        "data XLS 2023-01-13 vs Tran 2023-01-14",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32292",
+      "nx": 32292,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32292 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 8.50 ≈ Total Final 8.50",
+        "data XLS 2023-01-13 vs Tran 2023-01-14",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32293",
+      "nx": 32293,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32293 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 30.00 ≈ Total Final 30.00",
+        "data XLS 2023-01-13 vs Tran 2023-01-14",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32294",
+      "nx": 32294,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32294 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 72.40 ≈ Total Final 72.40",
+        "data XLS 2023-01-13 vs Tran 2023-01-14",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32295",
+      "nx": 32295,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32295 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 199.90 ≠ 149.90",
+        "data XLS 2023-01-13 vs Tran 2023-01-14",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32296",
+      "nx": 32296,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32296 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 26.00 ≈ Total Final 26.00",
+        "data XLS 2023-01-13 vs Tran 2023-01-14",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32284",
+      "nx": 32284,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32284 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 32.50 ≠ 38.00",
+        "data XLS 2023-01-13 vs Tran 2023-01-14",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32297",
+      "nx": 32297,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32297 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 86.90 ≠ 93.90",
+        "data XLS 2023-01-13 vs Tran 2023-01-14",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32298",
+      "nx": 32298,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32298 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 150.00 ≈ Total Final 150.00",
+        "data XLS 2023-01-13 vs Tran 2023-01-14",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32299",
+      "nx": 32299,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32299 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 74.00 ≈ Total Final 74.00",
+        "data XLS 2023-01-13 vs Tran 2023-01-14",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32300",
+      "nx": 32300,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32300 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 38.30 ≈ Total Final 38.30",
+        "data XLS 2023-01-13 vs Tran 2023-01-14",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32301",
+      "nx": 32301,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32301 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 12.00 ≈ Total Final 12.00",
+        "data XLS 2023-01-13 vs Tran 2023-01-14",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32303",
+      "nx": 32303,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32303 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 16.60 ≈ Total Final 16.60",
+        "data XLS 2023-01-13 vs Tran 2023-01-14",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32302",
+      "nx": 32302,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32302 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 29.00 ≈ Total Final 29.00",
+        "data XLS 2023-01-13 vs Tran 2023-01-14",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32305",
+      "nx": 32305,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32305 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 47.50 ≈ Total Final 47.50",
+        "data XLS 2023-01-13 vs Tran 2023-01-14",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32306",
+      "nx": 32306,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32306 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 52.50 ≈ Total Final 52.50",
+        "data XLS 2023-01-13 vs Tran 2023-01-14",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32307",
+      "nx": 32307,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32307 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 173.00 ≈ Total Final 173.00",
+        "data XLS 2023-01-13 vs Tran 2023-01-14",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32311",
+      "nx": 32311,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32311 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 95.00 ≈ Total Final 95.00",
+        "data XLS 2023-01-14 vs Tran 2023-01-15",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32312",
+      "nx": 32312,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32312 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 69.90 ≠ 55.00",
+        "data XLS 2023-01-14 vs Tran 2023-01-15",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32313",
+      "nx": 32313,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32313 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 15.40 ≈ Total Final 15.40",
+        "data XLS 2023-01-14 vs Tran 2023-01-15",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32315",
+      "nx": 32315,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32315 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 54.00 ≈ Total Final 54.00",
+        "data XLS 2023-01-14 vs Tran 2023-01-15",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32316",
+      "nx": 32316,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32316 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 199.90 ≠ 159.90",
+        "data XLS 2023-01-14 vs Tran 2023-01-15",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32317",
+      "nx": 32317,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32317 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 44.90 ≈ Total Final 44.90",
+        "data XLS 2023-01-14 vs Tran 2023-01-15",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32318",
+      "nx": 32318,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32318 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 144.80 ≈ Total Final 144.80",
+        "data XLS 2023-01-14 vs Tran 2023-01-15",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32319",
+      "nx": 32319,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32319 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 273.90 ≠ 273.00",
+        "data XLS 2023-01-14 vs Tran 2023-01-15",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32321",
+      "nx": 32321,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32321 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 39.90 ≈ Total Final 39.90",
+        "data XLS 2023-01-14 vs Tran 2023-01-15",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32322",
+      "nx": 32322,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32322 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 24.90 ≈ Total Final 24.90",
+        "data XLS 2023-01-14 vs Tran 2023-01-15",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32323",
+      "nx": 32323,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32323 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 27.00 ≈ Total Final 27.00",
+        "data XLS 2023-01-14 vs Tran 2023-01-15",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32328",
+      "nx": 32328,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32328 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 1.00 ≈ Total Final 1.00",
+        "data XLS 2023-01-14 vs Tran 2023-01-15",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32329",
+      "nx": 32329,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32329 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 40.00 ≈ Total Final 40.00",
+        "data XLS 2023-01-14 vs Tran 2023-01-15",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32331",
+      "nx": 32331,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32331 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 40.00 ≈ Total Final 40.00",
+        "data XLS 2023-01-14 vs Tran 2023-01-15",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32332",
+      "nx": 32332,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32332 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 16.40 ≈ Total Final 16.40",
+        "data XLS 2023-01-14 vs Tran 2023-01-15",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32333",
+      "nx": 32333,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32333 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 29.00 ≈ Total Final 29.00",
+        "data XLS 2023-01-14 vs Tran 2023-01-15",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32334",
+      "nx": 32334,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32334 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 17.00 ≈ Total Final 17.00",
+        "data XLS 2023-01-14 vs Tran 2023-01-15",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32336",
+      "nx": 32336,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32336 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 73.00 ≈ Total Final 73.00",
+        "data XLS 2023-01-14 vs Tran 2023-01-15",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32320",
+      "nx": 32320,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32320 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 45.00 ≈ Total Final 45.00",
+        "data XLS 2023-01-14 vs Tran 2023-01-15",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32335",
+      "nx": 32335,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32335 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 22.80 ≠ 30.30",
+        "data XLS 2023-01-14 vs Tran 2023-01-15",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32324",
+      "nx": 32324,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32324 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 58.50 ≠ 70.50",
+        "data XLS 2023-01-14 vs Tran 2023-01-15",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32338",
+      "nx": 32338,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32338 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 10.00 ≈ Total Final 10.00",
+        "data XLS 2023-01-14 vs Tran 2023-01-15",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32337",
+      "nx": 32337,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32337 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 50.50 ≠ 60.50",
+        "data XLS 2023-01-14 vs Tran 2023-01-15",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32354",
+      "nx": 32354,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32354 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 22.50 ≈ Total Final 22.50",
+        "data XLS 2023-01-14 vs Tran 2023-01-15",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32355",
+      "nx": 32355,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32355 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 69.00 ≈ Total Final 69.00",
+        "data XLS 2023-01-14 vs Tran 2023-01-15",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32356",
+      "nx": 32356,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32356 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 69.00 ≈ Total Final 69.00",
+        "data XLS 2023-01-14 vs Tran 2023-01-15",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "0070-C",
+      "nx": 32292,
+      "conf": "PROVÁVEL",
+      "criterios": [
+        "hora quase igual (17:58)",
+        "total diverge (8.50) — marcada cancelada"
+      ]
+    },
+    {
+      "id": "32358",
+      "nx": 32358,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32358 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 21.60 ≈ Total Final 21.60",
+        "data XLS 2023-01-14 vs Tran 2023-01-15",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32359",
+      "nx": 32359,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32359 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 17.10 ≠ 17.00",
+        "data XLS 2023-01-14 vs Tran 2023-01-15",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32360",
+      "nx": 32360,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32360 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 14.50 ≈ Total Final 14.50",
+        "data XLS 2023-01-14 vs Tran 2023-01-15",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32361",
+      "nx": 32361,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32361 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 40.00 ≈ Total Final 40.00",
+        "data XLS 2023-01-14 vs Tran 2023-01-15",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32362",
+      "nx": 32362,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32362 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 22.00 ≠ 12.00",
+        "data XLS 2023-01-14 vs Tran 2023-01-15",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32363",
+      "nx": 32363,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32363 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 289.80 ≠ 209.90",
+        "data XLS 2023-01-14 vs Tran 2023-01-15",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32365",
+      "nx": 32365,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32365 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 16.40 ≈ Total Final 16.40",
+        "data XLS 2023-01-14 vs Tran 2023-01-15",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32364",
+      "nx": 32364,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32364 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 32.80 ≈ Total Final 32.80",
+        "data XLS 2023-01-14 vs Tran 2023-01-15",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32366",
+      "nx": 32366,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32366 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 32.80 ≈ Total Final 32.80",
+        "data XLS 2023-01-14 vs Tran 2023-01-15",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32367",
+      "nx": 32367,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32367 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 10.00 ≈ Total Final 10.00",
+        "data XLS 2023-01-14 vs Tran 2023-01-15",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32368",
+      "nx": 32368,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32368 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 22.10 ≈ Total Final 22.10",
+        "data XLS 2023-01-14 vs Tran 2023-01-15",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32369",
+      "nx": 32369,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32369 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 31.90 ≠ 39.40",
+        "data XLS 2023-01-14 vs Tran 2023-01-15",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32370",
+      "nx": 32370,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32370 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 9.10 ≈ Total Final 9.10",
+        "data XLS 2023-01-14 vs Tran 2023-01-15",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32371",
+      "nx": 32371,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32371 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 28.00 ≈ Total Final 28.00",
+        "data XLS 2023-01-14 vs Tran 2023-01-15",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32372",
+      "nx": 32372,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32372 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 8.50 ≈ Total Final 8.50",
+        "data XLS 2023-01-14 vs Tran 2023-01-15",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32373",
+      "nx": 32373,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32373 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 10.00 ≈ Total Final 10.00",
+        "data XLS 2023-01-14 vs Tran 2023-01-15",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32374",
+      "nx": 32374,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32374 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 23.90 ≈ Total Final 23.90",
+        "data XLS 2023-01-14 vs Tran 2023-01-15",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32375",
+      "nx": 32375,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32375 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 20.00 ≈ Total Final 20.00",
+        "data XLS 2023-01-14 vs Tran 2023-01-15",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32376",
+      "nx": 32376,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32376 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 4.50 ≈ Total Final 4.50",
+        "data XLS 2023-01-14 vs Tran 2023-01-15",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "0017-1",
+      "nx": null,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "hora quase igual (20:48)",
+        "5 candidatos empatados"
+      ]
+    },
+    {
+      "id": "0016-1",
+      "nx": null,
+      "conf": "NÃO ENCONTRADA",
+      "criterios": [
+        "sem candidato em Tran.nx1 (data 2023-01-17, total 0.00, pagto ∅)"
+      ]
+    },
+    {
+      "id": "32383",
+      "nx": 32383,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32383 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 149.90 ≠ 158.40",
+        "data XLS 2023-01-17 vs Tran 2023-01-18",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32394",
+      "nx": 32394,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32394 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 88.50 ≈ Total Final 88.50",
+        "data XLS 2023-01-17 vs Tran 2023-01-18",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32395",
+      "nx": 32395,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32395 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 50.70 ≈ Total Final 50.70",
+        "data XLS 2023-01-17 vs Tran 2023-01-18",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32402",
+      "nx": 32402,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32402 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 87.00 ≈ Total Final 87.00",
+        "data XLS 2023-01-17 vs Tran 2023-01-18",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32403",
+      "nx": 32403,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32403 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 18.70 ≈ Total Final 18.70",
+        "data XLS 2023-01-17 vs Tran 2023-01-18",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32404",
+      "nx": 32404,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32404 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 101.50 ≠ 111.00",
+        "data XLS 2023-01-17 vs Tran 2023-01-18",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32408",
+      "nx": 32408,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32408 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 30.00 ≈ Total Final 30.00",
+        "data XLS 2023-01-17 vs Tran 2023-01-18",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32407",
+      "nx": 32407,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32407 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 89.00 ≈ Total Final 89.00",
+        "data XLS 2023-01-17 vs Tran 2023-01-18",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32409",
+      "nx": 32409,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32409 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 5.40 ≈ Total Final 5.40",
+        "data XLS 2023-01-17 vs Tran 2023-01-18",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32411",
+      "nx": 32411,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32411 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 121.00 ≈ Total Final 121.00",
+        "data XLS 2023-01-17 vs Tran 2023-01-18",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32410",
+      "nx": 32410,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32410 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 37.80 ≈ Total Final 37.80",
+        "data XLS 2023-01-17 vs Tran 2023-01-18",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32427",
+      "nx": 32427,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32427 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 65.00 ≠ 75.00",
+        "data XLS 2023-01-17 vs Tran 2023-01-18",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32429",
+      "nx": 32429,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32429 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 79.90 ≈ Total Final 79.90",
+        "data XLS 2023-01-17 vs Tran 2023-01-18",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32433",
+      "nx": 32433,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32433 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 60.50 ≈ Total Final 60.50",
+        "data XLS 2023-01-17 vs Tran 2023-01-18",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32434",
+      "nx": 32434,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32434 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 11.70 ≈ Total Final 11.70",
+        "data XLS 2023-01-17 vs Tran 2023-01-18",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32435",
+      "nx": 32435,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32435 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 21.00 ≈ Total Final 21.00",
+        "data XLS 2023-01-17 vs Tran 2023-01-18",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32436",
+      "nx": 32436,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32436 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 45.00 ≈ Total Final 45.00",
+        "data XLS 2023-01-17 vs Tran 2023-01-18",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32437",
+      "nx": 32437,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32437 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 38.00 ≈ Total Final 38.00",
+        "data XLS 2023-01-17 vs Tran 2023-01-18",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32413",
+      "nx": 32413,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32413 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 55.00 ≈ Total Final 55.00",
+        "data XLS 2023-01-17 vs Tran 2023-01-18",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32438",
+      "nx": 32438,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32438 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 78.90 ≈ Total Final 78.90",
+        "data XLS 2023-01-17 vs Tran 2023-01-18",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32442",
+      "nx": 32442,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32442 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 16.80 ≈ Total Final 16.80",
+        "data XLS 2023-01-18 vs Tran 2023-01-19",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32443",
+      "nx": 32443,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32443 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 21.60 ≈ Total Final 21.60",
+        "data XLS 2023-01-18 vs Tran 2023-01-19",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32444",
+      "nx": 32444,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32444 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 28.10 ≈ Total Final 28.10",
+        "data XLS 2023-01-18 vs Tran 2023-01-19",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32445",
+      "nx": 32445,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32445 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 119.80 ≠ 95.50",
+        "data XLS 2023-01-18 vs Tran 2023-01-19",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32446",
+      "nx": 32446,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32446 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 142.40 ≈ Total Final 142.40",
+        "data XLS 2023-01-18 vs Tran 2023-01-19",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32447",
+      "nx": 32447,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32447 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 20.10 ≠ 20.00",
+        "data XLS 2023-01-18 vs Tran 2023-01-19",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32448",
+      "nx": 32448,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32448 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 59.00 ≠ 66.50",
+        "data XLS 2023-01-18 vs Tran 2023-01-19",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32450",
+      "nx": 32450,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32450 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 258.70 ≠ 270.70",
+        "data XLS 2023-01-18 vs Tran 2023-01-19",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32451",
+      "nx": 32451,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32451 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 10.50 ≠ 10.00",
+        "data XLS 2023-01-18 vs Tran 2023-01-19",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32452",
+      "nx": 32452,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32452 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 21.00 ≈ Total Final 21.00",
+        "data XLS 2023-01-18 vs Tran 2023-01-19",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32453",
+      "nx": 32453,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32453 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 63.90 ≈ Total Final 63.90",
+        "data XLS 2023-01-18 vs Tran 2023-01-19",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32454",
+      "nx": 32454,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32454 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst ∅ ",
+        "data XLS 2023-01-18 vs Tran 2023-01-19",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32458",
+      "nx": 32458,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32458 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 50.00 ≈ Total Final 50.00",
+        "data XLS 2023-01-18 vs Tran 2023-01-19",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32459",
+      "nx": 32459,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32459 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 179.00 ≈ Total Final 179.00",
+        "data XLS 2023-01-18 vs Tran 2023-01-19",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32463",
+      "nx": 32463,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32463 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 18.90 ≈ Total Final 18.90",
+        "data XLS 2023-01-19 vs Tran 2023-01-20",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32464",
+      "nx": 32464,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32464 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 18.40 ≈ Total Final 18.40",
+        "data XLS 2023-01-19 vs Tran 2023-01-20",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "0071-C",
+      "nx": null,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "hora próxima (14:56, dif 17min)",
+        "total diverge (16.80) — marcada cancelada",
+        "5 candidatos empatados"
+      ]
+    },
+    {
+      "id": "32466",
+      "nx": 32466,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32466 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 148.00 ≠ 156.50",
+        "data XLS 2023-01-19 vs Tran 2023-01-20",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32468",
+      "nx": 32468,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32468 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 42.00 ≈ Total Final 42.00",
+        "data XLS 2023-01-19 vs Tran 2023-01-20",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32469",
+      "nx": 32469,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32469 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 21.60 ≠ 30.10",
+        "data XLS 2023-01-19 vs Tran 2023-01-20",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32470",
+      "nx": 32470,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32470 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 3.50 ≈ Total Final 3.50",
+        "data XLS 2023-01-19 vs Tran 2023-01-20",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32471",
+      "nx": 32471,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32471 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 4.50 ≠ 0.00",
+        "data XLS 2023-01-19 vs Tran 2023-01-20",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32472",
+      "nx": 32472,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32472 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 10.50 ≠ 10.00",
+        "data XLS 2023-01-19 vs Tran 2023-01-20",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32473",
+      "nx": 32473,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32473 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 13.50 ≈ Total Final 13.50",
+        "data XLS 2023-01-19 vs Tran 2023-01-20",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32474",
+      "nx": 32474,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32474 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 20.00 ≈ Total Final 20.00",
+        "data XLS 2023-01-19 vs Tran 2023-01-20",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32475",
+      "nx": 32475,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32475 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 126.90 ≠ 133.40",
+        "data XLS 2023-01-19 vs Tran 2023-01-20",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32477",
+      "nx": 32477,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32477 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 113.50 ≈ Total Final 113.50",
+        "data XLS 2023-01-19 vs Tran 2023-01-20",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32478",
+      "nx": 32478,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32478 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 23.50 ≈ Total Final 23.50",
+        "data XLS 2023-01-19 vs Tran 2023-01-20",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32479",
+      "nx": 32479,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32479 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 22.00 ≈ Total Final 22.00",
+        "data XLS 2023-01-19 vs Tran 2023-01-20",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32481",
+      "nx": 32481,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32481 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 39.90 ≠ 35.00",
+        "data XLS 2023-01-19 vs Tran 2023-01-20",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32480",
+      "nx": 32480,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32480 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 64.50 ≈ Total Final 64.50",
+        "data XLS 2023-01-19 vs Tran 2023-01-20",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32482",
+      "nx": 32482,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32482 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 25.00 ≈ Total Final 25.00",
+        "data XLS 2023-01-19 vs Tran 2023-01-20",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32484",
+      "nx": 32484,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32484 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 80.00 ≠ 92.00",
+        "data XLS 2023-01-19 vs Tran 2023-01-20",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32486",
+      "nx": 32486,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32486 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 19.60 ≈ Total Final 19.60",
+        "data XLS 2023-01-19 vs Tran 2023-01-20",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32485",
+      "nx": 32485,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32485 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 59.90 ≠ 65.40",
+        "data XLS 2023-01-19 vs Tran 2023-01-20",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32487",
+      "nx": 32487,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32487 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 10.00 ≈ Total Final 10.00",
+        "data XLS 2023-01-19 vs Tran 2023-01-20",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32488",
+      "nx": 32488,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32488 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 22.00 ≈ Total Final 22.00",
+        "data XLS 2023-01-19 vs Tran 2023-01-20",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32489",
+      "nx": 32489,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32489 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 15.00 ≈ Total Final 15.00",
+        "data XLS 2023-01-19 vs Tran 2023-01-20",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32490",
+      "nx": 32490,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32490 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 249.80 ≠ 218.30",
+        "data XLS 2023-01-19 vs Tran 2023-01-20",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32494",
+      "nx": 32494,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32494 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 6.40 ≈ Total Final 6.40",
+        "data XLS 2023-01-20 vs Tran 2023-01-21",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32495",
+      "nx": 32495,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32495 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 145.50 ≠ 155.00",
+        "data XLS 2023-01-20 vs Tran 2023-01-21",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32496",
+      "nx": 32496,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32496 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 22.00 ≈ Total Final 22.00",
+        "data XLS 2023-01-20 vs Tran 2023-01-21",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32497",
+      "nx": 32497,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32497 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 64.00 ≈ Total Final 64.00",
+        "data XLS 2023-01-20 vs Tran 2023-01-21",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32498",
+      "nx": 32498,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32498 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 5.40 ≈ Total Final 5.40",
+        "data XLS 2023-01-20 vs Tran 2023-01-21",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32499",
+      "nx": 32499,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32499 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 99.40 ≠ 97.90",
+        "data XLS 2023-01-20 vs Tran 2023-01-21",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32501",
+      "nx": 32501,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32501 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 35.00 ≈ Total Final 35.00",
+        "data XLS 2023-01-20 vs Tran 2023-01-21",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32502",
+      "nx": 32502,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32502 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 189.00 ≈ Total Final 189.00",
+        "data XLS 2023-01-20 vs Tran 2023-01-21",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32516",
+      "nx": 32516,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32516 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 49.00 ≈ Total Final 49.00",
+        "data XLS 2023-01-20 vs Tran 2023-01-21",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32517",
+      "nx": 32517,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32517 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 19.60 ≈ Total Final 19.60",
+        "data XLS 2023-01-20 vs Tran 2023-01-21",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32521",
+      "nx": 32521,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32521 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 40.00 ≠ 52.00",
+        "data XLS 2023-01-20 vs Tran 2023-01-21",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32522",
+      "nx": 32522,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32522 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 10.00 ≈ Total Final 10.00",
+        "data XLS 2023-01-20 vs Tran 2023-01-21",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32524",
+      "nx": 32524,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32524 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 16.40 ≈ Total Final 16.40",
+        "data XLS 2023-01-20 vs Tran 2023-01-21",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32527",
+      "nx": 32527,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32527 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 33.50 ≈ Total Final 33.50",
+        "data XLS 2023-01-20 vs Tran 2023-01-21",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32528",
+      "nx": 32528,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32528 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 52.00 ≈ Total Final 52.00",
+        "data XLS 2023-01-20 vs Tran 2023-01-21",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32529",
+      "nx": 32529,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32529 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 10.30 ≈ Total Final 10.30",
+        "data XLS 2023-01-20 vs Tran 2023-01-21",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32531",
+      "nx": 32531,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32531 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst ∅ ",
+        "data XLS 2023-01-20 vs Tran 2023-01-21",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32532",
+      "nx": 32532,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32532 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 43.50 ≈ Total Final 43.50",
+        "data XLS 2023-01-20 vs Tran 2023-01-21",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "0041-2",
+      "nx": null,
+      "conf": "NÃO ENCONTRADA",
+      "criterios": [
+        "hora quase igual (19:26)",
+        "melhor candidato abaixo do limiar"
+      ]
+    },
+    {
+      "id": "0042-2",
+      "nx": null,
+      "conf": "NÃO ENCONTRADA",
+      "criterios": [
+        "hora quase igual (19:26)",
+        "melhor candidato abaixo do limiar"
+      ]
+    },
+    {
+      "id": "32536",
+      "nx": 32536,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32536 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 29.00 ≈ Total Final 29.00",
+        "data XLS 2023-01-20 vs Tran 2023-01-21",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32535",
+      "nx": 32535,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32535 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 23.80 ≠ 29.30",
+        "data XLS 2023-01-20 vs Tran 2023-01-21",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32530",
+      "nx": 32530,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32530 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 20.30 ≠ 20.00",
+        "data XLS 2023-01-20 vs Tran 2023-01-21",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32538",
+      "nx": 32538,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32538 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 29.00 ≠ 36.50",
+        "data XLS 2023-01-20 vs Tran 2023-01-21",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32537",
+      "nx": 32537,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32537 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 47.50 ≠ 56.00",
+        "data XLS 2023-01-20 vs Tran 2023-01-21",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32539",
+      "nx": 32539,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32539 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 50.00 ≈ Total Final 50.00",
+        "data XLS 2023-01-20 vs Tran 2023-01-21",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32540",
+      "nx": 32540,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32540 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 38.70 ≠ 46.20",
+        "data XLS 2023-01-20 vs Tran 2023-01-21",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "0043-2",
+      "nx": null,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "hora próxima (19:56, dif 60min)",
+        "5 candidatos empatados"
+      ]
+    },
+    {
+      "id": "0044-2",
+      "nx": null,
+      "conf": "NÃO ENCONTRADA",
+      "criterios": [
+        "hora quase igual (21:09)",
+        "melhor candidato abaixo do limiar"
+      ]
+    },
+    {
+      "id": "32547",
+      "nx": 32547,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32547 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 30.00 ≈ Total Final 30.00",
+        "data XLS 2023-01-21 vs Tran 2023-01-22",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32548",
+      "nx": 32548,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32548 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 55.40 ≠ 63.90",
+        "data XLS 2023-01-21 vs Tran 2023-01-22",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32549",
+      "nx": 32549,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32549 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 68.90 ≈ Total Final 68.90",
+        "data XLS 2023-01-21 vs Tran 2023-01-22",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32551",
+      "nx": 32551,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32551 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 20.40 ≈ Total Final 20.40",
+        "data XLS 2023-01-21 vs Tran 2023-01-22",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32550",
+      "nx": 32550,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32550 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 42.00 ≠ 50.50",
+        "data XLS 2023-01-21 vs Tran 2023-01-22",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32552",
+      "nx": 32552,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32552 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 115.90 ≠ 124.40",
+        "data XLS 2023-01-21 vs Tran 2023-01-22",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32554",
+      "nx": 32554,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32554 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 13.90 ≈ Total Final 13.90",
+        "data XLS 2023-01-21 vs Tran 2023-01-22",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32553",
+      "nx": 32553,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32553 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 55.00 ≠ 62.50",
+        "data XLS 2023-01-21 vs Tran 2023-01-22",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32555",
+      "nx": 32555,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32555 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 15.00 ≈ Total Final 15.00",
+        "data XLS 2023-01-21 vs Tran 2023-01-22",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32557",
+      "nx": 32557,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32557 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 22.90 ≈ Total Final 22.90",
+        "data XLS 2023-01-21 vs Tran 2023-01-22",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32558",
+      "nx": 32558,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32558 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 28.10 ≈ Total Final 28.10",
+        "data XLS 2023-01-21 vs Tran 2023-01-22",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32560",
+      "nx": 32560,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32560 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 20.30 ≠ 20.00",
+        "data XLS 2023-01-21 vs Tran 2023-01-22",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32561",
+      "nx": 32561,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32561 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 19.90 ≈ Total Final 19.90",
+        "data XLS 2023-01-21 vs Tran 2023-01-22",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32559",
+      "nx": 32559,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32559 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 50.00 ≠ 60.00",
+        "data XLS 2023-01-21 vs Tran 2023-01-22",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32562",
+      "nx": 32562,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32562 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst ∅ ",
+        "data XLS 2023-01-21 vs Tran 2023-01-22",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32563",
+      "nx": 32563,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32563 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 47.00 ≠ 37.00",
+        "data XLS 2023-01-21 vs Tran 2023-01-22",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32564",
+      "nx": 32564,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32564 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 98.90 ≈ Total Final 98.90",
+        "data XLS 2023-01-21 vs Tran 2023-01-22",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32565",
+      "nx": 32565,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32565 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 21.50 ≈ Total Final 21.50",
+        "data XLS 2023-01-21 vs Tran 2023-01-22",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32566",
+      "nx": 32566,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32566 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 22.80 ≈ Total Final 22.80",
+        "data XLS 2023-01-21 vs Tran 2023-01-22",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32567",
+      "nx": 32567,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32567 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 21.50 ≈ Total Final 21.50",
+        "data XLS 2023-01-21 vs Tran 2023-01-22",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32568",
+      "nx": 32568,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32568 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 15.40 ≈ Total Final 15.40",
+        "data XLS 2023-01-21 vs Tran 2023-01-22",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32569",
+      "nx": 32569,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32569 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 3.50 ≈ Total Final 3.50",
+        "data XLS 2023-01-21 vs Tran 2023-01-22",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32570",
+      "nx": 32570,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32570 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 35.50 ≠ 43.00",
+        "data XLS 2023-01-21 vs Tran 2023-01-22",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32573",
+      "nx": 32573,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32573 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 33.70 ≈ Total Final 33.70",
+        "data XLS 2023-01-21 vs Tran 2023-01-22",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32575",
+      "nx": 32575,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32575 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 33.50 ≠ 32.00",
+        "data XLS 2023-01-21 vs Tran 2023-01-22",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32556",
+      "nx": 32556,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32556 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 6.40 ≈ Total Final 6.40",
+        "data XLS 2023-01-21 vs Tran 2023-01-22",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32576",
+      "nx": 32576,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32576 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 89.50 ≠ 99.00",
+        "data XLS 2023-01-21 vs Tran 2023-01-22",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32578",
+      "nx": 32578,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32578 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 20.00 ≈ Total Final 20.00",
+        "data XLS 2023-01-21 vs Tran 2023-01-22",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32577",
+      "nx": 32577,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32577 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 110.00 ≠ 120.00",
+        "data XLS 2023-01-21 vs Tran 2023-01-22",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32580",
+      "nx": 32580,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32580 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 16.90 ≈ Total Final 16.90",
+        "data XLS 2023-01-21 vs Tran 2023-01-22",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32582",
+      "nx": 32582,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32582 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 30.00 ≈ Total Final 30.00",
+        "data XLS 2023-01-21 vs Tran 2023-01-22",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32584",
+      "nx": 32584,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32584 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 2.70 ≈ Total Final 2.70",
+        "data XLS 2023-01-21 vs Tran 2023-01-22",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32583",
+      "nx": 32583,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32583 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 109.50 ≠ 117.00",
+        "data XLS 2023-01-21 vs Tran 2023-01-22",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32585",
+      "nx": 32585,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32585 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 45.50 ≈ Total Final 45.50",
+        "data XLS 2023-01-21 vs Tran 2023-01-22",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32586",
+      "nx": 32586,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32586 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 32.80 ≈ Total Final 32.80",
+        "data XLS 2023-01-21 vs Tran 2023-01-22",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32587",
+      "nx": 32587,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32587 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 64.00 ≠ 60.00",
+        "data XLS 2023-01-21 vs Tran 2023-01-22",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32588",
+      "nx": 32588,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32588 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 79.50 ≈ Total Final 79.50",
+        "data XLS 2023-01-21 vs Tran 2023-01-22",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32589",
+      "nx": 32589,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32589 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 11.20 ≈ Total Final 11.20",
+        "data XLS 2023-01-21 vs Tran 2023-01-22",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32579",
+      "nx": 32579,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32579 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 81.00 ≈ Total Final 81.00",
+        "data XLS 2023-01-21 vs Tran 2023-01-22",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32590",
+      "nx": 32590,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32590 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 24.00 ≠ 32.50",
+        "data XLS 2023-01-21 vs Tran 2023-01-22",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32592",
+      "nx": 32592,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32592 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 23.50 ≈ Total Final 23.50",
+        "data XLS 2023-01-21 vs Tran 2023-01-22",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32593",
+      "nx": 32593,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32593 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 35.00 ≈ Total Final 35.00",
+        "data XLS 2023-01-21 vs Tran 2023-01-22",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32594",
+      "nx": 32594,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32594 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 23.50 ≈ Total Final 23.50",
+        "data XLS 2023-01-21 vs Tran 2023-01-22",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32591",
+      "nx": 32591,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32591 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 107.00 ≠ 115.50",
+        "data XLS 2023-01-21 vs Tran 2023-01-22",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32595",
+      "nx": 32595,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32595 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 40.00 ≠ 49.50",
+        "data XLS 2023-01-21 vs Tran 2023-01-22",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32596",
+      "nx": 32596,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32596 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 48.40 ≈ Total Final 48.40",
+        "data XLS 2023-01-21 vs Tran 2023-01-22",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32597",
+      "nx": 32597,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32597 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 20.20 ≈ Total Final 20.20",
+        "data XLS 2023-01-21 vs Tran 2023-01-22",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32598",
+      "nx": 32598,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32598 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 27.50 ≈ Total Final 27.50",
+        "data XLS 2023-01-21 vs Tran 2023-01-22",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32599",
+      "nx": 32599,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32599 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 82.50 ≠ 92.50",
+        "data XLS 2023-01-21 vs Tran 2023-01-22",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32600",
+      "nx": 32600,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32600 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 37.00 ≠ 44.50",
+        "data XLS 2023-01-21 vs Tran 2023-01-22",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32601",
+      "nx": 32601,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32601 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 20.80 ≈ Total Final 20.80",
+        "data XLS 2023-01-21 vs Tran 2023-01-22",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32602",
+      "nx": 32602,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32602 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 20.50 ≈ Total Final 20.50",
+        "data XLS 2023-01-21 vs Tran 2023-01-22",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32604",
+      "nx": 32604,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32604 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 20.00 ≈ Total Final 20.00",
+        "data XLS 2023-01-21 vs Tran 2023-01-22",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32610",
+      "nx": 32610,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32610 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 39.30 ≈ Total Final 39.30",
+        "data XLS 2023-01-24 vs Tran 2023-01-25",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32611",
+      "nx": 32611,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32611 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 189.00 ≠ 145.00",
+        "data XLS 2023-01-24 vs Tran 2023-01-25",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "0072-C",
+      "nx": null,
+      "conf": "NÃO ENCONTRADA",
+      "criterios": [
+        "sem candidato em Tran.nx1 (data 2023-01-24, total 219.90, pagto ∅)"
+      ]
+    },
+    {
+      "id": "32612",
+      "nx": 32612,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32612 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 49.00 ≈ Total Final 49.00",
+        "data XLS 2023-01-24 vs Tran 2023-01-25",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32613",
+      "nx": 32613,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32613 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 16.60 ≈ Total Final 16.60",
+        "data XLS 2023-01-24 vs Tran 2023-01-25",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32614",
+      "nx": 32614,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32614 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 29.90 ≠ 41.90",
+        "data XLS 2023-01-24 vs Tran 2023-01-25",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32615",
+      "nx": 32615,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32615 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 46.50 ≈ Total Final 46.50",
+        "data XLS 2023-01-24 vs Tran 2023-01-25",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32616",
+      "nx": 32616,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32616 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst ∅ ",
+        "data XLS 2023-01-24 vs Tran 2023-01-25",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32618",
+      "nx": 32618,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32618 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 25.50 ≈ Total Final 25.50",
+        "data XLS 2023-01-24 vs Tran 2023-01-25",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32619",
+      "nx": 32619,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32619 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 143.40 ≈ Total Final 143.40",
+        "data XLS 2023-01-24 vs Tran 2023-01-25",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32617",
+      "nx": 32617,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32617 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 57.40 ≈ Total Final 57.40",
+        "data XLS 2023-01-24 vs Tran 2023-01-25",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32620",
+      "nx": 32620,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32620 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 13.00 ≈ Total Final 13.00",
+        "data XLS 2023-01-24 vs Tran 2023-01-25",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32621",
+      "nx": 32621,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32621 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 2.70 ≈ Total Final 2.70",
+        "data XLS 2023-01-24 vs Tran 2023-01-25",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32622",
+      "nx": 32622,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32622 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 11.20 ≠ 11.00",
+        "data XLS 2023-01-24 vs Tran 2023-01-25",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32623",
+      "nx": 32623,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32623 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 36.90 ≈ Total Final 36.90",
+        "data XLS 2023-01-24 vs Tran 2023-01-25",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32624",
+      "nx": 32624,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32624 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 20.50 ≠ 27.00",
+        "data XLS 2023-01-24 vs Tran 2023-01-25",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32625",
+      "nx": 32625,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32625 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 10.00 ≈ Total Final 10.00",
+        "data XLS 2023-01-24 vs Tran 2023-01-25",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32626",
+      "nx": 32626,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32626 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 22.00 ≈ Total Final 22.00",
+        "data XLS 2023-01-24 vs Tran 2023-01-25",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32627",
+      "nx": 32627,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32627 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 32.50 ≠ 40.00",
+        "data XLS 2023-01-24 vs Tran 2023-01-25",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32628",
+      "nx": 32628,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32628 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 10.00 ≠ 0.00",
+        "data XLS 2023-01-24 vs Tran 2023-01-25",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32630",
+      "nx": 32630,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32630 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 20.00 ≠ 32.00",
+        "data XLS 2023-01-24 vs Tran 2023-01-25",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32631",
+      "nx": 32631,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32631 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 32.00 ≠ 30.00",
+        "data XLS 2023-01-24 vs Tran 2023-01-25",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32632",
+      "nx": 32632,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32632 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 165.00 ≈ Total Final 165.00",
+        "data XLS 2023-01-24 vs Tran 2023-01-25",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32633",
+      "nx": 32633,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32633 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 71.50 ≈ Total Final 71.50",
+        "data XLS 2023-01-24 vs Tran 2023-01-25",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32629",
+      "nx": 32629,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32629 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 14.90 ≈ Total Final 14.90",
+        "data XLS 2023-01-24 vs Tran 2023-01-25",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32634",
+      "nx": 32634,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32634 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 5.40 ≈ Total Final 5.40",
+        "data XLS 2023-01-24 vs Tran 2023-01-25",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32635",
+      "nx": 32635,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32635 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 6.30 ≠ 6.00",
+        "data XLS 2023-01-24 vs Tran 2023-01-25",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32636",
+      "nx": 32636,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32636 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 16.40 ≈ Total Final 16.40",
+        "data XLS 2023-01-24 vs Tran 2023-01-25",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32640",
+      "nx": 32640,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32640 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 11.70 ≈ Total Final 11.70",
+        "data XLS 2023-01-25 vs Tran 2023-01-26",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32641",
+      "nx": 32641,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32641 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst ∅ ",
+        "data XLS 2023-01-25 vs Tran 2023-01-26",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32642",
+      "nx": 32642,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32642 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 21.00 ≈ Total Final 21.00",
+        "data XLS 2023-01-25 vs Tran 2023-01-26",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32645",
+      "nx": 32645,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32645 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 114.50 ≠ 120.00",
+        "data XLS 2023-01-25 vs Tran 2023-01-26",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "0073-C",
+      "nx": null,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "hora próxima (15:43, dif 27min)",
+        "total diverge (25.50) — marcada cancelada",
+        "5 candidatos empatados"
+      ]
+    },
+    {
+      "id": "32644",
+      "nx": 32644,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32644 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 12.70 ≠ 11.00",
+        "data XLS 2023-01-25 vs Tran 2023-01-26",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32646",
+      "nx": 32646,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32646 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 23.50 ≈ Total Final 23.50",
+        "data XLS 2023-01-25 vs Tran 2023-01-26",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32647",
+      "nx": 32647,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32647 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 115.00 ≠ 123.50",
+        "data XLS 2023-01-25 vs Tran 2023-01-26",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32648",
+      "nx": 32648,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32648 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 49.00 ≈ Total Final 49.00",
+        "data XLS 2023-01-25 vs Tran 2023-01-26",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32649",
+      "nx": 32649,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32649 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 40.00 ≠ 48.50",
+        "data XLS 2023-01-25 vs Tran 2023-01-26",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32651",
+      "nx": 32651,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32651 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 99.90 ≠ 80.00",
+        "data XLS 2023-01-25 vs Tran 2023-01-26",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32652",
+      "nx": 32652,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32652 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 54.00 ≈ Total Final 54.00",
+        "data XLS 2023-01-25 vs Tran 2023-01-26",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32653",
+      "nx": 32653,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32653 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 10.00 ≠ 0.00",
+        "data XLS 2023-01-25 vs Tran 2023-01-26",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32654",
+      "nx": 32654,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32654 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 40.50 ≈ Total Final 40.50",
+        "data XLS 2023-01-25 vs Tran 2023-01-26",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32655",
+      "nx": 32655,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32655 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 20.00 ≈ Total Final 20.00",
+        "data XLS 2023-01-25 vs Tran 2023-01-26",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32657",
+      "nx": 32657,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32657 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 18.40 ≈ Total Final 18.40",
+        "data XLS 2023-01-25 vs Tran 2023-01-26",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32658",
+      "nx": 32658,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32658 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 20.00 ≈ Total Final 20.00",
+        "data XLS 2023-01-25 vs Tran 2023-01-26",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32659",
+      "nx": 32659,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32659 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 20.50 ≈ Total Final 20.50",
+        "data XLS 2023-01-25 vs Tran 2023-01-26",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32660",
+      "nx": 32660,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32660 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 55.00 ≈ Total Final 55.00",
+        "data XLS 2023-01-25 vs Tran 2023-01-26",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32662",
+      "nx": 32662,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32662 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 146.50 ≠ 143.50",
+        "data XLS 2023-01-25 vs Tran 2023-01-26",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "0074-C",
+      "nx": null,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "hora próxima (13:35, dif 7min)",
+        "total diverge (11.70) — marcada cancelada",
+        "5 candidatos empatados"
+      ]
+    },
+    {
+      "id": "32667",
+      "nx": 32667,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32667 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 3.50 ≠ 0.00",
+        "data XLS 2023-01-26 vs Tran 2023-01-27",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32668",
+      "nx": 32668,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32668 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 21.60 ≠ 27.10",
+        "data XLS 2023-01-26 vs Tran 2023-01-27",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32672",
+      "nx": 32672,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32672 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 67.50 ≠ 71.00",
+        "data XLS 2023-01-26 vs Tran 2023-01-27",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32673",
+      "nx": 32673,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32673 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 12.00 ≈ Total Final 12.00",
+        "data XLS 2023-01-26 vs Tran 2023-01-27",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32674",
+      "nx": 32674,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32674 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 7.50 ≈ Total Final 7.50",
+        "data XLS 2023-01-26 vs Tran 2023-01-27",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32676",
+      "nx": 32676,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32676 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 209.00 ≈ Total Final 209.00",
+        "data XLS 2023-01-26 vs Tran 2023-01-27",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32675",
+      "nx": 32675,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32675 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 29.30 ≈ Total Final 29.30",
+        "data XLS 2023-01-26 vs Tran 2023-01-27",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32677",
+      "nx": 32677,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32677 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 7.00 ≈ Total Final 7.00",
+        "data XLS 2023-01-26 vs Tran 2023-01-27",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32678",
+      "nx": 32678,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32678 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 12.10 ≈ Total Final 12.10",
+        "data XLS 2023-01-26 vs Tran 2023-01-27",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32679",
+      "nx": 32679,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32679 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 49.00 ≈ Total Final 49.00",
+        "data XLS 2023-01-26 vs Tran 2023-01-27",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32680",
+      "nx": 32680,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32680 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 57.00 ≈ Total Final 57.00",
+        "data XLS 2023-01-26 vs Tran 2023-01-27",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32681",
+      "nx": 32681,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32681 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 3.20 ≈ Total Final 3.20",
+        "data XLS 2023-01-26 vs Tran 2023-01-27",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32682",
+      "nx": 32682,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32682 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 12.00 ≈ Total Final 12.00",
+        "data XLS 2023-01-26 vs Tran 2023-01-27",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32683",
+      "nx": 32683,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32683 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 20.20 ≈ Total Final 20.20",
+        "data XLS 2023-01-26 vs Tran 2023-01-27",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32684",
+      "nx": 32684,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32684 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 22.80 ≈ Total Final 22.80",
+        "data XLS 2023-01-26 vs Tran 2023-01-27",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32685",
+      "nx": 32685,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32685 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 50.40 ≈ Total Final 50.40",
+        "data XLS 2023-01-26 vs Tran 2023-01-27",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32686",
+      "nx": 32686,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32686 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 99.90 ≠ 70.00",
+        "data XLS 2023-01-26 vs Tran 2023-01-27",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32687",
+      "nx": 32687,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32687 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 20.10 ≈ Total Final 20.10",
+        "data XLS 2023-01-26 vs Tran 2023-01-27",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32688",
+      "nx": 32688,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32688 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 20.10 ≠ 25.60",
+        "data XLS 2023-01-26 vs Tran 2023-01-27",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32689",
+      "nx": 32689,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32689 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 55.00 ≈ Total Final 55.00",
+        "data XLS 2023-01-26 vs Tran 2023-01-27",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32691",
+      "nx": 32691,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32691 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 22.00 ≈ Total Final 22.00",
+        "data XLS 2023-01-26 vs Tran 2023-01-27",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32690",
+      "nx": 32690,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32690 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 61.00 ≈ Total Final 61.00",
+        "data XLS 2023-01-26 vs Tran 2023-01-27",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32671",
+      "nx": 32671,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32671 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 129.00 ≈ Total Final 129.00",
+        "data XLS 2023-01-26 vs Tran 2023-01-27",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32696",
+      "nx": 32696,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32696 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 47.40 ≈ Total Final 47.40",
+        "data XLS 2023-01-27 vs Tran 2023-01-28",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32697",
+      "nx": 32697,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32697 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 96.00 ≈ Total Final 96.00",
+        "data XLS 2023-01-27 vs Tran 2023-01-28",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32698",
+      "nx": 32698,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32698 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 75.50 ≠ 74.50",
+        "data XLS 2023-01-27 vs Tran 2023-01-28",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32711",
+      "nx": 32711,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32711 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 51.50 ≠ 61.00",
+        "data XLS 2023-01-27 vs Tran 2023-01-28",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32712",
+      "nx": 32712,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32712 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 5.00 ≈ Total Final 5.00",
+        "data XLS 2023-01-27 vs Tran 2023-01-28",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32713",
+      "nx": 32713,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32713 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 79.00 ≈ Total Final 79.00",
+        "data XLS 2023-01-27 vs Tran 2023-01-28",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    },
+    {
+      "id": "32714",
+      "nx": 32714,
+      "conf": "AMBÍGUA",
+      "criterios": [
+        "id numérico 32714 presente no Tran.nx1 (nome=Venda)",
+        "total itens MovEst 11.00 ≠ 9.50",
+        "data XLS 2023-01-27 vs Tran 2023-01-28",
+        "hora coincide (mesmo minuto)",
+        "id existe mas data diverge"
+      ]
+    }
+  ]
+}

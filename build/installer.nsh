@@ -76,13 +76,12 @@
   DetailPrint "Instalando NossoSistema (instalador único)..."
   DetailPrint "Modo selecionado: $NossoSistema_Tipo"
 
-  ; 0) Se já existe uma instalação em modo servidor (indicado pela presença do
-  ;    NossoSistema-Servidor.exe), preserva esse tipo — mantém a configuração de
-  ;    servidor já instalada. Os dados em sistema-loja-tabacaria são preservados.
-  ${If} ${FileExists} "$INSTDIR\NossoSistema-Servidor.exe"
-    StrCpy $NossoSistema_Tipo "servidor"
-    DetailPrint "Instalação existente detectada — preservando modo SERVIDOR e dados."
-  ${EndIf}
+  ; 0) O modo selecionado no assistente é SEMPRE respeitado. O radio padrão já
+  ;    vem em "NossoSistema + Servidor", então reinstalações sem escolha
+  ;    explícita mantêm o modo servidor; se o usuário escolher "Somente
+  ;    NossoSistema", a instalação passa a ser cliente (Servidor.exe, autostart
+  ;    e firewall do servidor são removidos abaixo). Dados do sistema são
+  ;    sempre preservados na reinstalação.
 
   ; 1) Encerra processos instalados (importante em atualização)
   !insertmacro NossoSistema_MatarApp
@@ -162,6 +161,11 @@
       CreateShortcut "$DESKTOP\NossoSistema-Servidor.lnk" "$INSTDIR\NossoSistema-Servidor.exe" "" "$INSTDIR\resources\servidor.ico"
       CreateShortcut "$SMPROGRAMS\NossoSistema\NossoSistema-Servidor.lnk" "$INSTDIR\NossoSistema-Servidor.exe" "" "$INSTDIR\resources\servidor.ico"
     ${EndIf}
+  ${Else}
+    ; Cliente: remove atalhos do servidor que possam ter sobrado de uma
+    ; instalação anterior (Servidor.exe já foi removido acima).
+    Delete "$DESKTOP\NossoSistema-Servidor.lnk"
+    Delete "$SMPROGRAMS\NossoSistema\NossoSistema-Servidor.lnk"
   ${EndIf}
 
   ; 9) Preserva os dados do usuário (C:\NossoSistema\sistema-loja-tabacaria) — o
@@ -172,6 +176,11 @@
 !macroend
 
 !macro customUnInstall
+  ; Mata os processos antes de apagar — se o app/servidor estiver rodando os
+  ; arquivos ficam travados e a desinstalação "não fecha" e "não apaga tudo".
+  !insertmacro NossoSistema_MatarApp
+  Sleep 2000
+
   Delete "$DESKTOP\NossoSistema.lnk"
   Delete "$DESKTOP\NossoSistema-Servidor.lnk"
   RMDir /r "$SMPROGRAMS\NossoSistema"

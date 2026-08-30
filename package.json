@@ -12,6 +12,8 @@
     "preview": "electron-vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
     "servidor": "npm run build:servidor && node out/server/server/index.js",
+    "relay": "npm run build:servidor && node out/server/server/relay.js",
+    "test:relay": "npm run build:servidor && node --test tests/relay-permissao.test.mjs tests/relay-supervisor.test.mjs",
     "servidor:instalar": "npm run build:servidor && node scripts/instalar-servidor.js",
     "build:servidor": "tsc -p tsconfig.server.json",
     "build:servidor-exe": "tsc -p tsconfig.servidor-exe.json && node scripts/copiar-servidor-exe.js",
@@ -31,6 +33,7 @@
     "leaflet": "^1.9.4",
     "rcedit": "^5.0.2",
     "sharp": "^0.35.3",
+    "unzipper": "0.12.5",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {

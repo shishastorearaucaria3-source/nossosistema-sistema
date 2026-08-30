@@ -157,21 +157,6 @@ export function getCaixasApi(): CaixasApi {
 }
 
 export interface CatalogoApi {
-  status: () => Promise<{
-    status: string
-    ultima_sync: string
-    proxima_sync: string
-    produtos_publicados: number
-    pendentes: number
-    ultimo_erro: string
-    site_url: string
-    configurado: boolean
-    sincronizando: boolean
-  }>
-  config: (dados: Record<string, string | undefined>) => Promise<{ ok: boolean; config: unknown }>
-  getConfig: () => Promise<{ github_token: string; github_repo: string; github_branch: string; site_url: string; nome_loja: string }>
-  sync: () => Promise<{ ok: boolean; erro?: string }>
-  testar: () => Promise<{ ok: boolean; mensagem: string }>
   getExibicao: () => Promise<{
     mostrar_estoque: boolean
     sem_estoque: 'despublicar' | 'manter'

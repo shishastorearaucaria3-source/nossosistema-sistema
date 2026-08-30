@@ -1,19 +1,20 @@
-﻿import { DatabaseSync } from 'node:sqlite'
+import { DatabaseSync } from 'node:sqlite'
 import { createHash, randomBytes } from 'node:crypto'
 import { join, resolve, sep } from 'node:path'
-import { mkdirSync, existsSync, copyFileSync, readdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs'
+import { mkdirSync, existsSync, copyFileSync, readdirSync, rmSync, writeFileSync, readFileSync, createWriteStream, statSync } from 'node:fs'
 import express from 'express'
 import { createServer } from 'node:http'
 import type { Server } from 'node:http'
 import { networkInterfaces } from 'node:os'
 import { migrations, SCHEMA_VERSION } from '../shared/schema'
 import { encontrarZona, Zona } from '../shared/geo'
-import { getDefaultDbPath, getPortFilePath } from '../shared/data-dir'
+import { getDefaultDbPath, getPortFilePath, getImportDir, getDataDir } from '../shared/data-dir'
 export { getDefaultDbPath }
-import { getConfig, salvarConfig, getStatus, sincronizarAgora, testarConexao, temInternet, notificarAlteracaoProduto, getExibicao, salvarExibicao, backupConfigCatalogo, getBackupConfigCatalogo, restaurarBackupConfigCatalogo } from './catalogo'
+import { getConfig, salvarConfig, getStatus, notificarAlteracaoProduto, getExibicao, salvarExibicao, gerarCatalogoPublico } from './catalogo'
 import { getStatusServidor, getLogs, limparLogs, getBackupInfo, diagnosticar, corrigir, zerarDados, restaurarBackup, registrarLog, versaoSistema } from './servidor'
 import { extrairZip, listarArquivosImportacao, lerArquivoImportacao, importarProdutos, limparPastaImportacao, getProgressoImportacao } from './importar'
-import { importarNex, getProgressoNex, analisarNex } from './importar-nex'
+import { importarNex, getProgressoNex, analisarNex, importarNexDeZip, analisarNexDeZip } from './importar-nex'
+import * as nexImportador from './auditoria/servidor-importador'
 import { registerWhatsAppRoutes, stopWhatsApp } from '../whatsapp/index'
 import bcrypt from 'bcryptjs'
 
@@ -64,7 +65,20 @@ export function initDb(path = getDefaultDbPath()): DatabaseSync {
   // Espera até 5s por lock em vez de falhar imediato (multi-PDV na mesma rede).
   db.exec('PRAGMA busy_timeout = 5000;')
   migrate(db)
+  limparBackupConfigLegado()
   return db
+}
+
+// Remoção da integração antiga (GitHub Pages): apaga o backup local da
+// configuração do catálogo, que armazenava o token do GitHub em texto puro.
+function limparBackupConfigLegado(): void {
+  try {
+    const arquivo = join(getDataDir(), 'catalogo_config_backup.json')
+    if (existsSync(arquivo)) {
+      rmSync(arquivo, { force: true })
+      registrarLog('INFO', 'Backup antigo da configuração do catálogo (token GitHub) removido')
+    }
+  } catch { /* ignore */ }
 }
 
 function migrate(database: DatabaseSync): void {
@@ -861,17 +875,9 @@ export function iniciarServidor(porta = 3210): void {
     res.json(getStatus())
   })
 
-  app.post('/api/catalogo/config', requerAdmin, (req, res) => {
-    const { github_token, github_repo, github_branch, site_url, nome_loja } = req.body ?? {}
-    // Se o token vier mascarado (••••••) ou vazio, preserva o token atual (não sobrescreve)
-    let token: string | undefined
-    if (typeof github_token === 'string' && github_token && !github_token.includes('•')) {
-      token = github_token
-    }
+app.post('/api/catalogo/config', requerAdmin, (req, res) => {
+    const { site_url, nome_loja } = req.body ?? {}
     const novo = salvarConfig({
-      github_token: token,
-      github_repo: typeof github_repo === 'string' ? github_repo : undefined,
-      github_branch: typeof github_branch === 'string' ? github_branch : undefined,
       site_url: typeof site_url === 'string' ? site_url : undefined,
       nome_loja: typeof nome_loja === 'string' ? nome_loja : undefined
     })
@@ -880,47 +886,14 @@ export function iniciarServidor(porta = 3210): void {
 
   app.get('/api/catalogo/config', (_req, res) => {
     const cfg = getConfig()
-    res.json({ github_token: cfg.github_token ? '••••••' : '', github_repo: cfg.github_repo, github_branch: cfg.github_branch, site_url: cfg.site_url, nome_loja: cfg.nome_loja })
-  })
-
-  app.post('/api/catalogo/sync', async (_req, res) => {
-    const r = await sincronizarAgora()
-    res.json(r)
-  })
-
-  app.post('/api/catalogo/testar', async (_req, res) => {
-    res.json(await testarConexao())
-  })
-
-  app.post('/api/catalogo/backup-config', requerAdmin, (_req, res) => {
-    const r = backupConfigCatalogo()
-    if (r.ok) {
-      registrarLog('SUCCESS', `Backup da configuração do catálogo salvo em ${r.arquivo}`)
-      res.json({ ok: true, arquivo: r.arquivo, data: r.data })
-    } else {
-      res.status(400).json({ ok: false, erro: 'Falha ao salvar o backup da configuração.' })
-    }
-  })
-
-  app.get('/api/catalogo/backup-config', (_req, res) => {
-    res.json(getBackupConfigCatalogo())
-  })
-
-  app.post('/api/catalogo/restaurar-backup-config', requerAdmin, (_req, res) => {
-    const r = restaurarBackupConfigCatalogo()
-    if (r.ok) {
-      registrarLog('SUCCESS', 'Configuração do catálogo restaurada do backup')
-      res.json({ ok: true, config: r.config })
-    } else {
-      res.status(400).json({ ok: false, erro: r.erro })
-    }
+    res.json({ site_url: cfg.site_url, nome_loja: cfg.nome_loja })
   })
 
   app.get('/api/catalogo/exibicao', (_req, res) => {
     res.json(getExibicao())
   })
 
-  app.post('/api/catalogo/exibicao', (req, res) => {
+app.post('/api/catalogo/exibicao', (req, res) => {
     const { mostrar_estoque, sem_estoque, aceitar_pedidos_sem_estoque, destacar_promocoes } = req.body ?? {}
     const salvo = salvarExibicao({
       mostrar_estoque: typeof mostrar_estoque === 'boolean' ? mostrar_estoque : undefined,
@@ -929,6 +902,13 @@ export function iniciarServidor(porta = 3210): void {
       destacar_promocoes: typeof destacar_promocoes === 'boolean' ? destacar_promocoes : undefined
     })
     res.json({ ok: true, exibicao: salvo })
+  })
+
+  // Catálogo público (somente leitura) — consumido futuramente pelo site externo.
+  // Fica DE FORA de ROTAS_PUBLICAS: nesta fase responde apenas para requisições
+  // locais; requisições remotas exigem sessão válida (mesmo middleware padrão).
+  app.get('/api/catalogo/publico', (_req, res) => {
+    res.json(gerarCatalogoPublico())
   })
 
   // Módulo Servidor
@@ -1013,11 +993,78 @@ export function iniciarServidor(porta = 3210): void {
     }
   })
 
-  app.post('/api/servidor/encerrar', requerAdmin, (_req, res) => {
+app.post('/api/servidor/encerrar', requerAdmin, (_req, res) => {
     res.json({ ok: true })
     setTimeout(() => {
       try { process.exit(0) } catch { /* ignore */ }
     }, 300)
+  })
+
+  // ---------- Importação / Migração Nex (auditoria; grava SÓ em homologação) ----------
+  // Reutiliza o pipeline de auditoria aprovado. Nenhuma rota aqui escreve em
+  // produção: a importação acontece dentro de um snapshot (homologacao/).
+  const validarArquivoNex = (req: express.Request) => {
+    const { arquivo } = req.body ?? {}
+    if (typeof arquivo !== 'string' || !arquivo) return null
+    return arquivo
+  }
+  const respondErroNex = (res: express.Response, err: Error) => {
+    const msg = err instanceof Error ? err.message : String(err)
+    if (/em andamento/i.test(msg)) res.status(409).json({ ok: false, erro: msg })
+    else res.status(400).json({ ok: false, erro: msg })
+  }
+
+  app.get('/api/nex/arquivos', somenteLocal, (_req, res) => {
+    const r = nexImportador.listarArquivos()
+    res.json({ ok: true, ...r })
+  })
+
+  app.get('/api/nex/estado', somenteLocal, (_req, res) => {
+    res.json({ ok: true, progresso: nexImportador.getProgresso(), ocupado: nexImportador.estaOcupado(), preparado: nexImportador.getPreparado() })
+  })
+
+  app.post('/api/nex/progresso', somenteLocal, (_req, res) => {
+    res.json({ ok: true, ...nexImportador.getProgresso() })
+  })
+
+  app.post('/api/nex/analisar', somenteLocal, (req, res) => {
+    const arquivo = validarArquivoNex(req)
+    if (!arquivo) { res.status(400).json({ ok: false, erro: 'Arquivo obrigatório.' }); return }
+    nexImportador.analisar(arquivo).then((r) => res.json({ ok: true, ...r })).catch((err: Error) => respondErroNex(res, err))
+  })
+
+  app.post('/api/nex/preparar', somenteLocal, (req, res) => {
+    const reusar = req.body?.reusar === true
+    nexImportador.preparar({ reusar }).then((r) => {
+      registrarLog('INFO', `Nex: base preparada em ${r.snapshotDir} (${r.recon ? JSON.stringify((r.recon as { vendasNX?: number }).vendasNX ?? '') : ''} vendas NX)`)
+      res.json({ ok: true, ...r })
+    }).catch((err: Error) => respondErroNex(res, err))
+  })
+
+  app.post('/api/nex/preview', somenteLocal, (req, res) => {
+    const arquivo = validarArquivoNex(req)
+    if (!arquivo) { res.status(400).json({ ok: false, erro: 'Arquivo obrigatório.' }); return }
+    const confiancaMin = req.body?.confiancaMin === 'ALTA CONFIANÇA' ? 'ALTA CONFIANÇA' as const : 'EXATA' as const
+    nexImportador.preview(arquivo, confiancaMin).then((r) => res.json({ ok: true, ...r })).catch((err: Error) => respondErroNex(res, err))
+  })
+
+  app.post('/api/nex/importar', somenteLocal, (req, res) => {
+    const arquivo = validarArquivoNex(req)
+    if (!arquivo) { res.status(400).json({ ok: false, erro: 'Arquivo obrigatório.' }); return }
+    const confiancaMin = req.body?.confiancaMin === 'ALTA CONFIANÇA' ? 'ALTA CONFIANÇA' as const : 'EXATA' as const
+    nexImportador.importar(arquivo, confiancaMin).then((r) => {
+      registrarLog('INFO', `Nex: importação homolog em ${r.snapshotDir} — inseridas ${r.resultado.inseridas}, duplicadas ${r.resultado.duplicadas}, caso-C ${r.resultado.naoImportadasCasoC}, ambíguas ${r.resultado.ambiguas}, sem correlação ${r.resultado.semCorrelacao}`)
+      res.json({ ok: true, ...r })
+    }).catch((err: Error) => respondErroNex(res, err))
+  })
+
+  app.get('/api/nex/historico', somenteLocal, (_req, res) => {
+    res.json({ ok: true, snapshots: nexImportador.historico() })
+  })
+
+  app.post('/api/nex/liberar', somenteLocal, (_req, res) => {
+    nexImportador.liberar()
+    res.json({ ok: true })
   })
 
   // ---------- Estoque (movimentações e inventário) ----------
@@ -1646,34 +1693,65 @@ export function iniciarServidor(porta = 3210): void {
     res.json({ ok: true })
   })
 
-  app.post('/api/importar/nex', express.raw({ type: 'application/octet-stream', limit: '600mb' }), async (req, res) => {
+// Grava o corpo (ZIP de até GBs) diretamente num arquivo temporário — nunca o
+  // deixa inteiro na memória (um Dados.zip de 757MB + os .nx1 descomprimidos
+  // travaram o servidor em máquinas sem RAM). O nome é único por upload.
+  const gravarBodyEmTemp = (req: express.Request): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const dir = getImportDir()
+      mkdirSync(dir, { recursive: true })
+      const tmp = join(dir, `upload-nex-${Date.now()}-${Math.random().toString(36).slice(2)}.zip`)
+      const ws = createWriteStream(tmp)
+      req.pipe(ws)
+      ws.on('finish', () => resolve(tmp))
+      ws.on('error', reject)
+      req.on('error', reject)
+    })
+
+  app.post('/api/importar/nex', async (req, res) => {
     const nome = (() => {
       try { return decodeURIComponent(req.get('x-zip-nome') || 'backup.zip') } catch { return req.get('x-zip-nome') || 'backup.zip' }
     })()
-    const buffer = Buffer.isBuffer(req.body) ? req.body : null
-    if (!buffer || buffer.length === 0) {
-      res.status(400).json({ ok: false, erro: 'Arquivo ZIP obrigatório.' })
-      return
+    let tmp: string | null = null
+    try {
+      tmp = await gravarBodyEmTemp(req)
+      if ((statSync(tmp)?.size ?? 0) === 0) {
+        res.status(400).json({ ok: false, erro: 'Arquivo ZIP obrigatório.' })
+        return
+      }
+      const r = await importarNexDeZip(tmp, nome)
+      res.json(r)
+    } catch (err) {
+      registrarLog('ERROR', `Falha ao receber ZIP Nex: ${(err as Error).message}`)
+      res.status(500).json({ ok: false, erro: (err as Error).message })
+    } finally {
+      if (tmp) { try { rmSync(tmp, { force: true }) } catch { /* ignora */ } }
     }
-    const r = await importarNex(buffer, nome)
-    res.json(r)
   })
 
   app.get('/api/importar/nex/progresso', (_req, res) => {
     res.json({ ok: true, ...getProgressoNex() })
   })
 
-  app.post('/api/importar/nex/analisar', express.raw({ type: 'application/octet-stream', limit: '600mb' }), async (req, res) => {
+app.post('/api/importar/nex/analisar', async (req, res) => {
     const nome = (() => {
       try { return decodeURIComponent(req.get('x-zip-nome') || 'backup.zip') } catch { return req.get('x-zip-nome') || 'backup.zip' }
     })()
-    const buffer = Buffer.isBuffer(req.body) ? req.body : null
-    if (!buffer || buffer.length === 0) {
-      res.status(400).json({ ok: false, erro: 'Arquivo ZIP obrigatório.' })
-      return
+    let tmp: string | null = null
+    try {
+      tmp = await gravarBodyEmTemp(req)
+      if ((statSync(tmp)?.size ?? 0) === 0) {
+        res.status(400).json({ ok: false, erro: 'Arquivo ZIP obrigatório.' })
+        return
+      }
+      const r = await analisarNexDeZip(tmp, nome)
+      res.json(r)
+    } catch (err) {
+      registrarLog('ERROR', `Falha ao receber ZIP Nex: ${(err as Error).message}`)
+      res.status(500).json({ ok: false, erro: (err as Error).message })
+    } finally {
+      if (tmp) { try { rmSync(tmp, { force: true }) } catch { /* ignora */ } }
     }
-    const r = await analisarNex(buffer, nome)
-    res.json(r)
   })
 
   // ---------- WhatsApp Bot ----------
@@ -1700,8 +1778,7 @@ export function iniciarServidor(porta = 3210): void {
       registrarLog('SUCCESS', `Servidor iniciado na porta ${p}`)
       registrarLog('INFO', `Banco conectado`)
       registrarLog('SUCCESS', `API iniciada em http://${ip}:${p}`)
-      console.log(`[servidor] API em http://${ip}:${p} (local: http://localhost:${p})`)
-      dispararSyncAutomatica()
+console.log(`[servidor] API em http://${ip}:${p} (local: http://localhost:${p})`)
       agendarBackupAutomatico()
     })
   }
@@ -1711,10 +1788,7 @@ export function iniciarServidor(porta = 3210): void {
   tentarPorta(gravada || porta)
 }
 
-let syncJaDisparada = false
-
 // Backup automático: primeiro em ~2 min de uptime, depois a cada 4 horas.
-// Usa a mesma rotina/retenção do backup manual (MAX_BACKUPS=30).
 let backupAgendado = false
 function agendarBackupAutomatico(): void {
   if (backupAgendado) return
@@ -1736,51 +1810,6 @@ function agendarBackupAutomatico(): void {
       else registrarLog('ERROR', `Backup automático falhou: ${r.arquivo}`)
     } catch (err) {
       console.error('[servidor] Erro no backup automático:', (err as Error).message)
-    }
-  }, INTERVALO_MS)
-}
-
-async function dispararSyncAutomatica(): Promise<void> {
-  if (syncJaDisparada) return
-  syncJaDisparada = true
-  try {
-    const cfg = getConfig()
-    if (!cfg.github_token || !cfg.github_repo) {
-      console.log('[catalogo] Não configurado — sincronização automática ignorada.')
-    } else {
-      const online = await temInternet()
-      if (!online) {
-        console.log('[catalogo] Sem internet no boot — sincronização ficará pendente.')
-      } else {
-        console.log('[catalogo] Internet OK — sincronizando catálogo...')
-        const r = await sincronizarAgora()
-        if (r.ok) registrarLog('SUCCESS', 'Catálogo sincronizado com sucesso')
-        else registrarLog('ERROR', `Falha na sincronização: ${r.erro}`)
-        console.log(r.ok ? '[catalogo] Sincronizado com sucesso.' : `[catalogo] Falha: ${r.erro}`)
-      }
-    }
-  } catch (err) {
-    console.error('[catalogo] Erro na sincronização automática:', (err as Error).message)
-  }
-  agendarSyncPeriodica()
-}
-
-// Sincroniza automaticamente a cada intervalo se houver alterações pendentes.
-// Mantém o catálogo online atualizado sem depender do cliente chamar sync manual.
-function agendarSyncPeriodica(): void {
-  const INTERVALO_MS = 2 * 60 * 1000
-  setInterval(async () => {
-    try {
-      const cfg = getConfig()
-      if (!cfg.github_token || !cfg.github_repo) return
-      const pendentes = (getDb().prepare(`SELECT COUNT(*) AS c FROM catalogo_fila`).get() as { c: number }).c
-      if (pendentes === 0) return
-      console.log(`[catalogo] ${pendentes} alteração(ões) pendente(s) — sincronizando...`)
-      const r = await sincronizarAgora()
-      if (r.ok) registrarLog('SUCCESS', `Catálogo sincronizado automaticamente (${pendentes} pendente(s))`)
-      else registrarLog('ERROR', `Sincronização automática falhou: ${r.erro}`)
-    } catch (err) {
-      console.error('[catalogo] Erro na sincronização periódica:', (err as Error).message)
     }
   }, INTERVALO_MS)
 }

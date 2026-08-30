@@ -1,0 +1,24 @@
+{
+  "name": "catalogo-worker",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-08-29",
+  "assets": {
+    "directory": "./site",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*", "/proxy*", "/fetch*"]
+  },
+  "observability": {
+    "enabled": false
+  },
+  "vars": {
+    "CATALOGO_BACKEND_MODE": "mock",
+    "CATALOGO_CORS_ORIGEM": "https://catalogo-shishastore.pages.dev"
+  },
+  "vpc_services": [
+    {
+      "binding": "CATALOGO_API",
+      "service_id": "01a04ef4-c045-7a61-a979-eee35d017c67",
+      "remote": true
+    }
+  ]
+}

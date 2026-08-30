@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { getDbApi, getCatalogoApi } from '../../../shared/db'
+import { getDbApi } from '../../../shared/db'
 
 export interface DadosLoja {
   nome: string
@@ -34,9 +34,7 @@ export default function LojaModal({
       await gravar('telefone_loja', form.telefone.trim())
       await gravar('endereco_loja', form.endereco.trim())
       await gravar('horario_funcionamento', form.horario.trim())
-      const r = await getCatalogoApi().sync()
       onSalvar({ ...form, nome: form.nome.trim(), telefone: form.telefone.trim(), endereco: form.endereco.trim(), horario: form.horario.trim() })
-      if (!r.ok) alert(`Dados salvos, mas a publicação falhou: ${r.erro}`)
     } finally {
       setOcupado(false)
     }
@@ -79,7 +77,7 @@ export default function LojaModal({
 
         <div className="modal-acoes">
           <button className="btn-secundario" onClick={onFechar}>Cancelar</button>
-          <button className="btn-primario" onClick={salvar} disabled={ocupado}>Salvar e publicar</button>
+          <button className="btn-primario" onClick={salvar} disabled={ocupado}>Salvar</button>
         </div>
       </div>
     </div>

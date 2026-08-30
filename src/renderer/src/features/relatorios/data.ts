@@ -214,7 +214,7 @@ export async function carregarCaixasAnteriores(): Promise<{
     `SELECT c.id, c.aberto_em, c.fechado_em, c.total_vendas, c.qtd_vendas, c.saldo_inicial, c.total_sangrias, c.total_suprimentos,
             u.nome AS usuario_nome
      FROM caixas c LEFT JOIN usuarios u ON u.id = c.usuario_id
-     WHERE c.aberto = 0 ORDER BY c.id DESC LIMIT 30`
+     WHERE c.aberto = 0 ORDER BY COALESCE(c.aberto_em, c.fechado_em, '') DESC, c.id DESC LIMIT 30`
   )) as unknown as { id: number; aberto_em: string; fechado_em: string | null; total_vendas: number; qtd_vendas: number; saldo_inicial: number; total_sangrias: number; total_suprimentos: number; usuario_nome: string | null }[]
   return rows.map((r) => ({
     id: r.id,
