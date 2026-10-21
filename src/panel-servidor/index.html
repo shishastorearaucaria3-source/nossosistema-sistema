@@ -110,6 +110,28 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 .msg.visivel{opacity:1}
 .msg.ok{border-color:var(--green);color:var(--green)}
 .msg.erro{border-color:var(--red);color:var(--red)}
+/* Configuração do Supabase (Catálogo Online) */
+.conexoes{margin-top:14px;display:flex;flex-direction:column;gap:12px}
+.conexao{display:flex;flex-direction:column;gap:10px;padding:14px;border:1px solid var(--line);border-radius:10px;background:var(--card2)}
+.conexao-topo{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.conexao-titulo{display:flex;gap:8px;align-items:center;font-weight:700;font-size:14px;min-width:0}
+.conexao-badge{font-size:11px;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.conexao-badge.ativa{background:rgba(34,197,94,.2);color:var(--green)}
+.conexao-badge.inativa{background:rgba(148,163,184,.2);color:var(--muted)}
+.conexao-campos{display:flex;flex-direction:column;gap:8px}
+.fld.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fld input{width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--text);font-size:13px;font-family:inherit}
+.fld input:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(34,197,94,.12);outline:none}
+.conexao-acoes{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.conexao-acoes button{padding:7px 14px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--text);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+.conexao-acoes button:hover{background:#475569}
+.conexao-acoes button.primario{background:var(--green);border-color:var(--green);color:#052e16}
+.conexao-acoes button.primario:hover{background:#16a34a}
+.conexao-acoes button.perigo{background:var(--red);border-color:var(--red);color:#fff}
+.conexao-acoes button.perigo:hover{background:#dc2626}
+.ativa-radio{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--muted);cursor:pointer}
+.ativa-radio input{accent-color:var(--green)}
+.aviso-credenciais{font-size:12px;padding:10px 12px;border-radius:8px;background:rgba(245,158,11,.12);border:1px solid #92400e;color:var(--amber);line-height:1.5}
 </style>
 </head>
 <body>
@@ -130,6 +152,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
     <div class="menu-titulo">Sistema</div>
     <button class="menu-item" data-tela="info"><span class="ico">ℹ️</span> Informações</button>
     <button class="menu-item" data-tela="logs"><span class="ico">📄</span> Logs</button>
+    <button class="menu-item" data-tela="catalogo"><span class="ico">🌐</span> Catálogo Online</button>
   </nav>
   <div class="sidebar-rodape">
     <div class="status">
@@ -183,7 +206,7 @@ function fecharModal(){ document.getElementById('modalOverlay').style.display='n
 function navegar(tela){
   telaAtual=tela
   document.querySelectorAll('.menu-item').forEach(b=>b.classList.toggle('ativa', b.dataset.tela===tela))
-  const nomes={suporte:'Suporte',backup:'Copiar (Backup)',restaurar:'Restaurar',corrigir:'Corrigir',zerar:'Zerar',importar:'Importar Dados',nex:'Importação / Migração Nex',info:'Informações do Sistema',logs:'Log do Servidor'}
+  const nomes={suporte:'Suporte',backup:'Copiar (Backup)',restaurar:'Restaurar',corrigir:'Corrigir',zerar:'Zerar',importar:'Importar Dados',nex:'Importação / Migração Nex',info:'Informações do Sistema',logs:'Log do Servidor',catalogo:'Catálogo Online'}
   document.getElementById('tituloTela').textContent=nomes[tela]||'Servidor'
   renderizar()
 }
@@ -203,9 +226,178 @@ function renderizar(){
   else if(telaAtual==='zerar') renderZerar(c)
   else if(telaAtual==='info') renderInfo(c)
   else if(telaAtual==='logs') renderLogs(c)
+  else if(telaAtual==='catalogo') renderCatalogo(c)
   else if(telaAtual==='importar') renderImportar(c)
   else if(telaAtual==='nex') renderNex(c)
   else renderSuporte(c)
+}
+
+function renderCatalogo(c){
+  c.innerHTML='<div class="secao"><h3>Catálogo Online</h3>'+
+    '<p style="font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:14px">Configure as conexões do Supabase usadas para sincronizar o catálogo e importar os pedidos online. Salve as conexões neste painel — elas ficam persistidas e podem ser recuperadas/editadas aqui sempre que precisar, mesmo que o arquivo de ambiente seja perdido.</p>'+
+    '<div id="avisoConexoes" class="aviso-credenciais" style="margin-bottom:12px;display:none"></div>'+
+    '<div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;margin-bottom:14px">'+
+      '<button class="primario" onclick="adicionarConexao()" style="padding:10px 18px;border-radius:8px;border:none;background:var(--green);color:#052e16;font-size:13px;font-weight:700;cursor:pointer">+ Nova conexão</button>'+
+      '<button onclick="salvarConexoes()" style="padding:10px 18px;border-radius:8px;border:1px solid var(--line);background:var(--card2);color:var(--text);font-size:13px;font-weight:700;cursor:pointer">Salvar configuração</button>'+
+      '<button onclick="carregarConexoes(true)" style="padding:10px 18px;border-radius:8px;border:1px solid var(--line);background:var(--card2);color:var(--text);font-size:13px;font-weight:600;cursor:pointer">Recarregar</button>'+
+    '</div>'+
+    '<div id="catConexoes" style="font-size:13px;color:var(--muted)">Carregando conexões...</div>'+
+    '<div class="acao" style="margin-top:18px"><div class="info"><strong>Conexão do catálogo</strong>'+
+    '<span id="releStatus" style="font-size:12px;color:var(--muted)">Verificando...</span></div>'+
+    '<button class="primario" onclick="repararCatalogo(this)">Reparar conexão</button></div></div>'
+  carregarConexoes()
+}
+
+function statusConexoesPorFonte(){
+  return fetch(baseUrl+'/api/catalogo/conexao').then(r=>r.json()).then(d=>{
+    return (d.ok&&(d.token_relay_configurado||d.token_sync_configurado))
+  }).catch(()=>false)
+}
+
+function atualizarStatusCatalogo(){
+  const s=document.getElementById('releStatus')
+  if(!s) return
+  Promise.all([statusConexoesPorFonte()]).then(([conectado])=>{
+    s.textContent=(conectado?'Conectado.':'Não conectado.')
+    const aviso=document.getElementById('avisoConexoes')
+    const ativa=catConexoes.find(x=>x.ativa)||null
+    const semChave=catConexoes.length===0
+    if(aviso){
+      if(ativa&&(!ativa.url||!ativa.serviceRoleKey||!ativa.empresaId)){
+        aviso.style.display='block'
+        aviso.innerHTML='⚠ A conexão ativa está incompleta. Preencha URL, Service Role Key e ID da Empresa e clique em <strong>Salvar configuração</strong>.'
+      }else if(semChave){
+        aviso.style.display='block'
+        aviso.innerHTML='⚠ Nenhuma conexão do Supabase salva. Adicione uma conexão e clique em <strong>Salvar configuração</strong>, ou use as variáveis de ambiente do sistema.'
+      }else{
+        aviso.style.display='none'
+      }
+    }
+  }).catch(()=>{ if(s) s.textContent='Não conectado.' })
+}
+
+let catConexoes=[]
+
+function gerarIdConexao(){ return 'c'+Date.now().toString(36)+Math.random().toString(36).slice(2,7) }
+
+function novaConexaoPadrao(){
+  return { id:gerarIdConexao(), rotulo:'', url:'', serviceRoleKey:'', empresaId:'', ativa:catConexoes.length===0 }
+}
+
+function carregarConexoes(silencioso){
+  const el=document.getElementById('catConexoes')
+  if(!el) return
+  if(!silencioso) el.textContent='Carregando conexões...'
+  fetch(baseUrl+'/api/catalogo/supabase/conexoes').then(r=>{
+    if(!r.ok) throw new Error('HTTP '+r.status)
+    return r.json()
+  }).then(d=>{
+    catConexoes=(d.conexoes||[]).slice()
+    renderConexoes()
+    atualizarStatusCatalogo()
+  }).catch(()=>{
+    el.innerHTML='<div style="font-size:13px;color:var(--red)">Não foi possível carregar as conexões.'+(silencioso?'':' Tente novamente.')+'</div>'
+  })
+}
+
+function renderConexoes(){
+  const el=document.getElementById('catConexoes')
+  if(!el) return
+  if(catConexoes.length===0){
+    el.innerHTML='<div style="font-size:13px;color:var(--muted)">Nenhuma conexão salva. Clique em <strong>+ Nova conexão</strong> para começar.</div>'
+    return
+  }
+  el.innerHTML=catConexoes.map((cx,i)=>renderConexaoCard(cx,i)).join('')
+}
+
+function renderConexaoCard(cx,i){
+  return '<div class="conexao">'+
+    '<div class="conexao-topo">'+
+      '<div class="conexao-titulo">'+(cx.rotulo||'Conexão')+' <span class="conexao-badge '+(cx.ativa?'ativa':'inativa')+'">'+(cx.ativa?'ATIVA':'INATIVA')+'</span></div>'+
+      '<div class="conexao-acoes">'+
+        '<label class="ativa-radio"><input type="radio" name="conexaoAtiva" onchange="marcarAtiva(\''+cx.id+'\')" '+(cx.ativa?'checked':'')+'> Usar como ativa</label>'+
+        '<button class="perigo" onclick="removerConexao(\''+cx.id+'\')">Excluir</button>'+
+      '</div>'+
+    '</div>'+
+    '<div class="conexao-campos">'+
+      '<div class="fld"><label>Rótulo (ex.: Loja Principal)</label><input value="'+esc(cx.rotulo)+'" oninput="editarConexao(\''+cx.id+'\',\'rotulo\',this.value)" placeholder="Rótulo da conexão"/></div>'+
+      '<div class="fld"><label>URL do Supabase</label><input value="'+esc(cx.url)+'" oninput="editarConexao(\''+cx.id+'\',\'url\',this.value)" placeholder="https://SEU-PROJETO.supabase.co"/></div>'+
+      '<div class="fld"><label>Service Role Key</label><input type="password" value="'+esc(cx.serviceRoleKey)+'" oninput="editarConexao(\''+cx.id+'\',\'serviceRoleKey\',this.value)" placeholder="eyJhbGciOi..."/></div>'+
+      '<div class="fld"><label>ID da Empresa (uuid)</label><input value="'+esc(cx.empresaId)+'" oninput="editarConexao(\''+cx.id+'\',\'empresaId\',this.value)" placeholder="ED0BF7DE-1E2C-4C7A-9F83-4D22B1C9E638"/></div>'+
+    '</div>'+
+  '</div>'
+}
+
+function editarConexao(id,campo,valor){
+  const cx=catConexoes.find(x=>x.id===id)
+  if(cx) cx[campo]=valor
+}
+
+function marcarAtiva(id){
+  for(const cx of catConexoes){ cx.ativa=(cx.id===id) }
+  renderConexoes()
+  atualizarStatusCatalogo()
+}
+
+function adicionarConexao(){
+  const cx=novaConexaoPadrao()
+  catConexoes.push(cx)
+  renderConexoes()
+  atualizarStatusCatalogo()
+}
+
+function removerConexao(id){
+  if(!confirm('Excluir esta conexão? A alteração só é salva ao clicar em "Salvar configuração".')) return
+  catConexoes=catConexoes.filter(x=>x.id!==id)
+  if(catConexoes.length>0&&!catConexoes.some(x=>x.ativa)) catConexoes[0].ativa=true
+  renderConexoes()
+  atualizarStatusCatalogo()
+}
+
+async function salvarConexoes(){
+  // validações mínimas
+  const invalidas=catConexoes.filter(x=>(!x.url)||(!x.serviceRoleKey)||(!x.empresaId))
+  if(catConexoes.length>0&&invalidas.length===catConexoes.length){
+    mostrarMsg('Preencha pelo menos uma conexão completa (URL, chave e empresa) antes de salvar.',false)
+    return
+  }
+  if(catConexoes.some(x=>x.ativa&&(!x.url||!x.serviceRoleKey||!x.empresaId))){
+    mostrarMsg('A conexão ativa está incompleta. Preencha os campos dela ou marque outra como ativa.',false)
+    return
+  }
+  try{
+    const r=await api('/api/catalogo/supabase/conexoes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({conexoes:catConexoes})})
+    if(r.ok){
+      catConexoes=(r.conexoes||[]).slice()
+      renderConexoes()
+      mostrarMsg('Configuração do Supabase salva com sucesso.',true)
+    }else{
+      mostrarMsg('Falha ao salvar a configuração.',false)
+    }
+  }catch(e){
+    mostrarMsg('Erro ao salvar: '+e.message,false)
+  }
+  atualizarStatusCatalogo()
+}
+
+function repararCatalogo(btn){
+  if(btn){ btn.disabled=true; btn.textContent='Conectando...' }
+  const s=document.getElementById('releStatus')
+  if(s) s.textContent='Conectando...'
+  fetch(baseUrl+'/api/catalogo/repair',{method:'POST'}).then(r=>r.json()).then(d=>{
+    if(d.ok){
+      if(s) s.textContent='Conectado.'
+      mostrarMsg('Catálogo conectado e atualizado com sucesso.',true)
+    }else{
+      if(s) s.textContent='Não conectado.'
+      mostrarMsg('Não foi possível conectar ao catálogo online agora. Tente novamente em instantes.',false)
+    }
+  }).catch(()=>{
+    if(s) s.textContent='Não conectado.'
+    mostrarMsg('Não foi possível conectar ao catálogo online agora. Tente novamente em instantes.',false)
+  }).finally(()=>{
+    if(btn){ btn.disabled=false; btn.textContent='Reparar conexão' }
+  })
 }
 
 function renderSuporte(c){
@@ -252,6 +444,8 @@ function renderImportar(c){
     '<input type="file" id="nexArquivo" accept=".zip" style="display:none" onchange="enviarNex(this)"><button class="primario" onclick="document.getElementById(\'nexArquivo\').click()">Selecionar ZIP Nex</button></div>'+
     '<div class="acao"><div class="info"><strong>Analisar Backup Nex</strong><span>Verifica as estruturas encontradas no ZIP sem importar nada (dry-run)</span></div>'+
     '<input type="file" id="nexAnalise" accept=".zip" style="display:none" onchange="analisarNexFile(this)"><button onclick="document.getElementById(\'nexAnalise\').click()" style="padding:8px 14px;border-radius:8px;border:1px solid var(--line);background:var(--card2);color:var(--text);font-size:12px;cursor:pointer;font-family:inherit">Analisar ZIP</button></div>'+
+    '<div class="acao"><div class="info"><strong>Importar arquivo .nx1 individual</strong><span>Importe UMA tabela do Nex por vez, sem ZIP — ex.: Tran.nx1 (vendas), MovEst.nx1 (itens), Produto.nx1, catalogo_json.nx1, Categoria.nx1, Cliente.nx1</span></div>'+
+    '<input type="file" id="nexArquivoAvulso" accept=".nx1,.nx" style="display:none" onchange="enviarNexArquivo(this)"><button class="primario" onclick="document.getElementById(\'nexArquivoAvulso\').click()">Selecionar arquivo .nx1</button></div>'+
     '<div class="acao"><div class="info"><strong>Enviar arquivo ZIP</strong><span>Selecione um .zip com as planilhas de produtos dentro</span></div>'+
     '<input type="file" id="impArquivo" accept=".zip" style="display:none" onchange="enviarZip(this)"><button class="primario" onclick="document.getElementById(\'impArquivo\').click()">Selecionar ZIP</button></div></div>'+
     '<div id="impStatus" style="margin-top:14px;font-size:13px;color:var(--muted)">Nenhum arquivo enviado ainda.</div>'+
@@ -301,6 +495,34 @@ function iniciarPollingNex(){
       mostrarProgresso(d)
     }catch{}
   },400)
+}
+
+async function enviarNexArquivo(input){
+  const arquivo=input.files&&input.files[0]
+  if(!arquivo) return
+  const st=document.getElementById('impStatus')
+  if(st) st.textContent='Enviando arquivo Nex '+arquivo.name+' ('+fmtBytes(arquivo.size)+')...'
+  const ini=Date.now()
+  try{
+    const d=await enviaArquivo('/api/importar/nex/arquivo', arquivo, arquivo.name,
+      (l,t)=>mostrarBarraUpload('Enviando '+arquivo.name+'... '+fmtBytes(l)+' de '+fmtBytes(t),l,t,ini),
+      ()=>iniciarPollingNex())
+    mostrarProgresso({ativo:false})
+    if(d.ok&&d.resumo){
+      if(st) st.innerHTML='<span style="color:var(--green)">✅ '+esc(arquivo.name)+' importado: '+d.resumo.produtosCriados+' produto(s) criado(s), '+d.resumo.produtosAtualizados+' atualizado(s), '+d.resumo.vendasCriadas+' venda(s), '+d.resumo.itensImportados+' item(ns), '+d.resumo.clientesCriados+' cliente(s)</span>'
+      if(d.erros&&d.erros.length) mostrarMsg(d.erros.length+' erro(s) na importação (verifique o log)',false)
+      else mostrarMsg(arquivo.name+' importado com sucesso!',true)
+    }else{
+      if(st) st.innerHTML='<span style="color:var(--red)">Erro: '+esc(d.erro||'Falha na importação')+'</span>'
+    }
+    input.value=''
+  }catch(e){
+    mostrarProgresso({ativo:false})
+    if(st) st.innerHTML='<span style="color:var(--red)">Erro ao enviar: '+esc(e.message)+'</span>'
+  }finally{
+    pararPollingNex()
+    pararPollingProgresso()
+  }
 }
 
 async function analisarNexFile(input){
@@ -680,7 +902,7 @@ async function apiNex(path, opts){
 
 function renderNex(c){
   c.innerHTML='<div class="secao"><h3>Importação / Migração Nex</h3>'+
-    '<p style="font-size:13px;color:var(--muted);margin-bottom:14px">Importa vendas do backup do Nex para uma cópia de homologação. <strong>Nenhum dado de produção é alterado.</strong> Fluxo: Selecionar arquivo → Analisar → Preparar base → Pré-visualizar → Importar.</p>'+
+    '<p style="font-size:13px;color:var(--muted);margin-bottom:14px">Selecione o arquivo de vendas exportado do Nex (.xls/.xlsx) e clique em <strong>Importar agora</strong>. Os dados são gravados em uma cópia de homologação — <strong>nenhum dado de produção é alterado</strong>. A base (snapshot + índices NX) é preparada automaticamente.</p>'+
     '<div id="nexEstado" style="margin-bottom:14px"></div>'+
     '<div id="nexProgresso" style="display:none;margin-bottom:14px">'+
       '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:6px"><span id="nexProgMsg">...</span><span id="nexProgTempo">0s</span></div>'+
@@ -690,27 +912,20 @@ function renderNex(c){
       '<div class="item"><span>Arquivo .xls/.xlsx</span><strong id="nexArqInfo">carregando...</strong></div>'+
       '<div class="item"><span>Pasta</span><strong id="nexDirInfo">—</strong></div>'+
     '</div>'+
-    '<div class="fld" style="margin-bottom:8px"><label>1. Selecionar arquivo exportado do Nex (vendas)</label></div>'+
     '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">'+
       '<select id="nexArquivoSel" style="flex:1;min-width:220px;padding:9px 10px;border-radius:8px;border:1px solid var(--line);background:var(--card2);color:var(--text);font-size:13px;font-family:inherit">'+
-        '<option value="">Selecione o arquivo...</option>'+
+        '<option value="">Selecione o arquivo de vendas...</option>'+
       '</select>'+
       '<button onclick="carregarArquivosNex(false)" style="padding:8px 12px;border-radius:8px;border:1px solid var(--line);background:var(--card2);color:var(--text);font-size:12px;cursor:pointer;font-family:inherit">Atualizar lista</button>'+
-      '<button class="primario" onclick="analisarNex()" style="padding:9px 18px;border-radius:8px;border:none;background:var(--green);color:#052e16;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">2. Analisar</button>'+
     '</div>'+
-    '<div id="nexAnalise" style="margin-top:14px"></div>'+
-    '<div style="margin-top:14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">'+
-      '<button class="primario" onclick="prepararNex()" style="padding:9px 18px;border-radius:8px;border:none;background:var(--green);color:#052e16;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">3. Preparar base (snapshot + índices NX)</button>'+
-      '<label style="display:flex;gap:6px;align-items:center;font-size:12px;color:var(--muted)"><input type="checkbox" id="nexReusar" checked> reutilizar snapshot mais recente</label>'+
-    '</div>'+
-    '<div id="nexPreparado" style="margin-top:14px"></div>'+
     '<div style="margin-top:14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">'+
       '<select id="nexConfianca" style="padding:9px 10px;border-radius:8px;border:1px solid var(--line);background:var(--card2);color:var(--text);font-size:13px;font-family:inherit">'+
         '<option value="EXATA">Somente EXATA (recomendado)</option>'+
         '<option value="ALTA CONFIANÇA">EXATA + ALTA CONFIANÇA</option>'+
       '</select>'+
-      '<button onclick="previewNex()" style="padding:9px 18px;border-radius:8px;border:1px solid var(--line);background:var(--card2);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">4. Pré-visualizar</button>'+
-      '<button class="perigo" onclick="importarNex()" style="padding:9px 18px;border-radius:8px;border:none;background:var(--red);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">5. Importar p/ homologação</button>'+
+      '<button onclick="previewNex()" style="padding:9px 18px;border-radius:8px;border:1px solid var(--line);background:var(--card2);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">Ver prévia</button>'+
+      '<button class="perigo" onclick="importarNex()" style="padding:11px 24px;border-radius:8px;border:none;background:var(--red);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">Importar agora</button>'+
+      '<label style="display:flex;gap:6px;align-items:center;font-size:12px;color:var(--muted)"><input type="checkbox" id="nexBaseNova"> criar nova base (ignorar importações anteriores)</label>'+
     '</div>'+
     '<div id="nexPreview" style="margin-top:14px"></div>'+
     '<div id="nexResultado" style="margin-top:14px"></div>'+
@@ -798,43 +1013,6 @@ function arquivoDoSelect(){
   return caminho
 }
 
-async function analisarNex(){
-  const arquivo=arquivoDoSelect()
-  if(!arquivo) return
-  const d=await guardaNex(async ()=>apiNex('/api/nex/analisar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({arquivo})}))
-  if(!d) return
-  const area=document.getElementById('nexAnalise')
-  const mapLinha=d.mapeamento.filter(x=>x.coluna).map(x=>'<div class="item"><span>'+esc(x.campo)+'</span><strong>'+esc(x.coluna)+'</strong></div>').join('')
-  area.innerHTML='<div class="secao" style="background:var(--card2)"><h3 style="font-size:14px">Análise: '+esc(d.arquivo.split(/[\\/]/).pop())+'</h3>'+
-    '<div class="cards" style="margin-bottom:12px">'+
-      '<div class="card"><div class="titulo">Tipo identificado</div><div class="valor" style="font-size:14px">'+esc(d.tipo.tipo)+'</div><div class="sub">'+(d.tipo.motivo||[]).map(esc).join(' · ')+'</div></div>'+
-      '<div class="card"><div class="titulo">Vendas</div><div class="valor">'+d.vendas+'</div><div class="sub">'+d.outras+' outras linhas</div></div>'+
-      '<div class="card"><div class="titulo">Inválidas</div><div class="valor '+(d.invalidas?'erro':'ok')+'">'+d.invalidas+'</div></div>'+
-      '<div class="card"><div class="titulo">Duplicadas (no arquivo)</div><div class="valor '+(d.duplicadas?'warn':'ok')+'">'+d.duplicadas+'</div></div>'+
-      '<div class="card"><div class="titulo">Soma Total Final</div><div class="valor">R$ '+fmtMoeda(d.somaTotal)+'</div></div>'+
-      '<div class="card"><div class="titulo">Soma Valor Pago</div><div class="valor">R$ '+fmtMoeda(d.somaPago)+'</div></div>'+
-    '</div>'+
-    '<div class="grid-info" style="grid-template-columns:1fr">'+mapLinha+'</div>'+
-    '<div style="font-size:12px;color:var(--muted);margin-top:10px">'+d.linhas+' linha(s) no livro, '+d.sheets+' planilha(s).</div></div>'
-}
-
-async function prepararNex(){
-  const reusar=document.getElementById('nexReusar')&&document.getElementById('nexReusar').checked
-  const d=await guardaNex(async ()=>apiNex('/api/nex/preparar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({reusar})}))
-  if(!d) return
-  const area=document.getElementById('nexPreparado')
-  const porAno=Object.entries(d.recon&&d.recon.porAno||{}).map(([k,v])=>k+'='+v).join(', ')
-  area.innerHTML='<div class="secao" style="background:var(--card2);border-color:var(--green)"><h3 style="font-size:14px;color:var(--green)">Base preparada</h3>'+
-    '<div class="grid-info" style="grid-template-columns:1fr 1fr">'+
-      '<div class="item"><span>Snapshot de homologação</span><strong>'+esc(d.snapshotDir)+'</strong></div>'+
-      '<div class="item"><span>Vendas no Tran.nx1 (TranNome=Venda)</span><strong>'+d.recon.vendasNX+'</strong></div>'+
-      '<div class="item"><span>Registros Tran lidos</span><strong>'+d.recon.totalRegistrosTran+'</strong></div>'+
-      '<div class="item"><span>Vendas por ano</span><strong>'+esc(porAno)+'</strong></div>'+
-      '<div class="item"><span>Soma total (itens MovEst)</span><strong>R$ '+fmtMoeda(d.recon.somaValorMovEst)+'</strong></div>'+
-      '<div class="item"><span>Montado em</span><strong>'+esc(fmtData(d.montadoEm))+'</strong></div>'+
-    '</div></div>'
-}
-
 async function previewNex(){
   const arquivo=arquivoDoSelect()
   if(!arquivo) return
@@ -861,13 +1039,12 @@ async function previewNex(){
 }
 
 async function importarNex(){
-  const arquivo=arquivoDoSelect()
-  if(!arquivo) return
   const confiancaMin=document.getElementById('nexConfianca').value
-  abrirModal('<h3>Importar para homologação</h3><p>As vendas correlacionadas ('+esc(confiancaMin)+') serão gravadas no SNAPSHOT de homologação. Produção não é alterada. Confirmar importação?</p>'+
+  const reusar=!(document.getElementById('nexBaseNova')&&document.getElementById('nexBaseNova').checked)
+  abrirModal('<h3>Importar vendas do Nex</h3><p>Todos os arquivos de vendas (.xls/.xlsx) da pasta serão correlacionados e gravados no SNAPSHOT de homologação, com deduplicação automática. <strong>Produção não é alterada.</strong> Confirmar importação?</p>'+
     '<div class="modal-acoes"><button data-cancela>Cancelar</button><button data-confirma class="primario">Confirmar e importar</button></div>',
     async ()=>{
-      const d=await guardaNex(async ()=>apiNex('/api/nex/importar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({arquivo,confiancaMin})}))
+      const d=await guardaNex(async ()=>apiNex('/api/nex/importar-todos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({confiancaMin,reusar})}))
       if(!d||!d.resultado) return
       const r=d.resultado
       const area=document.getElementById('nexResultado')
@@ -876,11 +1053,13 @@ async function importarNex(){
         '<div class="cards" style="margin-bottom:12px">'+
           '<div class="card"><div class="titulo">Inseridas</div><div class="valor ok">'+r.inseridas+'</div></div>'+
           '<div class="card"><div class="titulo">Duplicadas (ignoradas)</div><div class="valor '+(r.duplicadas?'warn':'ok')+'">'+r.duplicadas+'</div></div>'+
+          '<div class="card"><div class="titulo">Atualizadas (itens)</div><div class="valor '+(r.atualizadas?'ok':'')+'">'+r.atualizadas+'</div></div>'+
           '<div class="card"><div class="titulo">Pagamentos</div><div class="valor">'+r.pagamentos+'</div></div>'+
           '<div class="card"><div class="titulo">Caso "-C"</div><div class="valor '+(r.naoImportadasCasoC?'warn':'ok')+'">'+r.naoImportadasCasoC+'</div></div>'+
           '<div class="card"><div class="titulo">Ambíguas / sem corr.</div><div class="valor">'+r.ambiguas+' / '+r.semCorrelacao+'</div></div>'+
           '<div class="card"><div class="titulo">"NÃO DETERMINADO"</div><div class="valor" style="font-size:13px">valores de pagamento não estimados</div></div>'+
         '</div>'+
+        '<div style="font-size:12px;color:var(--muted);margin-bottom:8px">Arquivo(s) processado(s): '+(d.arquivos||[]).map(esc).join(', ')+' ('+d.vendasXLS+' venda(s)) · '+Object.keys(d.porConfianca||{}).map(k=>esc(k)+': '+(d.porConfianca[k]||0)).join(' · ')+'</div>'+
         (r.erros&&r.erros.length?'<div style="font-size:12px;color:var(--red);margin-bottom:10px">'+(r.erros.map(esc).join('<br>'))+'</div>':'')+
         (porArquivo?'<div style="font-size:12px;color:var(--muted);margin-bottom:6px">Por arquivo</div><div class="logs">'+porArquivo+'</div>':'')+
         '<div style="font-size:12px;color:var(--muted);margin-top:10px">Snapshot: '+esc(d.snapshotDir)+'</div></div>'

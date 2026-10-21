@@ -79,63 +79,70 @@ export default function ConfigPdv({ onFechar }: { onFechar: () => void }) {
 
   return (
     <div className="modal-overlay" onClick={onFechar}>
-      <div className="modal modal-pagamento" onClick={(e) => e.stopPropagation()}>
-        <h3>Configurações do PDV</h3>
-        <div className="config-pdv-lista">
-          <div className="config-pdv-item">
-            <div className="config-pdv-info">
-              <strong>Agrupar produtos iguais na venda</strong>
-              <span>Quando ativo, adicionar o mesmo produto soma na quantidade. Desative para cada adição virar um item separado (negociações diferentes).</span>
+      <div className="modal modal-tela-cheia" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-topo">
+          <h3>Configurações do PDV</h3>
+          <button className="btn-icone" onClick={onFechar}>✕</button>
+        </div>
+        <div className="modal-corpo">
+          <div className="config-pdv-lista">
+            <div className="config-pdv-item">
+              <div className="config-pdv-info">
+                <strong>Agrupar produtos iguais na venda</strong>
+                <span>Quando ativo, adicionar o mesmo produto soma na quantidade. Desative para cada adição virar um item separado (negociações diferentes).</span>
+              </div>
+              <label className="switch">
+                <input type="checkbox" checked={agrupar} onChange={(e) => toggleAgrupar(e.target.checked)} />
+                <span className="slider" />
+              </label>
             </div>
-            <label className="switch">
-              <input type="checkbox" checked={agrupar} onChange={(e) => toggleAgrupar(e.target.checked)} />
-              <span className="slider" />
-            </label>
-          </div>
-          <div className="config-pdv-item">
-            <div className="config-pdv-info">
-              <strong>Permitir venda sem estoque</strong>
-              <span>Permite adicionar produtos sem estoque direto (sem aviso).</span>
+            <div className="config-pdv-item">
+              <div className="config-pdv-info">
+                <strong>Permitir venda sem estoque</strong>
+                <span>Permite adicionar produtos sem estoque direto (sem aviso).</span>
+              </div>
+              <label className="switch">
+                <input type="checkbox" checked={permitirSemEstoque} onChange={(e) => toggleSemEstoque(e.target.checked)} />
+                <span className="slider" />
+              </label>
             </div>
-            <label className="switch">
-              <input type="checkbox" checked={permitirSemEstoque} onChange={(e) => toggleSemEstoque(e.target.checked)} />
-              <span className="slider" />
-            </label>
-          </div>
-          <div className="config-pdv-item">
-            <div className="config-pdv-info">
-              <strong>Comportamento da quantidade</strong>
-              <span>Define como a quantidade é informada ao adicionar produtos no PDV.</span>
+            <div className="config-pdv-item">
+              <div className="config-pdv-info">
+                <strong>Comportamento da quantidade</strong>
+                <span>Define como a quantidade é informada ao adicionar produtos no PDV.</span>
+              </div>
+              <select
+                className="config-pdv-select"
+                value={modoQuantidade}
+                onChange={(e) => escolherModoQuantidade(e.target.value as ModoQuantidade)}
+                title="Como a quantidade é informada no PDV"
+              >
+                <option value="opcional">Não passar pela quantidade (Quantidade Opcional)</option>
+                <option value="produto">Começar pelo Produto e depois informar a Quantidade</option>
+                <option value="quantidade">Começar pela Quantidade e depois informar o Produto</option>
+              </select>
             </div>
-            <select
-              className="config-pdv-select"
-              value={modoQuantidade}
-              onChange={(e) => escolherModoQuantidade(e.target.value as ModoQuantidade)}
-              title="Como a quantidade é informada no PDV"
-            >
-              <option value="opcional">Não passar pela quantidade (Quantidade Opcional)</option>
-              <option value="produto">Começar pelo Produto e depois informar a Quantidade</option>
-              <option value="quantidade">Começar pela Quantidade e depois informar o Produto</option>
-            </select>
-          </div>
-          <div className="config-pdv-item">
-            <div className="config-pdv-info">
-              <strong>Casas decimais na quantidade</strong>
-              <span>Permite ou não quantidade com casas decimais (ex.: 1,50).</span>
+            <div className="config-pdv-item">
+              <div className="config-pdv-info">
+                <strong>Casas decimais na quantidade</strong>
+                <span>Permite ou não quantidade com casas decimais (ex.: 1,50).</span>
+              </div>
+              <select
+                className="config-pdv-select"
+                value={casasDecimais}
+                onChange={(e) => escolherCasasDecimais(Number(e.target.value))}
+                title="Casas decimais permitidas na quantidade"
+              >
+                <option value={0}>Inteiro (sem decimais)</option>
+                <option value={2}>2 casas decimais (0,01 a 99,99)</option>
+              </select>
             </div>
-            <select
-              className="config-pdv-select"
-              value={casasDecimais}
-              onChange={(e) => escolherCasasDecimais(Number(e.target.value))}
-              title="Casas decimais permitidas na quantidade"
-            >
-              <option value={0}>Inteiro (sem decimais)</option>
-              <option value={2}>2 casas decimais (0,01 a 99,99)</option>
-            </select>
           </div>
         </div>
-        <div className="modal-acoes">
-          <button className="btn-primario" onClick={onFechar}>Fechar</button>
+        <div className="modal-rodape">
+          <div className="modal-acoes-direita">
+            <button className="btn-primario" onClick={onFechar}>Fechar</button>
+          </div>
         </div>
       </div>
     </div>

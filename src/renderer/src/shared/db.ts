@@ -11,6 +11,20 @@ export interface DbApi {
   }>
 }
 
+// Constrói o data URL correto para uma imagem armazenada em base64, detectando o
+// tipo real (PNG ou JPEG) pelos bytes mágicos. As imagens do Nex podem ser PNG ou
+// JPG, então prefixar sempre com "image/png" quebrava as JPG. Aceita base64 com ou
+// sem prefixo "data:..."
+export function dataUrlImagem(base64?: string | null, fallback = ''): string {
+  if (!base64) return fallback
+  const limpo = base64.startsWith('data:') ? base64.split(',')[1] ?? base64 : base64
+  const marcador = limpo.slice(0, 4)
+  if (/^\/9j/.test(marcador)) return `data:image/jpeg;base64,${limpo}`
+  if (/^Qk/i.test(marcador)) return `data:image/bmp;base64,${limpo}`
+  if (/^R0lG/.test(marcador)) return `data:image/gif;base64,${limpo}`
+  return `data:image/png;base64,${limpo}`
+}
+
 export interface VendasCancelApi {
   cancelar: (vendaId: number, usuarioId: number) => Promise<{ ok: boolean; numero?: string; itens_devolvidos?: number; erro?: string }>
   finalizar: (dados: {
@@ -55,6 +69,8 @@ export interface AuthApi {
   login: (login: string, senha: string) => Promise<{ ok: boolean; erro?: string; usuario?: Usuario }>
   logout: () => Promise<void>
   session: () => Promise<Usuario | null>
+  sessao: () => Promise<{ ok: boolean; usuario: Usuario }>
+  verificarSenhaSupervisor: (senha: string) => Promise<{ ok: boolean; autorizado: boolean; erro?: string }>
   usuarios: () => Promise<{ id: number; nome: string; login: string; perfil: string }[]>
   criarUsuario: (dados: {
     nome: string
@@ -62,14 +78,17 @@ export interface AuthApi {
     senha: string
     perfil: string
     comissao: number
+    email?: string
   }) => Promise<{ ok: boolean; id?: number }>
   alterarSenha: (usuarioId: number, novaSenha: string) => Promise<{ ok: boolean }>
+  alterarMinhaSenha: (senhaAtual: string, novaSenha: string) => Promise<{ ok: boolean; erro?: string }>
   atualizarUsuario: (dados: {
     usuarioId: number
     nome: string
     login: string
     perfil: string
     comissao: number
+    email?: string
     senha?: string
   }) => Promise<{ ok: boolean }>
   atualizarOpcoes: (dados: {
@@ -191,6 +210,19 @@ export interface ServidorApi {
   testar: () => Promise<{ ok: boolean; url: string; erro?: string }>
   apiKeyGet: () => Promise<{ ok: boolean; api_key: string }>
   apiKeyRegenerar: () => Promise<{ ok: boolean; api_key: string }>
+  catalogoStatus: () => Promise<{ ok: boolean; token_relay_configurado?: boolean; token_sync_configurado?: boolean }>
+  catalogoRepair: () => Promise<{ ok: boolean; sucesso?: { conectado?: boolean; sincronizado?: boolean; produtos?: number; pedidos_puxados?: number }; erro?: string }>
+  catalogoSyncStatus: () => Promise<{
+    status: string
+    ultima_sync: string
+    pendentes: number
+    ultimo_erro: string
+    sincronizando: boolean
+    conectado: boolean
+    auto_sync_ativos: boolean
+    auto_sync_intervalo_seg: number
+  }>
+  catalogoAutoSync: (dados: { ativo?: boolean; intervalo_seg?: number }) => Promise<{ ok: boolean; erro?: string; status?: string }>
 }
 
 export function getServidorApi(): ServidorApi {
@@ -263,11 +295,27 @@ export interface EstoqueApi {
     erro?: string
   }>
   inventarioCancelar: (dados: { inventario_id: number }) => Promise<{ ok: boolean; erro?: string }>
+  compraCancelar: (dados: { compra_id: number; usuario_id?: number | null }) => Promise<{
+    ok: boolean
+    numero: string
+    documento: string
+    itens_revertidos: number
+    erro?: string
+  }>
 }
 
 export function getEstoqueApi(): EstoqueApi {
   const win = window as unknown as { api: { estoque: EstoqueApi } }
   return win.api.estoque
+}
+
+export interface NfeApi {
+  lerXml: () => Promise<{ ok: boolean; arquivo?: string; conteudo?: string; erro?: string }>
+}
+
+export function getNfeApi(): NfeApi {
+  const win = window as unknown as { api: { nfe: NfeApi } }
+  return win.api.nfe
 }
 
 export interface WhatsAppApi {
@@ -279,4 +327,61 @@ export interface WhatsAppApi {
 export function getWhatsAppApi(): WhatsAppApi {
   const win = window as unknown as { api: { whatsapp: WhatsAppApi } }
   return win.api.whatsapp
+}
+
+export interface PedidoOnlineItem {
+  produto_id: number
+  nome_produto: string
+  quantidade: number
+  preco_unitario: number
+  subtotal: number
+}
+
+export interface PedidoOnlineTracking {
+  id: number
+  status: string
+  origem: string
+  atualizado_em: string
+}
+
+export interface PedidoOnline {
+  id: string
+  numero: number
+  cliente_nome: string
+  cliente_whatsapp: string | null
+  modalidade: string
+  endereco: string | null
+  cep: string | null
+  zona_nome: string | null
+  taxa_entrega: number
+  subtotal: number
+  desconto: number
+  total: number
+  forma_pagamento: string | null
+  observacao: string | null
+  status: string
+  importado_em: string | null
+  criado_em: string | null
+  atualizado_em: string | null
+  itens: PedidoOnlineItem[]
+  tracking?: PedidoOnlineTracking[]
+}
+
+export interface FiltroPedidosOnline {
+  busca?: string
+  status?: string
+  de?: string
+  ate?: string
+}
+
+export interface PedidosOnlineApi {
+  puxar: () => Promise<{ ok: boolean; puxados?: number; erro?: string }>
+  listar: (filtro?: FiltroPedidosOnline) => Promise<{ ok: boolean; pedidos: PedidoOnline[]; total?: number; erro?: string }>
+  detalhe: (id: string) => Promise<{ ok: boolean; pedido?: PedidoOnline; erro?: string }>
+  atualizarStatus: (id: string, status: string) => Promise<{ ok: boolean; sincronizado?: boolean; erro?: string }>
+}
+
+export function getPedidosOnlineApi(): PedidosOnlineApi {
+  const win = window as unknown as { api: { pedidosOnline: PedidosOnlineApi } }
+  return win.api.pedidosOnline
 }

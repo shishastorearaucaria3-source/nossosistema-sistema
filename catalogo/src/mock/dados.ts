@@ -17,7 +17,16 @@ export const MOCK_CATALOGO: CatalogoPublicoV1 = {
     nome: 'Shisha Store',
     whatsapp: '(41) 99999-0000',
     endereco: 'Rua das Flores, 123 — Centro',
-    horario: '10h às 22h'
+    horario: '10h às 22h',
+    manutencao_ativos: false,
+    pedidos_ativos: true,
+    aceita_entrega: true,
+    aceita_retirada: true,
+    taxa_entrega: 5,
+    zonas: [
+      { id: 1, nome: 'Centro', preco: 5 },
+      { id: 2, nome: 'Bairro Alto', preco: 8 }
+    ]
   },
   categorias: [
     { id: 1, nome: 'Essências' },

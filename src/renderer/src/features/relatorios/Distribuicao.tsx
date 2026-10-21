@@ -514,33 +514,40 @@ export default function Distribuicao({ usuarioId }: { usuarioId?: number }) {
 
       {modalConfig && (
         <div className="modal-overlay" onClick={() => setModalConfig(false)}>
-          <div className="modal modal-grande" onClick={(e) => e.stopPropagation()}>
-            <h3>Configurar regras de reposição</h3>
-            <p className="nota-config">Defina como calcular o valor a separar por fornecedor. Padrão: 100% do custo dos produtos vendidos.</p>
-            <div className="permissoes-grid" style={{ maxHeight: 400 }}>
-              {listaFornecedores.map((f) => {
-                const regra = regras[f.id] ?? { tipo: 'percent', valor: '100' }
-                return (
-                  <div key={f.id} className="dist-regra-item">
-                    <strong>{f.nome}</strong>
-                    <select value={regra.tipo} onChange={(e) => setRegras({ ...regras, [f.id]: { ...regra, tipo: e.target.value } })}>
-                      <option value="percent">Percentual do custo</option>
-                      <option value="fixo">Valor fixo</option>
-                    </select>
-                    <input
-                      type="text" inputMode="decimal"
-                      value={regra.valor}
-                      onChange={(e) => setRegras({ ...regras, [f.id]: { ...regra, valor: e.target.value } })}
-                      placeholder={regra.tipo === 'percent' ? '%' : 'R$'}
-                    />
-                  </div>
-                )
-              })}
-              {listaFornecedores.length === 0 && <p className="sem-resultado">Nenhum fornecedor cadastrado.</p>}
+          <div className="modal modal-tela-cheia" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-topo">
+              <h3>Configurar regras de reposição</h3>
+              <button className="btn-icone" onClick={() => setModalConfig(false)}>✕</button>
             </div>
-            <div className="modal-acoes">
-              <button className="btn-secundario" onClick={() => setModalConfig(false)}>Cancelar</button>
-              <button className="btn-primario" onClick={salvarRegras}>Salvar regras</button>
+            <div className="modal-corpo">
+              <p className="nota-config">Defina como calcular o valor a separar por fornecedor. Padrão: 100% do custo dos produtos vendidos.</p>
+              <div className="permissoes-grid" style={{ maxHeight: '60vh' }}>
+                {listaFornecedores.map((f) => {
+                  const regra = regras[f.id] ?? { tipo: 'percent', valor: '100' }
+                  return (
+                    <div key={f.id} className="dist-regra-item">
+                      <strong>{f.nome}</strong>
+                      <select value={regra.tipo} onChange={(e) => setRegras({ ...regras, [f.id]: { ...regra, tipo: e.target.value } })}>
+                        <option value="percent">Percentual do custo</option>
+                        <option value="fixo">Valor fixo</option>
+                      </select>
+                      <input
+                        type="text" inputMode="decimal"
+                        value={regra.valor}
+                        onChange={(e) => setRegras({ ...regras, [f.id]: { ...regra, valor: e.target.value } })}
+                        placeholder={regra.tipo === 'percent' ? '%' : 'R$'}
+                      />
+                    </div>
+                  )
+                })}
+                {listaFornecedores.length === 0 && <p className="sem-resultado">Nenhum fornecedor cadastrado.</p>}
+              </div>
+            </div>
+            <div className="modal-rodape">
+              <div className="modal-acoes-direita">
+                <button className="btn-secundario" onClick={() => setModalConfig(false)}>Cancelar</button>
+                <button className="btn-primario" onClick={salvarRegras}>Salvar regras</button>
+              </div>
             </div>
           </div>
         </div>

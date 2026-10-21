@@ -220,11 +220,26 @@ authLogin: async (login: string, senha: string) => {
     return res
   },
   authLogout: () => post<{ ok: boolean }>('/api/auth/logout', {}).then((r) => { limparSessao(); return r }).catch(() => { limparSessao(); return { ok: true } }),
+  authVerificarSupervisor: (senha: string) => post<{ ok: boolean; autorizado: boolean; erro?: string }>('/api/auth/verificarSupervisor', { senha }),
+  // Verifica se o token de sessão atual continua válido no servidor. Lança se o
+  // token foi invalidado (ex.: importação que apagou as sessões) ou se o servidor
+  // caiu — o terminal usa isso para voltar ao login na hora.
+  authSessao: () =>
+    fetch(`${getServidorUrl()}/api/auth/sessao`, { headers: headersComSessao() }).then(async (r) => {
+      if (r.status === 401) {
+        limparSessao()
+        throw new Error('Sessão inválida ou ausente.')
+      }
+      if (!r.ok) throw new Error(`Servidor /api/auth/sessao: HTTP ${r.status}`)
+      return r.json() as Promise<{ ok: boolean; usuario: { id: number; nome: string; login: string; perfil: string; comissao_percent: number } }>
+    }),
   authUsuarios: () => fetch(`${getServidorUrl()}/api/auth/usuarios`, { headers: headersComSessao() }).then((r) => r.json() as Promise<{ id: number; nome: string; login: string; perfil: string }[]>),
   authCriarUsuario: (dados: { nome: string; login: string; senha: string; perfil: string; comissao: number }) =>
     post<{ ok: boolean; id: number }>('/api/auth/criarUsuario', dados),
   authAlterarSenha: (usuarioId: number, novaSenha: string) =>
     post<{ ok: boolean }>('/api/auth/alterarSenha', { usuarioId, novaSenha }),
+  authAlterarMinhaSenha: (senhaAtual: string, novaSenha: string) =>
+    post<{ ok: boolean; erro?: string }>('/api/auth/alterarMinhaSenha', { senhaAtual, novaSenha }),
   authAtualizarUsuario: (dados: { usuarioId: number; nome: string; login: string; perfil: string; comissao: number; senha?: string }) =>
     post<{ ok: boolean }>('/api/auth/atualizarUsuario', dados),
   authAtualizarOpcoes: (dados: { usuarioId: number; usar_web: boolean; usar_app: boolean; limitar_desconto: boolean; desconto_max_percent: number }) =>
@@ -265,6 +280,8 @@ catalogoGetExibicao: () => fetch(`${getServidorUrl()}/api/catalogo/exibicao`, { 
     ),
   estoqueInventarioCancelar: (dados: { inventario_id: number }) =>
     post<{ ok: boolean; erro?: string }>('/api/estoque/inventario/cancelar', dados),
+  estoqueCompraCancelar: (dados: { compra_id: number; usuario_id?: number | null }) =>
+    post<{ ok: boolean; numero: string; documento: string; itens_revertidos: number; erro?: string }>('/api/estoque/compra/cancelar', dados),
   // Lote transacional (venda, cancelamentos â€” atomicidade garantida no servidor)
   dbTransacao: (statements: { sql: string; params?: unknown[] }[]) =>
     post<{ ok: boolean; resultados: { changes: number; lastInsertRowid: number }[]; indice?: number; erro?: string }>(
@@ -292,8 +309,53 @@ catalogoGetExibicao: () => fetch(`${getServidorUrl()}/api/catalogo/exibicao`, { 
       pedido_id: pedidoId,
       usuario_id: usuarioId
     }),
+  pedidosOnlinePuxar: () =>
+    post<{ ok: boolean; puxados?: number; erro?: string }>('/api/catalogo/pedidos/puxar', {}),
+  pedidosOnlineListar: (filtro?: { busca?: string; status?: string; de?: string; ate?: string }) => {
+    const params: string[] = []
+    if (filtro?.busca) params.push(`busca=${encodeURIComponent(filtro.busca)}`)
+    if (filtro?.status && filtro.status !== 'todos') params.push(`status=${encodeURIComponent(filtro.status)}`)
+    if (filtro?.de) params.push(`de=${encodeURIComponent(filtro.de)}`)
+    if (filtro?.ate) params.push(`ate=${encodeURIComponent(filtro.ate)}`)
+    const qs = params.length ? `?${params.join('&')}` : ''
+    return fetch(`${getServidorUrl()}/api/catalogo/pedidos/lista${qs}`, { headers: headersComSessao() }).then(
+      (r) => r.json() as Promise<{ ok: boolean; pedidos: unknown[]; total?: number }>,
+    )
+  },
+  pedidosOnlineDetalhe: (id: string) =>
+    fetch(`${getServidorUrl()}/api/catalogo/pedidos/detalhe?id=${encodeURIComponent(id)}`, { headers: headersComSessao() }).then(
+      (r) => r.json() as Promise<{ ok: boolean; pedido?: unknown; erro?: string }>,
+    ),
+  pedidosOnlineStatus: (id: string, status: string) =>
+    post<{ ok: boolean; sincronizado?: boolean; erro?: string }>('/api/catalogo/pedidos/status', { id, status }),
+  catalogoStatus: () =>
+    fetch(`${getServidorUrl()}/api/catalogo/conexao`, { headers: headersComSessao() }).then(
+      (r) => r.json() as Promise<{ ok: boolean; token_relay_configurado?: boolean; token_sync_configurado?: boolean }>,
+    ),
+  catalogoRepair: () =>
+    post<{ ok: boolean; sucesso?: { conectado?: boolean; sincronizado?: boolean; produtos?: number; pedidos_puxados?: number }; erro?: string }>(
+      '/api/catalogo/repair',
+      {},
+    ),
+  catalogoSyncStatus: () =>
+    fetch(`${getServidorUrl()}/api/catalogo/status`, { headers: headersComSessao() }).then(
+      (r) =>
+        r.json() as Promise<{
+          status: string
+          ultima_sync: string
+          pendentes: number
+          ultimo_erro: string
+          sincronizando: boolean
+          conectado: boolean
+          auto_sync_ativos: boolean
+          auto_sync_intervalo_seg: number
+        }>,
+    ),
+  catalogoAutoSync: (dados: { ativo?: boolean; intervalo_seg?: number }) =>
+    post<{ ok: boolean }>('/api/catalogo/auto-sync', dados),
   apiKeyGet: () => fetch(`${getServidorUrl()}/api/servidor/apikey`, { headers: headersComSessao() }).then((r) => r.json() as Promise<{ ok: boolean; api_key: string }>),
   apiKeyRegenerar: () => post<{ ok: boolean; api_key: string }>('/api/servidor/apikey/regenerar', {}),
+
   // WhatsApp panel proxy (authenticated via the NossoSistema session)
   whatsapp: {
     get: (path: string) =>

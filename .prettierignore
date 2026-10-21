@@ -1,0 +1,14 @@
+node_modules/
+out/
+dist-final/
+dist-setup/
+release/
+backups/
+homologacao/
+nexbackuptotal/
+catalogo/
+catalogo-worker/
+.git/
+*.lock
+*.log
+*.map

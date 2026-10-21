@@ -1,0 +1,452 @@
+/* PEDIDOS ONLINE — podol / podon classes */
+.podol-pagina { display: flex; flex-direction: column; gap: 16px; padding: 20px 24px; }
+.podol-topo { display: flex; flex-direction: column; gap: 10px; max-width: 860px; }
+.podol-puxar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.podol-url {
+  flex: 1; min-width: 280px; padding: 9px 12px;
+  border: 1px solid var(--borda, rgba(0, 0, 0, 0.12)); border-radius: var(--raio);
+  font-family: monospace; font-size: var(--fs-sm); background: var(--bg3); color: var(--texto);
+}
+.podol-url:focus { outline: 3px solid rgba(0, 145, 255, 0.25); border-color: #0091FF; }
+.podol-nota { font-size: var(--fs-sm); color: var(--texto2); line-height: 1.5; }
+.podol-vazio { text-align: center; color: var(--texto2); padding: 28px 0; }
+.podol-wpp { font-size: var(--fs-sm); color: var(--texto2); }
+.podol-itens { display: flex; flex-direction: column; gap: 2px; margin-top: 4px; font-size: var(--fs-sm); color: var(--texto2); }
+.podol-obs { font-size: var(--fs-sm); color: var(--texto2); font-style: italic; margin-top: 4px; }
+.podol-end { font-size: var(--fs-sm); color: var(--texto2); max-width: 260px; }
+.podol-status {
+  padding: 5px 8px; border: 1px solid var(--borda, rgba(0, 0, 0, 0.12));
+  border-radius: var(--raio); background: var(--bg3); color: var(--texto); font-size: var(--fs-sm);
+}
+.podol-status-novo { border-color: #0091FF; color: #0091FF; }
+.podol-status-em_atendimento { border-color: #f59e0b; color: #b45309; }
+.podol-status-concluido { border-color: #10b981; color: #047857; }
+.podol-status-cancelado { border-color: #ef4444; color: #b91c1c; }
+
+/* ============================================================
+   PEDIDOS ONLINE — Clean Minimalist ERP
+   ============================================================ */
+.podon-pagina {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 24px;
+}
+
+.podon-topo {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.podon-titulo-bloco { display: flex; flex-direction: column; gap: 4px; }
+
+.podon-pagina .pg-titulo {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--texto);
+}
+
+.podon-subtitulo {
+  margin: 0;
+  font-size: 13px;
+  color: var(--texto2);
+}
+
+.podon-acoes { display: flex; gap: 8px; }
+
+/* Toast */
+.podon-toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 120;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: var(--raio);
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: var(--sombra-lg);
+  animation: podon-toast-in 0.18s ease;
+  max-width: 420px;
+}
+
+@keyframes podon-toast-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.podon-toast-icone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: currentColor;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.podon-toast-ok { background: var(--tom-ok-bg); color: var(--tom-ok); border: 1px solid var(--tom-ok-borda); }
+.podon-toast-erro { background: var(--tom-perigo-bg); color: var(--tom-perigo); border: 1px solid var(--tom-perigo-borda); }
+.podon-toast-info { background: var(--tom-info-bg); color: var(--tom-info); border: 1px solid var(--tom-info-borda); }
+
+/* Resumo */
+.podon-resumo {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 12px;
+}
+
+.podon-resumo-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: var(--bg2);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio);
+  padding: 14px 16px;
+}
+
+.podon-resumo-item span {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--texto2);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.podon-resumo-item strong { font-size: 20px; color: var(--texto); }
+
+.podon-resumo-novo strong { color: #0091FF; }
+.podon-resumo-andam strong { color: #f59e0b; }
+.podon-resumo-entregue strong { color: var(--verde); }
+.podon-resumo-cancelado strong { color: var(--vermelho); }
+
+/* Filtros */
+.podon-filtros {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.podon-busca {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 260px;
+  min-width: 220px;
+  background: var(--bg2);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio);
+  padding: 0 12px;
+  color: var(--texto2);
+}
+
+.podon-busca:focus-within { border-color: var(--primaria); }
+
+.podon-busca input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  padding: 10px 0;
+  font-size: 13px;
+  color: var(--texto);
+}
+
+.podon-pagina .select-padrao,
+.podon-pagina .input-padrao {
+  background: var(--bg2);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio);
+  padding: 9px 12px;
+  font-size: 13px;
+  color: var(--texto);
+  outline: none;
+}
+
+.podon-pagina .select-padrao:focus,
+.podon-pagina .input-padrao:focus { border-color: var(--primaria); }
+
+.podon-filtro { display: flex; align-items: center; gap: 8px; }
+
+.podon-filtro-sep { font-size: 12px; color: var(--texto2); }
+
+/* Tabela principal */
+.podon-pagina .tabela-wrap {
+  background: var(--bg);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio);
+  overflow: auto;
+}
+
+.podon-pagina table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.podon-pagina thead th {
+  text-align: left;
+  padding: 12px 14px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--texto2);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  border-bottom: 1px solid var(--borda);
+  background: var(--bg2);
+  white-space: nowrap;
+}
+
+.podon-pagina tbody td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--borda);
+  vertical-align: top;
+}
+
+.podon-pagina tbody tr:last-child td { border-bottom: none; }
+
+.podon-pagina tbody tr:hover { background: var(--bg2); }
+
+.podon-linha-novo { background: rgba(0, 145, 255, 0.05); }
+
+.podon-numero { font-weight: 700; color: var(--primaria); white-space: nowrap; }
+.podon-wpp { font-size: 12px; color: var(--texto2); }
+.podon-itens-count { white-space: nowrap; }
+.podon-modalidade { font-weight: 600; }
+.podon-zona { color: var(--texto2); }
+.podon-taxa { font-size: 12px; color: var(--texto2); }
+.podon-total { font-weight: 700; }
+
+.podon-vazio {
+  text-align: center;
+  color: var(--texto2);
+  padding: 40px 16px !important;
+}
+
+.podon-status {
+  padding: 5px 8px;
+  border: 1px solid var(--borda);
+  border-radius: var(--raio);
+  background: var(--bg3);
+  color: var(--texto);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.podon-status-novo { border-color: #0091FF; color: #0091FF; }
+.podon-status-confirmado { border-color: #8b5cf6; color: #7c3aed; }
+.podon-status-separando { border-color: #f59e0b; color: #b45309; }
+.podon-status-saiu_entrega { border-color: #06b6d4; color: #0e7490; }
+.podon-status-entregue { border-color: #10b981; color: #047857; }
+.podon-status-cancelado { border-color: #ef4444; color: #b91c1c; }
+
+/* Modal de detalhe */
+.podon-modal {
+  width: 720px;
+  max-width: 94vw;
+  max-height: 90vh;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.podon-modal-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--borda);
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  z-index: 2;
+}
+
+.podon-modal-topo h3 { margin: 0; }
+
+.podon-modal-corpo {
+  padding: 8px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.podon-secao {
+  border: 1px solid var(--borda);
+  border-radius: var(--raio);
+  overflow: hidden;
+}
+
+.podon-secao-titulo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--texto2);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--borda);
+}
+
+.podon-secao-titulo svg { color: var(--primaria); }
+
+.podon-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px 16px;
+  padding: 14px;
+}
+
+.podon-info-grid > div { display: flex; flex-direction: column; gap: 2px; }
+.podon-info-linha-inteira { grid-column: 1 / -1; }
+.podon-info-grid span { font-size: 11px; color: var(--texto2); font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
+.podon-info-grid strong { font-size: 14px; color: var(--texto); }
+
+.podon-obs {
+  margin: 0 14px 14px;
+  background: var(--tom-info-bg);
+  border: 1px solid var(--tom-info-borda);
+  border-radius: var(--raio-sm);
+  padding: 10px 12px;
+}
+
+.podon-obs span { font-size: 11px; font-weight: 600; color: var(--tom-info); text-transform: uppercase; letter-spacing: 0.3px; }
+.podon-obs p { margin: 4px 0 0; font-size: 13px; color: var(--texto); }
+
+/* Itens */
+.podon-itens-tabela thead th { padding: 8px 12px; }
+.podon-itens-tabela tbody td { padding: 8px 12px; }
+
+.podon-totais {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  padding: 12px 14px;
+  border-top: 1px solid var(--borda);
+  font-size: 13px;
+}
+
+.podon-totais > div { display: flex; gap: 24px; }
+.podon-totais span { color: var(--texto2); }
+.podon-total-final { font-size: 16px; font-weight: 700; color: var(--texto); padding-top: 6px; border-top: 1px solid var(--borda); width: 100%; justify-content: flex-end; }
+
+/* Stepper de status */
+.podon-stepper {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+  padding: 14px;
+  flex-wrap: wrap;
+}
+
+.podon-passo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex: 1 1 90px;
+  min-width: 90px;
+  padding: 10px 6px;
+  border-radius: var(--raio-sm);
+  border: 1px solid var(--borda);
+  background: var(--bg2);
+  text-align: center;
+  position: relative;
+}
+
+.podon-passo-bolha {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--bg3);
+  color: var(--texto2);
+  font-size: 12px;
+  font-weight: 700;
+  transition: all 0.15s;
+}
+
+.podon-passo-nome { font-size: 11px; color: var(--texto2); }
+
+.podon-passo-ativo .podon-passo-bolha { background: var(--primaria); color: #fff; }
+.podon-passo-ativo .podon-passo-nome { color: var(--primaria); font-weight: 600; }
+.podon-passo-atual { border-color: var(--primaria); box-shadow: 0 0 0 1px var(--primaria); }
+.podon-passo-final.podon-passo-ativo .podon-passo-bolha { background: var(--verde); }
+.podon-passo-final.podon-passo-ativo.podon-passo-atual { border-color: var(--verde); box-shadow: 0 0 0 1px var(--verde); }
+
+.podon-passo-cancelado .podon-passo-bolha { background: var(--vermelho); color: #fff; }
+
+.podon-passo-clicavel { cursor: pointer; }
+.podon-passo-clicavel:hover { border-color: var(--primaria); background: var(--bg3); }
+
+/* Tracking */
+.podon-tracking {
+  padding: 0 14px 14px;
+}
+
+.podon-tracking-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--texto2);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-bottom: 8px;
+}
+
+.podon-tracking-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.podon-tracking-lista li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  background: var(--bg2);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-sm);
+}
+
+.podon-tracking-data { font-size: 12px; color: var(--texto2); }
+.podon-tracking-origem { font-size: 11px; color: var(--texto2); margin-left: auto; }
+
+.podon-modal-rodape {
+  display: flex;
+  justify-content: flex-end;
+  padding: 14px 20px;
+  border-top: 1px solid var(--borda);
+  position: sticky;
+  bottom: 0;
+  background: var(--bg);
+}
+
+@media (max-width: 720px) {
+  .podon-info-grid { grid-template-columns: 1fr; }
+  .podon-stepper { flex-direction: column; }
+  .podon-passo { min-width: 100%; }
+}

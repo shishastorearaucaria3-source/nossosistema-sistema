@@ -12,6 +12,8 @@ const api = {
     login: (login: string, senha: string) => ipcRenderer.invoke('auth:login', login, senha),
     logout: () => ipcRenderer.invoke('auth:logout'),
     session: () => ipcRenderer.invoke('auth:session'),
+    sessao: () => ipcRenderer.invoke('auth:sessao'),
+    verificarSenhaSupervisor: (senha: string) => ipcRenderer.invoke('auth:verificarSenhaSupervisor', senha),
     usuarios: () => ipcRenderer.invoke('auth:usuarios'),
     criarUsuario: (dados: {
       nome: string
@@ -22,6 +24,8 @@ const api = {
     }) => ipcRenderer.invoke('auth:criarUsuario', dados),
     alterarSenha: (usuarioId: number, novaSenha: string) =>
       ipcRenderer.invoke('auth:alterarSenha', usuarioId, novaSenha),
+    alterarMinhaSenha: (senhaAtual: string, novaSenha: string) =>
+      ipcRenderer.invoke('auth:alterarMinhaSenha', senhaAtual, novaSenha),
     atualizarUsuario: (dados: {
       usuarioId: number
       nome: string
@@ -85,6 +89,12 @@ const api = {
   pedidosApi: {
     cancelar: (pedidoId: number, usuarioId: number) => ipcRenderer.invoke('pedidos:cancelar', pedidoId, usuarioId)
   },
+  pedidosOnline: {
+    puxar: () => ipcRenderer.invoke('pedidosOnline:puxar'),
+    listar: (filtro?: { busca?: string; status?: string; de?: string; ate?: string }) => ipcRenderer.invoke('pedidosOnline:listar', filtro),
+    detalhe: (id: string) => ipcRenderer.invoke('pedidosOnline:detalhe', id),
+    atualizarStatus: (id: string, status: string) => ipcRenderer.invoke('pedidosOnline:status', id, status)
+  },
   servidor: {
     status: () => ipcRenderer.invoke('servidor:status'),
     logs: () => ipcRenderer.invoke('servidor:logs'),
@@ -100,7 +110,12 @@ const api = {
       ipcRenderer.invoke('servidor:configurarConexao', opcoes),
     testar: () => ipcRenderer.invoke('servidor:testar'),
     apiKeyGet: () => ipcRenderer.invoke('servidor:apiKeyGet'),
-    apiKeyRegenerar: () => ipcRenderer.invoke('servidor:apiKeyRegenerar')
+    apiKeyRegenerar: () => ipcRenderer.invoke('servidor:apiKeyRegenerar'),
+    catalogoStatus: () => ipcRenderer.invoke('catalogo:status'),
+    catalogoRepair: () => ipcRenderer.invoke('catalogo:repair'),
+    catalogoSyncStatus: () => ipcRenderer.invoke('catalogo:syncStatus'),
+    catalogoAutoSync: (dados: { ativo?: boolean; intervalo_seg?: number }) =>
+      ipcRenderer.invoke('catalogo:autoSync', dados),
   },
   estoque: {
     movimentar: (dados: Record<string, unknown>) => ipcRenderer.invoke('estoque:movimentar', dados),
@@ -108,12 +123,17 @@ const api = {
       ipcRenderer.invoke('estoque:inventarioAbrir', dados),
     inventarioFinalizar: (dados: { inventario_id: number; usuario_id?: number | null }) =>
       ipcRenderer.invoke('estoque:inventarioFinalizar', dados),
-    inventarioCancelar: (dados: { inventario_id: number }) => ipcRenderer.invoke('estoque:inventarioCancelar', dados)
+    inventarioCancelar: (dados: { inventario_id: number }) => ipcRenderer.invoke('estoque:inventarioCancelar', dados),
+    compraCancelar: (dados: { compra_id: number; usuario_id?: number | null }) =>
+      ipcRenderer.invoke('estoque:compraCancelar', dados)
   },
   whatsapp: {
     get: (path: string) => ipcRenderer.invoke('whatsapp:get', path),
     post: (path: string, body: unknown) => ipcRenderer.invoke('whatsapp:post', path, body),
     status: () => ipcRenderer.invoke('whatsapp:status')
+  },
+  nfe: {
+    lerXml: () => ipcRenderer.invoke('nfe:lerXml')
   }
 }
 

@@ -1,0 +1,93 @@
+.financeiro-busca {
+  flex: 1;
+  min-width: 220px;
+  max-width: 380px;
+}
+
+.financeiro-busca .busca-pdv {
+  padding: 9px 12px;
+  min-height: 40px;
+}
+
+.financeiro-filtros-status {
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.tabela-financeiro {
+  table-layout: fixed;
+  min-width: 1200px;
+}
+
+.tabela-financeiro th,
+.tabela-financeiro td {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.linha-vencida {
+  background: rgba(239, 68, 68, 0.06);
+}
+
+.financeiro-filtros-drop {
+  right: 0;
+  left: auto;
+}
+.caixa-periodo-drop {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.caixa-periodo-datas {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--texto2);
+}
+
+.caixa-periodo-datas input {
+  padding: 6px 8px;
+  border: 1px solid var(--borda);
+  border-radius: 6px;
+  background: var(--bg2);
+  color: var(--texto);
+  font-size: 13px;
+}
+
+
+/* — Filtro de relatório / período (financeiro) — */
+.repo-filtro-destaque {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 14px;
+  border: 1px solid var(--borda);
+  border-radius: 10px;
+  background: var(--bg2);
+  margin-bottom: 10px;
+}
+.repo-filtro-titulo {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--texto2);
+}
+.repo-datas {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--texto2);
+}
+.repo-datas input {
+  padding: 6px 8px;
+  border: 1px solid var(--borda);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--texto);
+  font-size: 13px;
+}

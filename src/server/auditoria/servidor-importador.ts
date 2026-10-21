@@ -16,7 +16,7 @@ import { getNxDir, getXlsDir, getHomologDir } from './config'
 import { abrirBancoHomolog, criarSnapshotHomologacao, registrarPasso, type SnapshotHomologacao } from './homologacao'
 import { lerArquivo, resumoReconstrucaoNX } from './nex-leitura'
 import { lerPagEspecies } from './pagespecies'
-import { lerItensMovEst } from '../nex-binary'
+import { lerItensMovEst, type ItemMovEst } from '../nex-binary'
 import { analisarXLS, chaveUnicaVenda, lerArquivoXLS, listarArquivosXLS, lerTransacoesXLS, normalizarTransacao, type AnaliseArquivo, type TransacaoXLS } from './xls'
 import { correlacionar, montarIndiceNX, type Correlacao, type IndiceNX } from './correlacao'
 import { importarEmHomologacao, previewImportacao, type ResultadoImportacaoHomolog, type VendaProntaIportar } from './importador'
@@ -27,6 +27,7 @@ interface Preparado {
   snapshot: SnapshotHomologacao
   buffers: { tran: Buffer; mov: Buffer; pag: Buffer }
   indices: IndiceNX
+  itensPorVenda: Map<number, ItemMovEst[]>  // itens positivos do MovEst por venda
   montadoEm: string
   recon: unknown
   pag: unknown
@@ -218,50 +219,58 @@ async function prepararInternoSnap(opts: { reusar?: boolean }): Promise<Snapshot
   return criarSnapshotHomologacao('nex-importacao')
 }
 
+async function montarPreparado(opts: { reusar?: boolean }): Promise<void> {
+  if (preparado) return
+  etapa('Preparando snapshot de homologação', opts.reusar ? 'reutilizando o mais recente' : 'criando novo (VACUUM INTO de leitura)')
+  const snapshot = await prepararInternoSnap(opts)
+  etapa('Lendo arquivos NX', 'Tran.nx1, MovEst.nx1, PagEspecies.nx1')
+  const nxDir = getNxDir()
+  const buffers = {
+    tran: lerArquivo(nxDir, 'Tran.nx1'),
+    mov: lerArquivo(nxDir, 'MovEst.nx1'),
+    pag: lerArquivo(nxDir, 'PagEspecies.nx1'),
+  }
+  etapa('Classificando transações', 'TranNome=Venda')
+  const recon = resumoReconstrucaoNX(buffers.tran, buffers.mov, null)
+  const idsVendas = new Set(recon.vendasNX.map((v) => v.id))
+  const pag = lerPagEspecies(buffers.pag, idsVendas)
+  const pagamentosPorVenda = new Map<number, string[]>()
+  const totalPorVenda = new Map<number, number>()
+  const itensPorVenda = new Map<number, ItemMovEst[]>()
+  for (const it of lerItensMovEst(buffers.mov)) {
+    if (idsVendas.has(it.tran)) {
+      totalPorVenda.set(it.tran, Math.round(((totalPorVenda.get(it.tran) || 0) + it.total) * 100) / 100)
+      const arr = itensPorVenda.get(it.tran) || []
+      arr.push(it)
+      itensPorVenda.set(it.tran, arr)
+    }
+  }
+  for (const rec of pag.amostra) {
+    if (rec.vinculadoAVenda) {
+      const arr = pagamentosPorVenda.get(rec.tran) || []
+      arr.push(String(rec.especie))
+      pagamentosPorVenda.set(rec.tran, arr)
+    }
+  }
+  const indices = montarIndiceNX(recon.registros, totalPorVenda, pagamentosPorVenda)
+  registrarPasso(snapshot, `preparacao servidor: ${recon.vendasNX.length} vendas NX, ${pag.totalTriplasValidas} registros PagEspecies`)
+  preparado = { snapshot, buffers, indices, itensPorVenda, montadoEm: new Date().toISOString(), recon: resumoRecon(recon), pag: resumoPag(pag) }
+}
+
 /** Cria/recicla snapshot e monta índices NX (demorado; com progresso). */
 export async function preparar(opts: { reusar?: boolean } = {}): Promise<{ snapshotDir: string; montadoEm: string; recon: unknown; pag: unknown }> {
   return comOcupacao(async () => {
     progresso.ativo = true
     progresso.iniciadoEm = Date.now()
     try {
-      etapa('Preparando snapshot de homologação', opts.reusar ? 'reutilizando o mais recente' : 'criando novo (VACUUM INTO de leitura)')
-      const snapshot = await prepararInternoSnap(opts)
-      etapa('Lendo arquivos NX', 'Tran.nx1, MovEst.nx1, PagEspecies.nx1')
-      const nxDir = getNxDir()
-      const buffers = {
-        tran: lerArquivo(nxDir, 'Tran.nx1'),
-        mov: lerArquivo(nxDir, 'MovEst.nx1'),
-        pag: lerArquivo(nxDir, 'PagEspecies.nx1'),
-      }
-      etapa('Classificando transações', 'TranNome=Venda')
-      const recon = resumoReconstrucaoNX(buffers.tran, buffers.mov, null)
-      const idsVendas = new Set(recon.vendasNX.map((v) => v.id))
-      const pag = lerPagEspecies(buffers.pag, idsVendas)
-      const pagamentosPorVenda = new Map<number, string[]>()
-      const totalPorVenda = new Map<number, number>()
-      for (const it of lerItensMovEst(buffers.mov)) {
-        if (idsVendas.has(it.tran)) totalPorVenda.set(it.tran, Math.round(((totalPorVenda.get(it.tran) || 0) + it.total) * 100) / 100)
-      }
-      for (const rec of pag.amostra) {
-        if (rec.vinculadoAVenda) {
-          const arr = pagamentosPorVenda.get(rec.tran) || []
-          arr.push(String(rec.especie))
-          pagamentosPorVenda.set(rec.tran, arr)
-        }
-      }
-      const indices = montarIndiceNX(recon.registros, totalPorVenda, pagamentosPorVenda)
-      registrarPasso(snapshot, `preparacao servidor: ${recon.vendasNX.length} vendas NX, ${pag.totalTriplasValidas} registros PagEspecies`)
+      await montarPreparado(opts)
+      const p = exigirPreparado()
       etapa('Preparação concluída', '')
-      preparado = { snapshot, buffers, indices, montadoEm: new Date().toISOString(), recon: resumoRecon(recon), pag: resumoPag(pag) }
+      return { snapshotDir: p.snapshot.dir, montadoEm: p.montadoEm, recon: p.recon, pag: p.pag }
+    } finally {
       progresso.ativo = false
       progresso.etapa = ''
       progresso.detalhe = ''
-      return { snapshotDir: snapshot.dir, montadoEm: preparado.montadoEm, recon: preparado.recon, pag: preparado.pag }
-    } catch (err) {
-      progresso.ativo = false
-      progresso.etapa = ''
-      progresso.detalhe = ''
-      throw err
     }
   })
 }
@@ -288,15 +297,61 @@ function resumoPag(pag: ReturnType<typeof lerPagEspecies>) {
   }
 }
 
-export function montarPendentes(vendasXLS: TransacaoXLS[], correlacoes: Correlacao[], confiancaMin: ConfiancaMin): VendaProntaIportar[] {
+export interface MontagemPendentes {
+  itensPorVenda?: Map<number, ItemMovEst[]>
+  snapshot?: SnapshotHomologacao
+}
+
+/** Resolve o produto local de um item do MovEst (mesmo critério do migrador binário). */
+function preencherItensNX(
+  nxId: number,
+  itensPorVenda: Map<number, ItemMovEst[]>,
+  db: DatabaseSync,
+): VendaProntaIportar['itensNX'] {
+  const stmt = db.prepare('SELECT id, nome FROM produtos WHERE codigo_interno = ? OR id = ?')
+  const cache = new Map<number, { id: number; nome: string } | null>()
+  const resolver = (produtoId: number): { id: number; nome: string } | null => {
+    if (cache.has(produtoId)) return cache.get(produtoId)!
+    let r: { id: number; nome: string } | null = null
+    try {
+      r = (stmt.get(String(produtoId), produtoId) as { id: number; nome: string } | undefined) ?? null
+    } catch { r = null }
+    cache.set(produtoId, r)
+    return r
+  }
+  const itens = itensPorVenda.get(nxId) || []
+  const out: VendaProntaIportar['itensNX'] = []
+  for (const it of itens) {
+    const p = resolver(it.produtoId)
+    out.push({
+      produto_id: p?.id ?? null,
+      nome_produto: p?.nome ?? `produto#${it.produtoId}`,
+      quantidade: it.quant,
+      preco_unitario: it.unit,
+      subtotal: it.total,
+    })
+  }
+  return out
+}
+
+export function montarPendentes(vendasXLS: TransacaoXLS[], correlacoes: Correlacao[], confiancaMin: ConfiancaMin, ctx: MontagemPendentes = {}): VendaProntaIportar[] {
   const pendentes: VendaProntaIportar[] = []
-  for (let i = 0; i < vendasXLS.length; i++) {
-    const c = correlacoes[i]
-    if (!c) continue
-    if (c.confianca === 'AMBÍGUA' || c.confianca === 'NÃO ENCONTRADA' || c.xlsData == null) continue
-    if (confiancaMin === 'EXATA' && c.confianca !== 'EXATA') continue
-    if (confiancaMin === 'ALTA CONFIANÇA' && c.confianca !== 'EXATA' && c.confianca !== 'ALTA CONFIANÇA') continue
-    pendentes.push({ xls: vendasXLS[i], nxId: c.nxId, confianca: c.confianca, itensNX: [] })
+  let db: DatabaseSync | null = null
+  try {
+    if (ctx.itensPorVenda && ctx.snapshot) db = abrirBancoHomolog(ctx.snapshot)
+    for (let i = 0; i < vendasXLS.length; i++) {
+      const c = correlacoes[i]
+      if (!c) continue
+      if (c.confianca === 'AMBÍGUA' || c.confianca === 'NÃO ENCONTRADA' || c.xlsData == null) continue
+      if (confiancaMin === 'EXATA' && c.confianca !== 'EXATA') continue
+      if (confiancaMin === 'ALTA CONFIANÇA' && c.confianca !== 'EXATA' && c.confianca !== 'ALTA CONFIANÇA') continue
+      const itensNX = c.nxId != null && ctx.itensPorVenda && db
+        ? preencherItensNX(c.nxId, ctx.itensPorVenda, db)
+        : []
+      pendentes.push({ xls: vendasXLS[i], nxId: c.nxId, confianca: c.confianca, itensNX })
+    }
+  } finally {
+    if (db) db.close()
   }
   return pendentes
 }
@@ -327,12 +382,13 @@ export async function preview(arquivo: string, confiancaMin: ConfiancaMin = 'EXA
     progresso.ativo = true
     progresso.iniciadoEm = Date.now()
     try {
+      await montarPreparado({ reusar: true })
       const p = exigirPreparado()
       etapa('Correlacionando vendas XLS→NX', basename(arquivo))
       const { vendas } = await lerTransacoesXLS(arquivo)
       const correlacoes: Correlacao[] = vendas.map((v) => correlacionar(v, p.indices))
       const porConfianca = contagemPorConfiancaLocal(correlacoes)
-      const pendentes = montarPendentes(vendas, correlacoes, confiancaMin)
+      const pendentes = montarPendentes(vendas, correlacoes, confiancaMin, p)
       etapa('Consultando duplicidades no snapshot', '')
       const prev = previewImportacao(pendentes, p.snapshot)
       etapa('Preview concluído', '')
@@ -350,6 +406,8 @@ export interface ResultadoServidor {
   confiancaMin: ConfiancaMin
   snapshotDir: string
   resultado: ResultadoImportacaoHomolog
+  porConfianca: Record<string, number>
+  vendasXLS: number
 }
 
 /** Importa para o snapshot de homologação (transacional, com dedup + origem). */
@@ -358,15 +416,81 @@ export async function importar(arquivo: string, confiancaMin: ConfiancaMin = 'EX
     progresso.ativo = true
     progresso.iniciadoEm = Date.now()
     try {
+      await montarPreparado({ reusar: true })
       const p = exigirPreparado()
       etapa('Correlacionando e importando', basename(arquivo))
       const { vendas } = await lerTransacoesXLS(arquivo)
       const correlacoes: Correlacao[] = vendas.map((v) => correlacionar(v, p.indices))
-      const pendentes = montarPendentes(vendas, correlacoes, confiancaMin)
+      const pendentes = montarPendentes(vendas, correlacoes, confiancaMin, p)
       etapa('Importando (transação no snapshot)', `${pendentes.length} pendentes`)
       const resultado = importarEmHomologacao(pendentes, p.snapshot)
       etapa('Importação concluída', '')
-      return { arquivo, confiancaMin, snapshotDir: p.snapshot.dir, resultado }
+      return { arquivo, confiancaMin, snapshotDir: p.snapshot.dir, resultado, porConfianca: contagemPorConfiancaLocal(correlacoes), vendasXLS: vendas.length }
+    } finally {
+      progresso.ativo = false
+      progresso.etapa = ''
+      progresso.detalhe = ''
+    }
+  })
+}
+
+function somarResultados(rs: ResultadoImportacaoHomolog[]): ResultadoImportacaoHomolog {
+  const out: ResultadoImportacaoHomolog = { ok: true, inseridas: 0, atualizadas: 0, duplicadas: 0, naoImportadasCasoC: 0, ambiguas: 0, semCorrelacao: 0, pagamentos: 0, erros: [], rollback: false, resumoPorArquivo: [] }
+  for (const r of rs) {
+    out.ok = out.ok && r.ok
+    out.inseridas += r.inseridas
+    out.atualizadas += r.atualizadas
+    out.duplicadas += r.duplicadas
+    out.naoImportadasCasoC += r.naoImportadasCasoC
+    out.ambiguas += r.ambiguas
+    out.semCorrelacao += r.semCorrelacao
+    out.pagamentos += r.pagamentos
+    out.erros.push(...r.erros)
+    out.rollback = out.rollback || r.rollback
+    out.resumoPorArquivo.push(...r.resumoPorArquivo)
+  }
+  return out
+}
+
+export interface ResultadoServidorTodos {
+  arquivo: string
+  confiancaMin: ConfiancaMin
+  snapshotDir: string
+  arquivos: string[]
+  resultado: ResultadoImportacaoHomolog
+  porConfianca: Record<string, number>
+  vendasXLS: number
+}
+
+/** Importa TODOS os arquivos de vendas (.xls/.xlsx) da pasta, com deduplicação por No.Tran. */
+export async function importarTodos(confiancaMin: ConfiancaMin = 'EXATA', reusar = true): Promise<ResultadoServidorTodos> {
+  return comOcupacao(async () => {
+    progresso.ativo = true
+    progresso.iniciadoEm = Date.now()
+    try {
+      if (!reusar) preparado = null
+      await montarPreparado({ reusar })
+      const p = exigirPreparado()
+      const caminhos = listarArquivos().arquivos
+        .map((a) => a.caminho)
+        .filter((c) => identificarTipoArquivo(analisarXLS(c)).tipo === 'vendas_nex')
+      if (caminhos.length === 0) throw new Error('Nenhum arquivo de vendas (.xls/.xlsx) encontrado na pasta.')
+      const resultados: ResultadoImportacaoHomolog[] = []
+      const porConfianca: Record<string, number> = {}
+      let vendasXLS = 0
+      for (let i = 0; i < caminhos.length; i++) {
+        const nomeArq = basename(caminhos[i])
+        etapa('Correlacionando e importando', `${i + 1}/${caminhos.length}: ${nomeArq}`)
+        const { vendas } = await lerTransacoesXLS(caminhos[i])
+        const correlacoes: Correlacao[] = vendas.map((v) => correlacionar(v, p.indices))
+        for (const c of correlacoes) porConfianca[c.confianca] = (porConfianca[c.confianca] || 0) + 1
+        const pendentes = montarPendentes(vendas, correlacoes, confiancaMin, p)
+        vendasXLS += vendas.length
+        etapa('Importando (transação no snapshot)', `${nomeArq} — ${pendentes.length} pendentes`)
+        resultados.push(importarEmHomologacao(pendentes, p.snapshot))
+      }
+      etapa('Importação concluída', `${caminhos.length} arquivo(s)`)
+      return { arquivo: 'todos', confiancaMin, snapshotDir: p.snapshot.dir, arquivos: caminhos.map((c) => basename(c)), resultado: somarResultados(resultados), porConfianca, vendasXLS }
     } finally {
       progresso.ativo = false
       progresso.etapa = ''

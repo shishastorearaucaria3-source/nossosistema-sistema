@@ -1,7 +1,9 @@
 import { useCarrinho } from '../state/carrinho'
+import logoBranca from '../assets/logo-branca.png'
 
 export default function Cabecalho({
   nomeLoja,
+  pedidosAtivos,
   busca,
   onBusca,
   categoriaAtiva,
@@ -9,6 +11,7 @@ export default function Cabecalho({
   onCategoria
 }: {
   nomeLoja: string
+  pedidosAtivos: boolean
   busca: string
   onBusca: (v: string) => void
   categoriaAtiva: number | null
@@ -20,14 +23,22 @@ export default function Cabecalho({
   return (
     <header className="cabecalho">
       <div className="cabecalho__topo">
-        <a className="marca" href="/" onClick={(e) => { e.preventDefault(); onCategoria(null); onBusca('') }}>
-          <span className="marca__selo" aria-hidden="true">C</span>
-          <span className="marca__nome">{nomeLoja || 'Catálogo'}</span>
+        <a
+          className="marca"
+          href="/"
+          onClick={(e) => {
+            e.preventDefault()
+            onCategoria(null)
+            onBusca('')
+          }}
+        >
+          <img className="marca__logo" src={logoBranca} alt={`${nomeLoja || 'Shisha Store'} — logo`} />
+          <span className="marca__nome">{nomeLoja || 'Shisha Store'}</span>
         </a>
         <button
           className="btn-carrinho"
           onClick={() => setAbrir(true)}
-          aria-label={`Abrir carrinho (${itensCount} itens)`}
+          aria-label={pedidosAtivos ? `Abrir carrinho (${itensCount} itens)` : 'Abrir carrinho (pedidos pausados)'}
         >
           <span aria-hidden="true">🛒</span>
           <span className="btn-carrinho__badge">{itensCount}</span>
@@ -37,7 +48,7 @@ export default function Cabecalho({
         <input
           type="search"
           className="busca"
-          placeholder="Buscar produto..."
+          placeholder="Buscar essências, narguilés, acessórios..."
           value={busca}
           onChange={(e) => onBusca(e.target.value)}
           aria-label="Buscar produto"

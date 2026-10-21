@@ -129,6 +129,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
     <div class="menu-titulo">Sistema</div>
     <button class="menu-item" data-tela="info"><span class="ico">ℹ️</span> Informações</button>
     <button class="menu-item" data-tela="logs"><span class="ico">📄</span> Logs</button>
+    <button class="menu-item" data-tela="catalogo"><span class="ico">🌐</span> Catálogo Online</button>
   </nav>
   <div class="sidebar-rodape">
     <div class="status">
@@ -182,7 +183,7 @@ function fecharModal(){ document.getElementById('modalOverlay').style.display='n
 function navegar(tela){
   telaAtual=tela
   document.querySelectorAll('.menu-item').forEach(b=>b.classList.toggle('ativa', b.dataset.tela===tela))
-  const nomes={suporte:'Suporte',backup:'Copiar (Backup)',restaurar:'Restaurar',corrigir:'Corrigir',zerar:'Zerar',importar:'Importar Dados',info:'Informações do Sistema',logs:'Log do Servidor'}
+  const nomes={suporte:'Suporte',backup:'Copiar (Backup)',restaurar:'Restaurar',corrigir:'Corrigir',zerar:'Zerar',importar:'Importar Dados',info:'Informações do Sistema',logs:'Log do Servidor',catalogo:'Catálogo Online'}
   document.getElementById('tituloTela').textContent=nomes[tela]||'Servidor'
   renderizar()
 }
@@ -202,8 +203,50 @@ function renderizar(){
   else if(telaAtual==='zerar') renderZerar(c)
   else if(telaAtual==='info') renderInfo(c)
   else if(telaAtual==='logs') renderLogs(c)
+  else if(telaAtual==='catalogo') renderCatalogo(c)
   else if(telaAtual==='importar') renderImportar(c)
   else renderSuporte(c)
+}
+
+function renderCatalogo(c){
+  c.innerHTML='<div class="secao"><h3>Catálogo Online</h3>'+
+    '<p style="font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:14px">A conexão do catálogo é mantida automaticamente. Use o botão abaixo para reparar/atualizar a conexão quando o catálogo parar de responder.</p>'+
+    '<div class="acao"><div class="info"><strong>Conexão do catálogo</strong>'+
+    '<span id="releStatus" style="font-size:12px;color:var(--muted)">Verificando...</span></div>'+
+    '<button class="primario" onclick="repararCatalogo(this)">Reparar conexão</button></div></div>'
+  carregarStatusCatalogo()
+}
+
+function carregarStatusCatalogo(){
+  const s=document.getElementById('releStatus')
+  fetch(baseUrl+'/api/catalogo/conexao').then(r=>{
+    if(!r.ok) throw new Error('HTTP '+r.status)
+    return r.json()
+  }).then(d=>{
+    if(s) s.textContent = (d.ok && (d.token_relay_configurado||d.token_sync_configurado)) ? 'Conectado.' : 'Não conectado.'
+  }).catch(()=>{
+    if(s) s.textContent='Não conectado.'
+  })
+}
+
+function repararCatalogo(btn){
+  if(btn){ btn.disabled=true; btn.textContent='Conectando...' }
+  const s=document.getElementById('releStatus')
+  if(s) s.textContent='Conectando...'
+  fetch(baseUrl+'/api/catalogo/repair',{method:'POST'}).then(r=>r.json()).then(d=>{
+    if(d.ok){
+      if(s) s.textContent='Conectado.'
+      mostrarMsg('Catálogo conectado e atualizado com sucesso.',true)
+    }else{
+      if(s) s.textContent='Não conectado.'
+      mostrarMsg('Não foi possível conectar ao catálogo online agora. Tente novamente em instantes.',false)
+    }
+  }).catch(()=>{
+    if(s) s.textContent='Não conectado.'
+    mostrarMsg('Não foi possível conectar ao catálogo online agora. Tente novamente em instantes.',false)
+  }).finally(()=>{
+    if(btn){ btn.disabled=false; btn.textContent='Reparar conexão' }
+  })
 }
 
 function renderSuporte(c){
@@ -250,8 +293,6 @@ function renderImportar(c){
     '<input type="file" id="nexArquivo" accept=".zip" style="display:none" onchange="enviarNex(this)"><button class="primario" onclick="document.getElementById(\'nexArquivo\').click()">Selecionar ZIP Nex</button></div>'+
     '<div class="acao"><div class="info"><strong>Analisar Backup Nex</strong><span>Verifica as estruturas encontradas no ZIP sem importar nada (dry-run)</span></div>'+
     '<input type="file" id="nexAnalise" accept=".zip" style="display:none" onchange="analisarNexFile(this)"><button onclick="document.getElementById(\'nexAnalise\').click()" style="padding:8px 14px;border-radius:8px;border:1px solid var(--line);background:var(--card2);color:var(--text);font-size:12px;cursor:pointer;font-family:inherit">Analisar ZIP</button></div>'+
-    '<div class="acao"><div class="info"><strong>Simular Importação</strong><span>Processa tudo e gera relatório sem gravar nada no banco</span></div>'+
-    '<input type="file" id="nexSimular" accept=".zip" style="display:none" onchange="simularNex(this)"><button onclick="document.getElementById(\'nexSimular\').click()" style="padding:8px 14px;border-radius:8px;border:1px solid var(--line);background:var(--card2);color:var(--text);font-size:12px;cursor:pointer;font-family:inherit">Simular Importação</button></div>'+
     '<div class="acao"><div class="info"><strong>Enviar arquivo ZIP</strong><span>Selecione um .zip com as planilhas de produtos dentro</span></div>'+
     '<input type="file" id="impArquivo" accept=".zip" style="display:none" onchange="enviarZip(this)"><button class="primario" onclick="document.getElementById(\'impArquivo\').click()">Selecionar ZIP</button></div></div>'+
     '<div id="impStatus" style="margin-top:14px;font-size:13px;color:var(--muted)">Nenhum arquivo enviado ainda.</div>'+
@@ -333,35 +374,6 @@ async function analisarNexFile(input){
   }catch(e){
     mostrarProgresso({ativo:false})
     if(st) st.innerHTML='<span style="color:var(--red)">Erro: '+esc(e.message)+'</span>'
-  }
-}
-
-async function simularNex(input){
-  const arquivo=input.files&&input.files[0]
-  if(!arquivo) return
-  const st=document.getElementById('impStatus')
-  if(st) st.textContent='Simulando importação de '+arquivo.name+' (nada será gravado)...'
-  const ini=Date.now()
-  try{
-    const d=await enviaArquivo('/api/importar/nex', arquivo, arquivo.name,
-      (l,t)=>mostrarBarraUpload('Simulando importação... '+fmtBytes(l)+' de '+fmtBytes(t),l,t,ini),
-      ()=>iniciarPollingNex(),
-      {'x-simular':'1'})
-    mostrarProgresso({ativo:false})
-    if(d.ok&&d.resumo){
-      const s=d.resumo
-      if(st) st.innerHTML='<span style="color:var(--green)">🧪 SIMULAÇÃO (nada gravado): '+s.produtosCriados+' produtos, '+s.clientesCriados+' clientes, '+s.vendasCriadas+' vendas, '+s.itensImportados+' itens, '+s.pagamentosImportados+' pagamentos, '+s.brutosPreservados+' estruturas preservadas em bruto</span>'
-      mostrarMsg('Simulação concluída — nenhum dado foi gravado no banco',true)
-    }else{
-      if(st) st.innerHTML='<span style="color:var(--red)">Erro: '+esc(d.erro||'Falha')+'</span>'
-    }
-    input.value=''
-  }catch(e){
-    mostrarProgresso({ativo:false})
-    if(st) st.innerHTML='<span style="color:var(--red)">Erro: '+esc(e.message)+'</span>'
-  }finally{
-    pararPollingNex()
-    pararPollingProgresso()
   }
 }
 

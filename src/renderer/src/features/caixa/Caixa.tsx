@@ -1,6 +1,7 @@
-import { useEffect, useState, useCallback } from 'react'
+import { Fragment, useEffect, useState, useCallback, useRef, type PointerEvent as ReactPointerEvent } from 'react'
 import { getDbApi, getCaixasApi } from '../../shared/db'
 import CaixaImportar from './CaixaImportar'
+import OpcoesCaixa from './OpcoesCaixa'
 
 interface Caixa {
   id: number
@@ -39,7 +40,21 @@ interface PagamentoForma {
 
 type Aba = 'atual' | 'anteriores' | 'conferir' | 'contador'
 
-export default function Caixa({ usuarioId, usuarioNome, onAbrirCaixa }: { usuarioId?: number; usuarioNome?: string; onAbrirCaixa?: (caixaId: number) => void }) {
+const COLUNAS_CAIXA: [string, string][] = [
+  ['acoes', 'Ações'],
+  ['numero', 'Nº'],
+  ['abertura', 'Abertura'],
+  ['fechamento', 'Fechamento'],
+  ['abriu', 'Abriu'],
+  ['fechou', 'Fechou'],
+  ['vendas', 'Vendas'],
+  ['qtd', 'Qtd'],
+  ['saldo', 'Saldo'],
+  ['saldo_informado', 'Saldo Informado'],
+  ['quebra', 'Quebra']
+]
+
+export default function Caixa({ usuarioId, usuarioNome, onAbrirCaixa, pedirConfig }: { usuarioId?: number; usuarioNome?: string; onAbrirCaixa?: (caixaId: number) => void; pedirConfig?: number }) {
   const [caixaAtual, setCaixaAtual] = useState<Caixa | null>(null)
   const [historico, setHistorico] = useState<Caixa[]>([])
   const [timeline, setTimeline] = useState<MovimentoTimeline[]>([])
@@ -49,6 +64,14 @@ export default function Caixa({ usuarioId, usuarioNome, onAbrirCaixa }: { usuari
   const [modoImportar, setModoImportar] = useState(false)
   const [caixaExpandido, setCaixaExpandido] = useState<number | null>(null)
   const [limiteHistorico, setLimiteHistorico] = useState(60)
+  const [colLarguras, setColLarguras] = useState<Record<string, number>>(() => {
+    try {
+      const s = localStorage.getItem('caixa_hist_cols')
+      return s ? (JSON.parse(s) as Record<string, number>) : {}
+    } catch {
+      return {}
+    }
+  })
   const [soComQuebra, setSoComQuebra] = useState(false)
   const [filtroAberto, setFiltroAberto] = useState(false)
   const [periodoFiltro, setPeriodoFiltro] = useState<'todos' | 'hoje' | 'ontem' | '7d' | 'mensal' | 'personalizado'>('todos')
@@ -63,8 +86,31 @@ export default function Caixa({ usuarioId, usuarioNome, onAbrirCaixa }: { usuari
   const [motivoMov, setMotivoMov] = useState('')
   const [tipoMov, setTipoMov] = useState<'sangria' | 'suprimento'>('suprimento')
   const [modalMov, setModalMov] = useState(false)
+  const [meiosPagamento, setMeiosPagamento] = useState<{ id: number; nome: string; tipo: string }[]>([])
+  const [sangriasPorForma, setSangriasPorForma] = useState<Record<string, string>>({})
   const [modalAbrir, setModalAbrir] = useState(false)
   const [modalFechar, setModalFechar] = useState(false)
+  const [modalConfirmarQuebra, setModalConfirmarQuebra] = useState(false)
+  const [quebraPendente, setQuebraPendente] = useState<{ saldoFisico: number; quebra: number } | null>(null)
+  const [modalOpcoes, setModalOpcoes] = useState(false)
+  const [caixaSaldoAbertura, setCaixaSaldoAbertura] = useState<'informar' | 'zerado' | 'anterior'>('anterior')
+  const [exigirSaldoFinal, setExigirSaldoFinal] = useState(true)
+  const [fechamentoPor, setFechamentoPor] = useState<'forma' | 'total'>('total')
+  const ultimoPedirConfig = useRef(pedirConfig ?? 0)
+  useEffect(() => {
+    if ((pedirConfig ?? 0) > ultimoPedirConfig.current) {
+      setModalOpcoes(true)
+      ultimoPedirConfig.current = pedirConfig ?? 0
+    }
+  }, [pedirConfig])
+  const [menuCaixaAberto, setMenuCaixaAberto] = useState(false)
+  const [modalAlterarSaldo, setModalAlterarSaldo] = useState(false)
+  const [modalCorrigirData, setModalCorrigirData] = useState(false)
+  const [novoSaldoInicial, setNovoSaldoInicial] = useState('')
+  const [novaAbertura, setNovaAbertura] = useState('')
+  const [modalTotalizar, setModalTotalizar] = useState(false)
+  const [buscaCodigo, setBuscaCodigo] = useState('')
+  const [modalRelatorio, setModalRelatorio] = useState(false)
   const [mensagem, setMensagem] = useState('')
   const [conferencia, setConferencia] = useState<Record<string, string>>({})
   const [contador, setContador] = useState<Record<string, string>>(() => {
@@ -120,7 +166,6 @@ export default function Caixa({ usuarioId, usuarioNome, onAbrirCaixa }: { usuari
        LEFT JOIN usuarios uf ON uf.id = c.usuario_fechamento
        LEFT JOIN usuarios ur ON ur.id = c.reaberto_por
        WHERE c.aberto = 0
-         AND EXISTS (SELECT 1 FROM vendas v WHERE v.caixa_id = c.id AND v.status != 'cancelada')
          ${soComQuebra ? `AND (c.quebra IS NOT NULL AND ABS(c.quebra) > 0.005)` : ''}
          ${periodoSql}
        ORDER BY COALESCE(c.aberto_em, c.fechado_em, '') DESC, c.id DESC LIMIT ?`,
@@ -137,13 +182,6 @@ export default function Caixa({ usuarioId, usuarioNome, onAbrirCaixa }: { usuari
       )) as unknown as { id: number; total: number; subtotal: number; created_at: string; forma: string | null }[]
 
       const timelineItems: MovimentoTimeline[] = []
-      timelineItems.push({
-        id: 0,
-        valor: atual.saldo_inicial,
-        descricao: 'Abertura de Caixa',
-        detalhe: 'Dinheiro',
-        criado_em: atual.aberto_em
-      })
       for (const v of vendas) {
         const desconto = v.subtotal - v.total
         timelineItems.push({
@@ -162,7 +200,7 @@ export default function Caixa({ usuarioId, usuarioNome, onAbrirCaixa }: { usuari
         timelineItems.push({
           id: 100000 + m.id,
           valor: m.tipo === 'sangria' ? -m.valor : m.valor,
-          descricao: m.tipo === 'sangria' ? 'Sangria' : m.tipo === 'suprimento' ? 'Suprimento' : m.tipo === 'abertura' ? 'Abertura' : 'Fechamento',
+          descricao: m.tipo === 'sangria' ? 'Sangria' : m.tipo === 'suprimento' ? 'Suprimento' : m.tipo === 'abertura' ? 'Abertura de Caixa' : 'Fechamento',
           detalhe: m.motivo ?? '-',
           criado_em: m.criado_em
         })
@@ -188,6 +226,11 @@ export default function Caixa({ usuarioId, usuarioNome, onAbrirCaixa }: { usuari
       setFormas([])
       setCanais([])
     }
+
+    const meios = (await db.all(
+      `SELECT id, nome, tipo FROM formas_pagamento WHERE ativo = 1 ORDER BY id`
+    )) as unknown as { id: number; nome: string; tipo: string }[]
+    setMeiosPagamento(meios)
   }, [limiteHistorico, soComQuebra, periodoFiltro, dataIniFiltro, dataFimFiltro])
 
   useEffect(() => {
@@ -195,28 +238,93 @@ export default function Caixa({ usuarioId, usuarioNome, onAbrirCaixa }: { usuari
   }, [carregar])
 
   useEffect(() => {
+    getDbApi()
+      .all(
+        `SELECT chave, valor FROM config WHERE chave IN ('caixa_saldo_abertura','caixa_exigir_saldo_final','caixa_fechamento_por')`
+      )
+      .then((rows) => {
+        const mapa: Record<string, string> = {}
+        for (const r of rows as unknown as { chave: string; valor: string | null }[]) mapa[r.chave] = r.valor ?? ''
+        if (mapa['caixa_saldo_abertura']) setCaixaSaldoAbertura(mapa['caixa_saldo_abertura'] as 'informar' | 'zerado' | 'anterior')
+        setExigirSaldoFinal(mapa['caixa_exigir_saldo_final'] !== '0')
+        if (mapa['caixa_fechamento_por']) setFechamentoPor(mapa['caixa_fechamento_por'] as 'forma' | 'total')
+      })
+      .catch(() => {})
+  }, [modalOpcoes])
+
+  useEffect(() => {
     const fechar = (e: MouseEvent) => {
       if (!(e.target as HTMLElement).closest('.dropdown-filtro')) setFiltroAberto(false)
       if (!(e.target as HTMLElement).closest('.caixa-periodo-drop')) setPeriodoFiltroAberto(false)
+      if (!(e.target as HTMLElement).closest('.menu-caixa-atual')) setMenuCaixaAberto(false)
     }
     window.addEventListener('mousedown', fechar)
     return () => window.removeEventListener('mousedown', fechar)
   }, [])
 
+  const abrirModalAbrir = () => {
+    if (caixaSaldoAbertura === 'zerado') {
+      setSaldoAbertura(formatarMoedaDigitos('0'))
+    } else if (caixaSaldoAbertura === 'anterior') {
+      getDbApi()
+        .get(
+          `SELECT COALESCE(saldo_informado, saldo_inicial + total_vendas + total_suprimentos - total_sangrias) AS saldo
+           FROM caixas WHERE aberto = 0 ORDER BY COALESCE(aberto_em, fechado_em) DESC, id DESC LIMIT 1`
+        )
+        .then((ult) => {
+          const s = (ult as { saldo: number } | undefined)?.saldo ?? 0
+          setSaldoAbertura(formatarMoedaDigitos(String(Math.max(0, Math.round(s * 100)))))
+        })
+        .catch(() => setSaldoAbertura(''))
+    } else {
+      setSaldoAbertura('')
+    }
+    setModalAbrir(true)
+  }
+
   const abrirCaixa = async () => {
     const saldo = parseMoedaDigitada(saldoAbertura)
-    await getDbApi().run(
-      `INSERT INTO caixas (usuario_id, saldo_inicial, aberto) VALUES (?, ?, 1)`,
+    const res = await getDbApi().run(
+      `INSERT INTO caixas (usuario_id, saldo_inicial, aberto, aberto_em) VALUES (?, ?, 1, datetime('now','localtime'))`,
       [usuarioId ?? null, saldo]
+    )
+    const caixaId = Number(res.lastInsertRowid)
+    await getDbApi().run(
+      `INSERT INTO movimentos_caixa (caixa_id, tipo, valor, motivo, usuario_id, criado_em) VALUES (?, 'abertura', ?, 'Abertura de Caixa', ?, datetime('now','localtime'))`,
+      [caixaId, saldo, usuarioId ?? null]
     )
     setModalAbrir(false)
     setSaldoAbertura('')
-    setMensagem('Caixa aberto.')
+    setMensagem(`Caixa #${caixaId} aberto.`)
     carregar()
   }
 
   const lancarMovimento = async () => {
     if (!caixaAtual) return
+    if (tipoMov === 'sangria' && meiosPagamento.length > 0) {
+      let total = 0
+      for (const m of meiosPagamento) {
+        const valor = parseMoedaDigitada(sangriasPorForma[m.nome] ?? '')
+        if (valor <= 0) continue
+        await getDbApi().run(
+          `INSERT INTO movimentos_caixa (caixa_id, tipo, valor, motivo, usuario_id) VALUES (?, 'sangria', ?, ?, ?)`,
+          [caixaAtual.id, valor, `Sangria - ${m.nome}${motivoMov ? ` (${motivoMov})` : ''}`, usuarioId ?? null]
+        )
+        total += valor
+      }
+      if (total <= 0) {
+        setMensagem('Informe um valor válido para a remoção.')
+        return
+      }
+      await getDbApi().run(`UPDATE caixas SET total_sangrias = total_sangrias + ? WHERE id = ?`, [total, caixaAtual.id])
+      setModalMov(false)
+      setValorMov('')
+      setMotivoMov('')
+      setSangriasPorForma({})
+      setMensagem('Remoção registrada.')
+      carregar()
+      return
+    }
     const valor = parseMoedaDigitada(valorMov)
     if (!valor || valor <= 0) {
       setMensagem('Informe um valor válido.')
@@ -238,6 +346,24 @@ export default function Caixa({ usuarioId, usuarioNome, onAbrirCaixa }: { usuari
     carregar()
   }
 
+  const abrirModalSangria = () => {
+    setTipoMov('sangria')
+    setValorMov('')
+    setMotivoMov('')
+    const base: Record<string, string> = {}
+    for (const m of meiosPagamento) base[m.nome] = ''
+    setSangriasPorForma(base)
+    setModalMov(true)
+  }
+
+  const abrirModalSuprimento = () => {
+    setTipoMov('suprimento')
+    setValorMov('')
+    setMotivoMov('')
+    setSangriasPorForma({})
+    setModalMov(true)
+  }
+
   const reabrirCaixa = async (id: number) => {
     const db = getDbApi()
     const aberto = (await db.get(
@@ -249,11 +375,35 @@ export default function Caixa({ usuarioId, usuarioNome, onAbrirCaixa }: { usuari
     }
     if (!confirm(`Reabrir o caixa #${id}? As vendas voltarão para o caixa atual e novas vendas entram nele.`)) return
     await db.run(
-      `UPDATE caixas SET aberto = 1, fechado_em = NULL, reaberto_em = datetime('now', 'localtime'), reaberto_por = ? WHERE id = ?`,
+      `UPDATE caixas SET aberto = 1, fechado_em = NULL, saldo_inicial = COALESCE(saldo_informado, saldo_inicial), reaberto_em = datetime('now', 'localtime'), reaberto_por = ? WHERE id = ?`,
       [usuarioId ?? null, id]
     )
-    setMensagem(`Caixa #${id} reaberto.`)
+    const saldoReaberto = (await db.get(`SELECT saldo_inicial FROM caixas WHERE id = ?`, [id])) as { saldo_inicial: number }
+    setMensagem(`Caixa #${id} reaberto com saldo de R$ ${saldoReaberto.saldo_inicial.toFixed(2)}.`)
     carregar()
+  }
+
+  const executarFechamento = async (saldoFisico: number, totalSistema: number, quebra: number) => {
+    if (!caixaAtual) return
+    try {
+      const db = getDbApi()
+      await db.run(
+        `UPDATE caixas SET aberto = 0, fechado_em = datetime('now', 'localtime'), usuario_fechamento = ?, saldo_informado = ?, quebra = ? WHERE id = ?`,
+        [usuarioId ?? null, saldoFisico, quebra, caixaAtual.id]
+      )
+      await db.run(
+        `INSERT INTO movimentos_caixa (caixa_id, tipo, valor, motivo, usuario_id) VALUES (?, 'fechamento', ?, ?, ?)`,
+        [caixaAtual.id, saldoFisico, `Fechamento (sistema: R$ ${totalSistema.toFixed(2)}, quebra: ${quebra >= 0 ? '+' : ''}R$ ${quebra.toFixed(2)})`, usuarioId ?? null]
+      )
+      setModalFechar(false)
+      setModalConfirmarQuebra(false)
+      setQuebraPendente(null)
+      setSaldoFechamento('')
+      setMensagem(`Caixa fechado. Quebra: ${quebra >= 0 ? '+' : ''}R$ ${quebra.toFixed(2)}`)
+      carregar()
+    } catch (err) {
+      setMensagem(`Erro ao fechar o caixa: ${(err as Error).message}`)
+    }
   }
 
   const fecharCaixa = async () => {
@@ -261,27 +411,56 @@ export default function Caixa({ usuarioId, usuarioNome, onAbrirCaixa }: { usuari
       setMensagem('Nenhum caixa aberto para fechar.')
       return
     }
-    const saldoFisico = parseMoedaDigitada(saldoFechamento)
+    const saldoFisicoDigitado = parseMoedaDigitada(saldoFechamento)
     const totalSistema = saldoFinal
-    const quebra = saldoFisico - totalSistema
-    if (!confirm(`Confirmar o fechamento do caixa?\n\nSaldo do sistema: R$ ${totalSistema.toFixed(2)}\nSaldo físico: R$ ${saldoFisico.toFixed(2)}\nQuebra: ${quebra >= 0 ? '+' : ''}R$ ${quebra.toFixed(2)}`)) return
-    try {
-      const db = getDbApi()
-      await db.run(
-        `UPDATE caixas SET aberto = 0, fechado_em = datetime('now', 'localtime'), usuario_fechamento = ?, saldo_informado = ?, quebra = ? WHERE id = ?`,
-        [usuarioId ?? null, caixaAtual.id, saldoFisico, quebra, caixaAtual.id]
-      )
-      await db.run(
-        `INSERT INTO movimentos_caixa (caixa_id, tipo, valor, motivo, usuario_id) VALUES (?, 'fechamento', ?, ?, ?)`,
-        [caixaAtual.id, saldoFisico, `Fechamento (sistema: R$ ${totalSistema.toFixed(2)}, quebra: ${quebra >= 0 ? '+' : ''}R$ ${quebra.toFixed(2)})`, usuarioId ?? null]
-      )
-      setModalFechar(false)
-      setSaldoFechamento('')
-      setMensagem(`Caixa fechado. Quebra: ${quebra >= 0 ? '+' : ''}R$ ${quebra.toFixed(2)}`)
-      carregar()
-    } catch (err) {
-      setMensagem(`Erro ao fechar o caixa: ${(err as Error).message}`)
+    const saldoFisico = exigirSaldoFinal ? (saldoFisicoDigitado || totalSistema) : (saldoFisicoDigitado > 0 ? saldoFisicoDigitado : totalSistema)
+    const quebra = Number((saldoFisico - totalSistema).toFixed(2))
+    if (Math.abs(quebra) > 0.0001) {
+      setQuebraPendente({ saldoFisico, quebra })
+      setModalConfirmarQuebra(true)
+      return
     }
+    await executarFechamento(saldoFisico, totalSistema, quebra)
+  }
+
+  const alterarSaldoInicial = async () => {
+    if (!caixaAtual) return
+    const valor = parseMoedaDigitada(novoSaldoInicial)
+    await getDbApi().run(`UPDATE caixas SET saldo_inicial = ? WHERE id = ?`, [valor, caixaAtual.id])
+    setModalAlterarSaldo(false)
+    setMensagem(`Saldo inicial do caixa #${caixaAtual.id} alterado para R$ ${valor.toFixed(2)}.`)
+    carregar()
+  }
+
+  const corrigirDataHora = async () => {
+    if (!caixaAtual || !novaAbertura) return
+    await getDbApi().run(`UPDATE caixas SET aberto_em = ? WHERE id = ?`, [novaAbertura, caixaAtual.id])
+    setModalCorrigirData(false)
+    setMensagem('Data/hora de abertura corrigida.')
+    carregar()
+  }
+
+  const totalizarPeriodo = () => {
+    const totais = historico.reduce(
+      (acc, c) => {
+        acc.vendas += c.total_vendas
+        acc.qtd += c.qtd_vendas
+        acc.sangrias += c.total_sangrias
+        acc.suprimentos += c.total_suprimentos
+        acc.saldo += c.saldo_inicial + c.total_vendas + c.total_suprimentos - c.total_sangrias
+        return acc
+      },
+      { vendas: 0, qtd: 0, sangrias: 0, suprimentos: 0, saldo: 0 }
+    )
+    const fim =
+      periodoFiltro === 'hoje' ? ' hoje'
+      : periodoFiltro === 'ontem' ? ' de ontem'
+      : periodoFiltro === '7d' ? ' dos últimos 7 dias'
+      : periodoFiltro === 'mensal' ? ' deste mês'
+      : periodoFiltro === 'personalizado' ? ` de ${dataIniFiltro} até ${dataFimFiltro}`
+      : ' do período filtrado'
+    setMensagem(`Total do período${fim}: R$ ${totais.vendas.toFixed(2)} em vendas (${totais.qtd} vendas), ${totais.suprimentos.toFixed(2)} entradas, ${totais.sangrias.toFixed(2)} saídas, saldo final R$ ${totais.saldo.toFixed(2)}.`)
+    setModalTotalizar(false)
   }
 
   const saldoFinal =
@@ -373,11 +552,36 @@ export default function Caixa({ usuarioId, usuarioNome, onAbrirCaixa }: { usuari
     return valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
   }
 
+  const iniciarRedimensionar = (campo: string) => (e: ReactPointerEvent<HTMLElement>) => {
+    e.preventDefault()
+    const th = (e.currentTarget as HTMLElement).closest('th')
+    if (!th) return
+    const iniX = e.clientX
+    const iniLarg = th.offsetWidth
+    const mover = (ev: PointerEvent) => {
+      const nova = Math.max(50, iniLarg + (ev.clientX - iniX))
+      th.style.width = `${nova}px`
+      setColLarguras((c) => {
+        const prox = { ...c, [campo]: nova }
+        try { localStorage.setItem('caixa_hist_cols', JSON.stringify(prox)) } catch { /* ignora */ }
+        return prox
+      })
+    }
+    const fim = () => {
+      window.removeEventListener('pointermove', mover)
+      window.removeEventListener('pointerup', fim)
+    }
+    window.addEventListener('pointermove', mover)
+    window.addEventListener('pointerup', fim)
+  }
+
   const parseMoedaDigitada = (v: string) => {
     const digitos = v.replace(/\D/g, '')
     if (!digitos) return 0
     return Number(digitos) / 100
   }
+
+  const totalSangriaPorForma = meiosPagamento.reduce((s, m) => s + parseMoedaDigitada(sangriasPorForma[m.nome] ?? ''), 0)
 
   const corCanal = (tipo: string) => (tipo === 'delivery' ? '#8b5cf6' : '#2563eb')
 
@@ -412,11 +616,11 @@ export default function Caixa({ usuarioId, usuarioNome, onAbrirCaixa }: { usuari
           <button className="btn-secundario" onClick={importarCaixas}>Importar</button>
           {caixaAtual ? (
             <>
-              <button className="btn-secundario" onClick={() => { setTipoMov('suprimento'); setModalMov(true) }}>Adicionar Dinheiro</button>
-              <button className="btn-secundario" onClick={() => { setTipoMov('sangria'); setModalMov(true) }}>Remover Valores</button>
+              <button className="btn-secundario" onClick={abrirModalSuprimento}>Adicionar Dinheiro</button>
+              <button className="btn-secundario" onClick={abrirModalSangria}>Remover Valores</button>
             </>
           ) : (
-            <button className="btn-primario" onClick={() => setModalAbrir(true)}>Abrir caixa</button>
+            <button className="btn-primario" onClick={abrirModalAbrir}>Abrir caixa</button>
           )}
         </div>
       </div>
@@ -442,7 +646,7 @@ export default function Caixa({ usuarioId, usuarioNome, onAbrirCaixa }: { usuari
             <div className="rel-painel caixa-sem-caixa">
               <h3>Nenhum caixa aberto</h3>
               <p className="sem-resultado">Abra o caixa para registrar vendas e movimentações.</p>
-              <button className="btn-primario" onClick={() => setModalAbrir(true)}>Abrir caixa</button>
+              <button className="btn-primario" onClick={abrirModalAbrir}>Abrir caixa</button>
             </div>
           )}
 
@@ -455,7 +659,16 @@ export default function Caixa({ usuarioId, usuarioNome, onAbrirCaixa }: { usuari
                       <h3>Resumo do Caixa #{numCaixa}</h3>
                       <p className="card-caixa-sub">Aberto Hoje ({horaAbertura})</p>
                     </div>
-                    <button className="btn-icone" title="Detalhes">⋯</button>
+                    <div className="menu-caixa-atual">
+                      <button className="btn-icone" title="Opções do caixa" onClick={() => setMenuCaixaAberto((v) => !v)}>⋯</button>
+                      {menuCaixaAberto && (
+                        <div className="dropdown-filtro-menu">
+                          <button className="dropdown-filtro-item" onClick={() => { setMenuCaixaAberto(false); setNovoSaldoInicial(String(caixaAtual.saldo_inicial)); setModalAlterarSaldo(true); setMensagem('') }}>Alterar saldo inicial</button>
+                          <button className="dropdown-filtro-item" onClick={() => { setMenuCaixaAberto(false); setNovaAbertura(caixaAtual.aberto_em); setModalCorrigirData(true); setMensagem('') }}>Corrigir data/hora</button>
+                          <button className="dropdown-filtro-item" onClick={() => { setMenuCaixaAberto(false); setModalRelatorio(true) }}>Relatório</button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div className="resumo-linhas">
                     <div className="linha"><span>{caixaAtual.qtd_vendas} Descontos em vendas</span><span className="texto-vermelho">-R$ {caixaAtual.descontos.toFixed(2)}</span></div>
@@ -579,17 +792,35 @@ export default function Caixa({ usuarioId, usuarioNome, onAbrirCaixa }: { usuari
                 </div>
               )}
             </div>
+            <input
+              className="input-busca-caixa"
+              value={buscaCodigo}
+              onChange={(e) => setBuscaCodigo(e.target.value.replace(/\D/g, ''))}
+              placeholder="Buscar por nº do caixa"
+            />
+            <button className="btn-secundario" onClick={() => setModalTotalizar(true)}>Totalizar Período</button>
           </div>
           <p className="nota-config">A quebra é o saldo final do caixa ser diferente do valor informado no fechamento.</p>
-          <table className="tabela">
+          <div className="tabela-scroll-h">
+          <table className="tabela tabela-redimensao">
             <thead>
-              <tr><th></th><th>Nº</th><th>Abertura</th><th>Fechamento</th><th>Abriu</th><th>Fechou</th><th>Vendas</th><th>Qtd</th><th>Saldo</th><th>Saldo Informado</th><th>Quebra</th><th>Ação</th></tr>
+              <tr>
+                {COLUNAS_CAIXA.map(([chave, rotulo]) => (
+                  <th key={chave} style={colLarguras[chave] ? { width: colLarguras[chave] } : undefined}>
+                    {rotulo}
+                    <span className="th-redim-alca" onPointerDown={(e) => iniciarRedimensionar(chave)(e)} />
+                  </th>
+                ))}
+              </tr>
             </thead>
             <tbody>
-              {historico.map((c) => (
-                <>
-                  <tr key={c.id} className="caixa-linha" onClick={() => alternarCaixa(c.id)}>
-                    <td className="td-acoes">{caixaExpandido === c.id ? '▼' : '▶'}</td>
+              {historico.filter((c) => !buscaCodigo || String(c.id) === buscaCodigo).map((c) => (
+                <Fragment key={c.id}>
+                  <tr className="caixa-linha">
+                    <td className="td-acoes">
+                      <button className="btn-mini" title="Ver vendas e movimentações deste caixa" onClick={() => alternarCaixa(c.id)}>Ver</button>
+                      <button className="btn-mini" title="Reabrir este caixa" onClick={() => reabrirCaixa(c.id)}>Reabrir</button>
+                    </td>
                     <td>#{c.id}</td>
                     <td>{c.aberto_em}</td>
                     <td>{c.fechado_em ?? '-'}</td>
@@ -602,20 +833,10 @@ export default function Caixa({ usuarioId, usuarioNome, onAbrirCaixa }: { usuari
                     <td className={c.quebra != null && c.quebra !== 0 ? 'texto-vermelho' : ''}>
                       {c.quebra != null ? `R$ ${c.quebra.toFixed(2)}` : '-'}
                     </td>
-                    <td className="td-acoes">
-                      {onAbrirCaixa && (
-                        <button className="btn-mini" onClick={(e) => { e.stopPropagation(); onAbrirCaixa(c.id) }}>
-                          Abrir
-                        </button>
-                      )}
-                      <button className="btn-mini" onClick={(e) => { e.stopPropagation(); reabrirCaixa(c.id) }}>
-                        Reabrir
-                      </button>
-                    </td>
                   </tr>
                   {caixaExpandido === c.id && (
                     <tr key={`d${c.id}`} className="caixa-detalhe-linha">
-                      <td colSpan={12}>
+                      <td colSpan={COLUNAS_CAIXA.length}>
                         <div className="caixa-detalhe">
                           {c.reaberto_em && (
                             <div className="caixa-movimentos">
@@ -667,13 +888,14 @@ export default function Caixa({ usuarioId, usuarioNome, onAbrirCaixa }: { usuari
                       </td>
                     </tr>
                   )}
-                </>
+                </Fragment>
               ))}
-              {historico.length === 0 && (
-                <tr><td colSpan={12} className="sem-resultado">Nenhum caixa anterior.</td></tr>
+              {historico.filter((c) => !buscaCodigo || String(c.id) === buscaCodigo).length === 0 && (
+                <tr><td colSpan={COLUNAS_CAIXA.length} className="sem-resultado">Nenhum caixa anterior.</td></tr>
               )}
             </tbody>
           </table>
+          </div>
           {historico.length >= limiteHistorico && (
             <div className="carregar-mais-wrap">
               <button className="btn-secundario" onClick={() => setLimiteHistorico((l) => l + 60)}>
@@ -684,7 +906,14 @@ export default function Caixa({ usuarioId, usuarioNome, onAbrirCaixa }: { usuari
         </div>
       )}
 
-      {aba === 'conferir' && caixaAtual && (
+      {aba === 'conferir' && (
+        !caixaAtual ? (
+          <div className="rel-painel caixa-sem-caixa">
+            <h3>Nenhum caixa aberto</h3>
+            <p className="sem-resultado">Abra o caixa para conferir os meios de pagamento.</p>
+            <button className="btn-primario" onClick={abrirModalAbrir}>Abrir caixa</button>
+          </div>
+        ) : (
         <div className="rel-painel">
           <h3>Conferir Meio de Pagamento</h3>
           <p className="nota-config">Informe o valor físico/digital conferido de cada meio e compare com o registrado.</p>
@@ -725,9 +954,17 @@ export default function Caixa({ usuarioId, usuarioNome, onAbrirCaixa }: { usuari
             <button className="btn-primario" onClick={confirmarConferencia}>Salvar conferência</button>
           </div>
         </div>
+        )
       )}
 
-      {aba === 'contador' && caixaAtual && (
+      {aba === 'contador' && (
+        !caixaAtual ? (
+          <div className="rel-painel caixa-sem-caixa">
+            <h3>Nenhum caixa aberto</h3>
+            <p className="sem-resultado">Abra o caixa para usar o contador de dinheiro.</p>
+            <button className="btn-primario" onClick={abrirModalAbrir}>Abrir caixa</button>
+          </div>
+        ) : (
         <div className="caixa-contador">
           <section className="card-caixa">
             <div className="card-caixa-topo"><h3>Contador de Dinheiro</h3></div>
@@ -777,6 +1014,7 @@ export default function Caixa({ usuarioId, usuarioNome, onAbrirCaixa }: { usuari
             </div>
           </section>
         </div>
+        )
       )}
 
       {modalAbrir && (
@@ -786,7 +1024,22 @@ export default function Caixa({ usuarioId, usuarioNome, onAbrirCaixa }: { usuari
             <div className="form-grid">
               <label>Operador: {usuarioNome ?? usuarioId ?? '-'}</label>
               <label>Saldo inicial (R$)
-                <input autoFocus value={saldoAbertura} onChange={(e) => setSaldoAbertura(formatarMoedaDigitos(e.target.value))} placeholder="0,00" inputMode="decimal" />
+                {caixaSaldoAbertura !== 'informar' ? (
+                  <>
+                    <input autoFocus readOnly value={saldoAbertura} placeholder="0,00" inputMode="decimal" tabIndex={-1} />
+                    <small className="nota-config">
+                      {caixaSaldoAbertura === 'anterior' ? 'Saldo anterior (não pode ser alterado).' : 'Caixa zerado (não pode ser alterado).'}
+                    </small>
+                  </>
+                ) : (
+                  <input
+                    autoFocus
+                    value={saldoAbertura}
+                    onChange={(e) => setSaldoAbertura(formatarMoedaDigitos(e.target.value))}
+                    placeholder="0,00"
+                    inputMode="decimal"
+                  />
+                )}
               </label>
             </div>
             <div className="modal-acoes">
@@ -802,16 +1055,38 @@ export default function Caixa({ usuarioId, usuarioNome, onAbrirCaixa }: { usuari
           <div className="modal">
             <h3>{tipoMov === 'sangria' ? 'Remover Valores' : 'Adicionar Dinheiro'}</h3>
             <div className="form-grid">
-              <label>Valor (R$)
-                <input
-                  autoFocus
-                  value={valorMov}
-                  onChange={(e) => setValorMov(formatarMoedaDigitos(e.target.value))}
-                  placeholder="0,00"
-                  inputMode="decimal"
-                />
-                <small className="nota-config">Digite somente números — ex: 1500 = R$ 15,00</small>
-              </label>
+              {tipoMov === 'sangria' && meiosPagamento.length > 0 ? (
+                <>
+                  {meiosPagamento.map((m) => (
+                    <label key={m.id} style={{ gridColumn: '1 / -1' }}>
+                      {m.nome} (R$)
+                      <input
+                        value={sangriasPorForma[m.nome] ?? ''}
+                        onChange={(e) => setSangriasPorForma({ ...sangriasPorForma, [m.nome]: formatarMoedaDigitos(e.target.value) })}
+                        placeholder="0,00"
+                        inputMode="decimal"
+                      />
+                    </label>
+                  ))}
+                  <div className="modal-resumo" style={{ gridColumn: '1 / -1' }}>
+                    <div className="linha"><span>Total a remover</span><strong>R$ {totalSangriaPorForma.toFixed(2)}</strong></div>
+                  </div>
+                  <span className="nota-config" style={{ gridColumn: '1 / -1' }}>
+                    Informe o valor retirado em cada meio de pagamento separadamente.
+                  </span>
+                </>
+              ) : (
+                <label>Valor (R$)
+                  <input
+                    autoFocus
+                    value={valorMov}
+                    onChange={(e) => setValorMov(formatarMoedaDigitos(e.target.value))}
+                    placeholder="0,00"
+                    inputMode="decimal"
+                  />
+                  <small className="nota-config">Digite somente números — ex: 1500 = R$ 15,00</small>
+                </label>
+              )}
               <label style={{ gridColumn: '1 / -1' }}>Motivo
                 <input value={motivoMov} onChange={(e) => setMotivoMov(e.target.value)} placeholder={tipoMov === 'sangria' ? 'Ex: pagar entregador, troco...' : 'Ex: aporte de troco...'} />
               </label>
@@ -834,13 +1109,17 @@ export default function Caixa({ usuarioId, usuarioNome, onAbrirCaixa }: { usuari
               <div className="linha"><span>Entradas (suprimentos)</span><strong>R$ {caixaAtual.total_suprimentos.toFixed(2)}</strong></div>
               <div className="linha"><span>Retiradas (sangrias)</span><strong>R$ {caixaAtual.total_sangrias.toFixed(2)}</strong></div>
               <div className="linha"><span>Descontos</span><strong className="texto-vermelho">-R$ {caixaAtual.descontos.toFixed(2)}</strong></div>
-              {formas.map((f) => (
-                <div key={f.forma} className="linha"><span>• {f.forma}</span><strong>R$ {f.valor.toFixed(2)}</strong></div>
-              ))}
+              {fechamentoPor === 'forma' && (
+                <>
+                  {formas.map((f) => (
+                    <div key={f.forma} className="linha"><span>• {f.forma}</span><strong>R$ {f.valor.toFixed(2)}</strong></div>
+                  ))}
+                </>
+              )}
               <div className="linha total-periodo"><span>Saldo Final</span><strong>R$ {saldoFinal.toFixed(2)}</strong></div>
             </div>
             <div className="form-grid">
-              <label>Saldo físico contado (R$)
+              <label>Saldo físico contado (R$) {exigirSaldoFinal ? '(obrigatório)' : '(opcional)'}
                 <input autoFocus value={saldoFechamento} onChange={(e) => setSaldoFechamento(formatarMoedaDigitos(e.target.value))} placeholder={saldoFinal.toFixed(2)} inputMode="decimal" />
               </label>
             </div>
@@ -858,6 +1137,110 @@ export default function Caixa({ usuarioId, usuarioNome, onAbrirCaixa }: { usuari
           </div>
         </div>
       )}
+
+      {modalConfirmarQuebra && quebraPendente && caixaAtual && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <h3>Confirmação de quebra de caixa</h3>
+            <p className="sem-resultado">
+              O saldo físico informado difere do saldo do sistema. O valor correto apontado pelo sistema é{' '}
+              <strong>R$ {saldoFinal.toFixed(2)}</strong>. Confirma o fechamento com a quebra registrada abaixo?
+            </p>
+            <div className="modal-resumo">
+              <div className="linha"><span>Saldo do sistema (correto)</span><strong>R$ {saldoFinal.toFixed(2)}</strong></div>
+              <div className="linha"><span>Saldo físico informado</span><strong>R$ {quebraPendente.saldoFisico.toFixed(2)}</strong></div>
+              <div className="linha total-periodo"><span>Quebra de caixa</span>
+                <strong className={quebraPendente.quebra < 0 ? 'texto-vermelho' : ''}>
+                  {quebraPendente.quebra >= 0 ? '+' : ''}R$ {quebraPendente.quebra.toFixed(2)}
+                </strong>
+              </div>
+            </div>
+            {quebraPendente.quebra < 0 && (
+              <p className="sem-resultado texto-vermelho">
+                Atenção: houve sobra/valores divergentes. Revise o valor contado antes de confirmar.
+              </p>
+            )}
+            <div className="modal-acoes">
+              <button className="btn-secundario" onClick={() => { setModalConfirmarQuebra(false); setQuebraPendente(null) }}>Voltar</button>
+              <button className="btn-primario" onClick={() => executarFechamento(quebraPendente.saldoFisico, saldoFinal, quebraPendente.quebra)}>Confirmar e fechar no valor do sistema</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {modalAlterarSaldo && caixaAtual && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <h3>Alterar saldo inicial — caixa #{caixaAtual.id}</h3>
+            <p className="nota-config">O saldo inicial atual é R$ {caixaAtual.saldo_inicial.toFixed(2)}. Digite o novo valor em R$.</p>
+            <div className="form-grid">
+              <label>Novo saldo inicial (R$)
+                <input autoFocus value={novoSaldoInicial} onChange={(e) => setNovoSaldoInicial(formatarMoedaDigitos(e.target.value))} placeholder="0,00" inputMode="decimal" />
+              </label>
+            </div>
+            <div className="modal-acoes">
+              <button className="btn-secundario" onClick={() => setModalAlterarSaldo(false)}>Cancelar</button>
+              <button className="btn-primario" onClick={alterarSaldoInicial}>Salvar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {modalCorrigirData && caixaAtual && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <h3>Corrigir data/hora — caixa #{caixaAtual.id}</h3>
+            <p className="nota-config">Ajuste a data/hora de abertura do caixa. Formato: AAAA-MM-DD HH:MM:SS.</p>
+            <div className="form-grid">
+              <label>Data/hora de abertura
+                <input autoFocus value={novaAbertura} onChange={(e) => setNovaAbertura(e.target.value)} placeholder="2026-08-31 08:00:00" />
+              </label>
+            </div>
+            <div className="modal-acoes">
+              <button className="btn-secundario" onClick={() => setModalCorrigirData(false)}>Cancelar</button>
+              <button className="btn-primario" onClick={corrigirDataHora}>Salvar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {modalRelatorio && caixaAtual && (
+        <div className="modal-overlay" onClick={() => setModalRelatorio(false)}>
+          <div className="modal modal-pagamento" onClick={(e) => e.stopPropagation()}>
+            <h3>Relatório do caixa #{caixaAtual.id}</h3>
+            <div className="modal-resumo">
+              <div className="linha"><span>Abertura</span><strong>{caixaAtual.aberto_em}</strong></div>
+              <div className="linha"><span>Saldo inicial</span><strong>R$ {caixaAtual.saldo_inicial.toFixed(2)}</strong></div>
+              <div className="linha"><span>Total de vendas</span><strong>R$ {totalVendas.toFixed(2)}</strong></div>
+              <div className="linha"><span>Qtd. vendas</span><strong>{caixaAtual.qtd_vendas}</strong></div>
+              <div className="linha"><span>Entradas (suprimentos)</span><strong>R$ {caixaAtual.total_suprimentos.toFixed(2)}</strong></div>
+              <div className="linha"><span>Retiradas (sangrias)</span><strong>R$ {caixaAtual.total_sangrias.toFixed(2)}</strong></div>
+              <div className="linha"><span>Descontos</span><strong className="texto-vermelho">-R$ {caixaAtual.descontos.toFixed(2)}</strong></div>
+              <div className="linha total-periodo"><span>Saldo Final</span><strong>R$ {saldoFinal.toFixed(2)}</strong></div>
+            </div>
+            <div className="modal-acoes">
+              <button className="btn-primario" onClick={() => { setModalRelatorio(false); setMensagem('Relatório de caixa gerado.') }}>Gerar relatório</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {modalTotalizar && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <h3>Totalizar Período</h3>
+            <p className="nota-config">
+              Soma os caixas do período atual ({periodoFiltro === 'todos' ? 'todos' : periodoFiltro === 'hoje' ? 'hoje' : periodoFiltro === 'ontem' ? 'ontem' : periodoFiltro === '7d' ? 'últimos 7 dias' : periodoFiltro === 'mensal' ? 'este mês' : 'personalizado'}) mostrados na lista acima ({historico.filter((c) => !buscaCodigo || String(c.id) === buscaCodigo).length} caixa(s)).
+            </p>
+            <div className="modal-acoes">
+              <button className="btn-secundario" onClick={() => setModalTotalizar(false)}>Cancelar</button>
+              <button className="btn-primario" onClick={totalizarPeriodo}>Totalizar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {modalOpcoes && <OpcoesCaixa onFechar={() => setModalOpcoes(false)} />}
       </>
       )}
     </div>

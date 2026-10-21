@@ -11,6 +11,7 @@ interface Forma {
   taxa: number
   dias_receber: number
   ativo: number
+  troco_credito_conta: number
 }
 
 const TIPOS = [
@@ -29,7 +30,8 @@ const formaVazia = {
   max_parcelas: 1,
   taxa: '',
   dias_receber: 0,
-  ativo: 1
+  ativo: 1,
+  troco_credito_conta: 1
 }
 
 export default function FormasPagamento() {
@@ -66,7 +68,8 @@ export default function FormasPagamento() {
       max_parcelas: f.max_parcelas,
       taxa: String(f.taxa),
       dias_receber: f.dias_receber,
-      ativo: f.ativo
+      ativo: f.ativo,
+      troco_credito_conta: f.troco_credito_conta
     })
     setEditandoId(f.id)
     setFormAberto(true)
@@ -87,17 +90,18 @@ export default function FormasPagamento() {
       form.permite_parcelas ? Math.max(1, Number(form.max_parcelas) || 1) : 1,
       Number(form.taxa) || 0,
       Number(form.dias_receber) || 0,
-      form.ativo
+      form.ativo,
+      form.troco_credito_conta ? 1 : 0
     ]
     if (editandoId) {
       await db.run(
-        `UPDATE formas_pagamento SET nome=?, tipo=?, permite_troco=?, permite_parcelas=?, max_parcelas=?, taxa=?, dias_receber=?, ativo=? WHERE id=?`,
+        `UPDATE formas_pagamento SET nome=?, tipo=?, permite_troco=?, permite_parcelas=?, max_parcelas=?, taxa=?, dias_receber=?, ativo=?, troco_credito_conta=? WHERE id=?`,
         [...params, editandoId]
       )
     } else {
       await db.run(
-        `INSERT INTO formas_pagamento (nome, tipo, permite_troco, permite_parcelas, max_parcelas, taxa, dias_receber, ativo)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO formas_pagamento (nome, tipo, permite_troco, permite_parcelas, max_parcelas, taxa, dias_receber, ativo, troco_credito_conta)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         params
       )
     }
@@ -126,9 +130,9 @@ export default function FormasPagamento() {
       return
     }
     await getDbApi().run(
-      `INSERT INTO formas_pagamento (nome, tipo, permite_troco, permite_parcelas, max_parcelas, taxa, dias_receber, ativo)
-       VALUES (?, ?, ?, ?, ?, ?, ?, 1)`,
-      [nome, tipo.toLowerCase(), tipo === 'Dinheiro' ? 1 : 0, permite_parcelas, permite_parcelas ? 12 : 1, 0, 0]
+      `INSERT INTO formas_pagamento (nome, tipo, permite_troco, permite_parcelas, max_parcelas, taxa, dias_receber, ativo, troco_credito_conta)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)`,
+      [nome, tipo.toLowerCase(), tipo === 'Dinheiro' ? 1 : 0, permite_parcelas, permite_parcelas ? 12 : 1, 0, 0, 1]
     )
     setMensagem(`"${nome}" criada.`)
     carregar()
@@ -183,6 +187,13 @@ export default function FormasPagamento() {
                   <option value={1}>Sim</option>
                 </select>
               </label>
+              <label>Deixar troco como crédito em conta
+                <select value={form.troco_credito_conta} onChange={(e) => setForm({ ...form, troco_credito_conta: Number(e.target.value) })}>
+                  <option value={0}>Não</option>
+                  <option value={1}>Sim</option>
+                </select>
+                <small className="nota-config">Quando o pagamento sobra troco e não há troco em espécie, pode virar crédito na conta do cliente.</small>
+              </label>
               <label>Permite parcelas
                 <select value={form.permite_parcelas} onChange={(e) => setForm({ ...form, permite_parcelas: Number(e.target.value) })}>
                   <option value={0}>Não</option>
@@ -219,10 +230,8 @@ export default function FormasPagamento() {
           <tr>
             <th>Forma</th>
             <th>Tipo</th>
-            <th>Troco</th>
-            <th>Parcelas</th>
-            <th>Taxa</th>
-            <th>Dias rec.</th>
+            <th>Pode voltar troco?</th>
+            <th>Pode troco como crédito em conta?</th>
             <th>Status</th>
             <th></th>
           </tr>
@@ -233,9 +242,7 @@ export default function FormasPagamento() {
               <td>{f.nome}</td>
               <td>{labelTipo(f.tipo)}</td>
               <td>{f.permite_troco ? 'Sim' : 'Não'}</td>
-              <td>{f.permite_parcelas ? `até ${f.max_parcelas}x` : 'Não'}</td>
-              <td>{f.taxa ? `${f.taxa}%` : '-'}</td>
-              <td>{f.dias_receber}</td>
+              <td>{f.troco_credito_conta ? 'Sim' : 'Não'}</td>
               <td>{f.ativo ? 'Ativa' : 'Inativa'}</td>
               <td className="td-acoes">
                 <button className="btn-mini" onClick={() => abrirEdicao(f)}>Editar</button>
@@ -245,7 +252,7 @@ export default function FormasPagamento() {
             </tr>
           ))}
           {formas.length === 0 && (
-            <tr><td colSpan={8} className="sem-resultado">Nenhuma forma cadastrada.</td></tr>
+            <tr><td colSpan={6} className="sem-resultado">Nenhuma forma cadastrada.</td></tr>
           )}
         </tbody>
       </table>

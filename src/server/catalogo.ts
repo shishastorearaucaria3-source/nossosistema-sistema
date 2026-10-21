@@ -94,12 +94,32 @@ function exibicaoPadrao(): ExibicaoConfig {
   }
 }
 
-function pegarConfig(chave: string): string {
+export function pegarConfig(chave: string): string {
   try {
     const db = getDb()
     const r = db.prepare(`SELECT valor FROM config WHERE chave = ?`).get(chave) as { valor: string | null } | undefined
     return r?.valor ?? ''
   } catch { return '' }
+}
+
+// Zonas de entrega ativas no checkout público (sem o polígono — a zona é
+// identificada pelo CEP informado no catálogo; o valor da taxa entra na
+// mensagem do WhatsApp). Exclui polígono e dados internos do ERP.
+export function getZonasPublicas(): { id: number; nome: string; preco: number; ceps: string[] }[] {
+  try {
+    const db = getDb()
+    const rows = db.prepare(`SELECT id, nome, preco, ceps FROM zonas_entrega WHERE ativo = 1 ORDER BY preco, nome`).all() as unknown as { id: number; nome: string; preco: number; ceps: string | null }[]
+    return rows.map((r) => {
+      let ceps: string[] = []
+      if (typeof r.ceps === 'string' && r.ceps) {
+        try {
+          const parsed = JSON.parse(r.ceps)
+          if (Array.isArray(parsed)) ceps = parsed.map(String).filter((c) => c.length >= 3)
+        } catch { /* ignore */ }
+      }
+      return { id: r.id, nome: r.nome, preco: r.preco, ceps }
+    })
+  } catch { return [] }
 }
 
 export function getExibicao(): ExibicaoConfig {
@@ -188,9 +208,23 @@ export interface StatusCatalogo {
   site_url: string
   configurado: boolean
   sincronizando: boolean
+  conectado: boolean
+  auto_sync_ativos: boolean
+  auto_sync_intervalo_seg: number
 }
 
 let sincronizando = false
+
+export function setSincronizando(v: boolean): void {
+  sincronizando = v
+}
+
+// Limpa a fila de alterações pendentes após uma sincronização bem-sucedida.
+export function limparFilaCatalogo(): void {
+  try {
+    getDb().prepare(`DELETE FROM catalogo_fila`).run()
+  } catch { /* ignore */ }
+}
 
 export function getStatus(): StatusCatalogo {
   const db = getDb()
@@ -213,7 +247,10 @@ export function getStatus(): StatusCatalogo {
     ultimo_erro: getSync('ultimo_erro'),
     site_url: cfg.site_url,
     configurado: !!cfg.site_url,
-    sincronizando
+    sincronizando,
+    conectado: getSync('conectado') === '1',
+    auto_sync_ativos: pegarConfig('auto_sync_ativos') === '1',
+    auto_sync_intervalo_seg: Number(pegarConfig('auto_sync_intervalo_seg')) || 60,
   }
 }
 
@@ -226,6 +263,12 @@ export interface LojaPublica {
   whatsapp?: string
   endereco?: string
   horario?: string
+  manutencao_ativos?: boolean
+  pedidos_ativos?: boolean
+  aceita_entrega?: boolean
+  aceita_retirada?: boolean
+  taxa_entrega?: number
+  zonas?: { id: number; nome: string; preco: number; ceps: string[] }[]
 }
 
 export interface CategoriaPublica {
@@ -271,6 +314,17 @@ export function gerarCatalogoPublico(): CatalogoPublicoV1 {
   if (endereco) loja.endereco = endereco
   const horario = pegarConfig('horario_funcionamento')
   if (horario) loja.horario = horario
+
+  // Estado de operação da loja: manutenção, pedidos ativos e entrega/retirada.
+  // O catálogo online usa estes sinalizadores para bloquear compras e o
+  // checkout (manutenção) ou desativar o carrinho (pedidos desativados).
+  loja.manutencao_ativos = pegarConfig('manutencao_ativos') === '1'
+  loja.pedidos_ativos = (pegarConfig('pedidos_ativos') || '1') === '1'
+  loja.aceita_entrega = (pegarConfig('aceita_entrega') || '1') === '1'
+  loja.aceita_retirada = pegarConfig('aceita_retirada') === '1'
+  loja.taxa_entrega = Number(pegarConfig('taxa_entrega')) || 0
+  const zonas = getZonasPublicas()
+  if (zonas.length > 0) loja.zonas = zonas
 
   const produtos: ProdutoPublicoV1[] = base.map((p) => {
     const item: ProdutoPublicoV1 = {

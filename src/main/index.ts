@@ -8,6 +8,7 @@ import { servidorClient, getServidorUrl, configurarServidor, lerPortaGravada, de
 import { gravarLogServidor } from './log'
 import { versaoAtual, verificarAtualizacao, instalarAtualizacao, getUpdateBaseUrl, setUpdateBaseUrl, tipoInstalacaoAtual } from './update'
 import { getUpdateMarkerPath, getLogFilePath } from '../shared/data-dir'
+import { garantirTokenRelay, caminhoTokenRelay, lerTokenRelay } from '../shared/relay-token'
 
 const PRODUTO = 'NossoSistema'
 const APP_ID = 'br.com.lojatabacaria.sistema'
@@ -306,6 +307,12 @@ function iniciarSupervisorRelay(): void {
   try {
     if (tipoInstalacaoAtual() === 'cliente') {
       gravarLogServidor('[relay] instalação cliente — supervisor não iniciado (exclusivo de servidor)')
+      return
+    }
+    const token = garantirTokenRelay()
+    gravarLogServidor(`[relay] token do catálogo ${lerTokenRelay() ? 'presente' : 'criado'} em ${caminhoTokenRelay()}`)
+    if (!token) {
+      gravarLogServidor('[relay] sem token disponível — réle não inicia (fail-closed)')
       return
     }
     const caminho = caminhoSupervisorRelay()

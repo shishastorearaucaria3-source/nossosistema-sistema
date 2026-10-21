@@ -1,4 +1,4 @@
-export const SCHEMA_VERSION = 42
+export const SCHEMA_VERSION = 49
 
 export const migrations: Record<number, string> = {
   1: `
@@ -827,5 +827,173 @@ export const migrations: Record<number, string> = {
       AND (json_extract(valor, '$.github_token') IS NOT NULL
            OR json_extract(valor, '$.github_repo') IS NOT NULL
            OR json_extract(valor, '$.github_branch') IS NOT NULL);
+  `,
+  43: `
+    -- ============================================================
+    -- MIGRATION 43: Meios de pagamento - troco como crédito em conta +
+    -- limite máximo de troco por venda (config).
+    --
+    -- troco_credito_conta: permite deixar o troco como crédito em conta
+    -- do cliente quando não há troco em espécie suficiente.
+    -- ============================================================
+
+    ALTER TABLE formas_pagamento ADD COLUMN troco_credito_conta INTEGER NOT NULL DEFAULT 1;
+
+    -- Padrão: Dinheiro permite troco em espécie; as demais não. Todas podem
+    -- deixar troco como crédito em conta por padrão.
+    UPDATE formas_pagamento SET permite_troco = 1, troco_credito_conta = 1 WHERE tipo = 'dinheiro';
+
+    -- Limite máximo de troco permitido por venda (0 = sem limite).
+    INSERT OR IGNORE INTO config (chave, valor) VALUES ('vendas_troco_max', '0');
+  `,
+  44: `
+    -- ============================================================
+    -- MIGRATION 44: E-mail do usuário
+    -- ============================================================
+
+    ALTER TABLE usuarios ADD COLUMN email TEXT;
+  `,
+  45: `
+    -- ============================================================
+    -- MIGRATION 45: Múltiplos endereços por cliente
+    -- ============================================================
+
+    CREATE TABLE IF NOT EXISTS clientes_enderecos (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      cliente_id INTEGER NOT NULL REFERENCES clientes(id) ON DELETE CASCADE,
+      rotulo TEXT,
+      endereco TEXT,
+      numero TEXT,
+      complemento TEXT,
+      bairro TEXT,
+      cidade TEXT,
+      uf TEXT,
+      cep TEXT,
+      principal INTEGER NOT NULL DEFAULT 0,
+      criado_em TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (cliente_id) REFERENCES clientes(id)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_clientes_enderecos_cliente ON clientes_enderecos(cliente_id);
+  `,
+  46: `
+    -- ============================================================
+    -- MIGRATION 46: Auditoria de movimentações + cancelamento de compra
+    --
+    -- movimentacoes:
+    --   estoque_anterior / estoque_posterior — saldo do produto antes e
+    --     depois de cada movimentação (ficha do produto / auditoria).
+    --   compra_id — vínculo da movimentação de entrada com a compra
+    --     que a originou (análogo ao venda_id das saídas).
+    -- compras:
+    --   cancelada / cancelada_em / cancelada_por — para reverter a
+    --     entrada de estoque no estorno e impedir dupla reversão.
+    -- ============================================================
+
+    ALTER TABLE movimentacoes ADD COLUMN estoque_anterior REAL;
+    ALTER TABLE movimentacoes ADD COLUMN estoque_posterior REAL;
+    ALTER TABLE movimentacoes ADD COLUMN compra_id INTEGER REFERENCES compras(id);
+
+    ALTER TABLE compras ADD COLUMN cancelada INTEGER NOT NULL DEFAULT 0;
+    ALTER TABLE compras ADD COLUMN cancelada_em TEXT;
+    ALTER TABLE compras ADD COLUMN cancelada_por INTEGER REFERENCES usuarios(id);
+
+    CREATE INDEX IF NOT EXISTS idx_mov_compra ON movimentacoes(compra_id);
+  `,
+  47: `
+    -- ============================================================
+    -- MIGRATION 47: Identificação de zona de entrega por CEP
+    --
+    -- Adiciona coluna "ceps" às zonas de entrega: lista JSON de prefixos
+    -- de CEP (3 a 8 dígitos, sem pontuação) que identificam a zona no
+    -- catálogo online. O polígono continua existindo para o fluxo por
+    -- localização (WhatsApp/PDV); o CEP é o vínculo usado no catálogo.
+    -- ============================================================
+
+    ALTER TABLE zonas_entrega ADD COLUMN ceps TEXT NOT NULL DEFAULT '[]';
+  `,
+  48: `
+    -- ============================================================
+    -- MIGRATION 48: Pedidos do catálogo online
+    --
+    -- Espelha localmente os pedidos criados no catálogo (salvos em D1 na
+    -- nuvem). O ERP puxa do worker quando online e grava aqui. O campo "id"
+    -- é o mesmo uuid do D1: é a chave de idempotência (o pedido nunca é
+    -- importado/estocado duas vezes — o decremento de estoque acontece UMA
+    -- vez por pedido, no primeiro pull).
+    -- ============================================================
+
+    CREATE TABLE IF NOT EXISTS pedidos_online (
+      id TEXT PRIMARY KEY,
+      numero INTEGER NOT NULL DEFAULT 0,
+      cliente_nome TEXT NOT NULL,
+      cliente_whatsapp TEXT,
+      modalidade TEXT NOT NULL DEFAULT 'entrega',
+      endereco TEXT,
+      cep TEXT,
+      zona_nome TEXT,
+      taxa_entrega REAL NOT NULL DEFAULT 0,
+      subtotal REAL NOT NULL DEFAULT 0,
+      desconto REAL NOT NULL DEFAULT 0,
+      total REAL NOT NULL DEFAULT 0,
+      forma_pagamento TEXT,
+      observacao TEXT,
+      status TEXT NOT NULL DEFAULT 'novo',
+      importado_em TEXT,
+      criado_em TEXT,
+      atualizado_em TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS pedido_online_itens (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      pedido_id TEXT NOT NULL REFERENCES pedidos_online(id) ON DELETE CASCADE,
+      produto_id INTEGER NOT NULL,
+      nome_produto TEXT NOT NULL,
+      quantidade INTEGER NOT NULL,
+      preco_unitario REAL NOT NULL,
+      subtotal REAL NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_pedido_online_itens_pedido
+      ON pedido_online_itens(pedido_id);
+
+    -- Controle da última posição puxada do worker (evita repetir a leitura
+    -- de pedidos já vistos para buscar os novos).
+    CREATE TABLE IF NOT EXISTS pedidos_online_sync (
+      chave TEXT PRIMARY KEY,
+      valor TEXT
+    );
+
+    INSERT OR IGNORE INTO pedidos_online_sync (chave, valor) VALUES ('ultimo_pedido_criado', '');
+  `,
+  49: ``,
+  50: `
+    -- ============================================================
+    -- MIGRATION 50: Estornos pós-fechamento (audit trail)
+    --
+    -- Permite cancelar vendas vinculadas a caixas FECHADOS sem alterar
+    -- retroativamente os agregados daquele caixa (total_vendas, qtd_vendas,
+    -- descontos, cancelamentos). Os estornos são registrados em tabela
+    -- auditável e aparecem em relatórios dedicados.
+    -- ============================================================
+
+    CREATE TABLE IF NOT EXISTS vendas_canceladas_pos_fechamento (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      venda_id INTEGER NOT NULL REFERENCES vendas(id) ON DELETE CASCADE,
+      caixa_id INTEGER NOT NULL REFERENCES caixas(id),
+      numero TEXT NOT NULL,
+      total REAL NOT NULL DEFAULT 0,
+      desconto REAL NOT NULL DEFAULT 0,
+      itens_devolvidos INTEGER NOT NULL DEFAULT 0,
+      motivo TEXT,
+      usuario_id INTEGER REFERENCES usuarios(id),
+      criado_em TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_vendas_canceladas_pf_venda
+      ON vendas_canceladas_pos_fechamento(venda_id);
+
+    CREATE INDEX IF NOT EXISTS idx_vendas_canceladas_pf_caixa
+      ON vendas_canceladas_pos_fechamento(caixa_id);
   `
 }

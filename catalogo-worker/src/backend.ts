@@ -1,8 +1,16 @@
+import { BackendSupabase } from "./backend-supabase";
+
 export interface LojaPublica {
   nome: string;
   whatsapp?: string;
   endereco?: string;
   horario?: string;
+  manutencao_ativos?: boolean;
+  pedidos_ativos?: boolean;
+  aceita_entrega?: boolean;
+  aceita_retirada?: boolean;
+  taxa_entrega?: number;
+  zonas?: { id: number; nome: string; preco: number; ceps?: string[] }[];
 }
 
 export interface CategoriaPublica {
@@ -24,7 +32,7 @@ export interface ProdutoPublicoV1 {
   disponivel: boolean;
   estoque?: number;
   ordem: number;
-  imagem: number | null;
+  imagem: number | string | null;
 }
 
 export interface CatalogoPublicoV1 {
@@ -51,6 +59,12 @@ export interface Env {
   CATALOGO_CORS_ORIGEM?: string;
   CATALOGO_API?: Fetcher;
   CATALOGO_RELAY_TOKEN?: string;
+  CATALOGO_DB?: D1Database;
+  CATALOGO_BUCKET?: R2Bucket;
+  CATALOGO_SYNC_TOKEN?: string;
+  SUPABASE_URL?: string;
+  SUPABASE_SERVICE_KEY?: string;
+  EMPRESA_ID?: string;
 }
 
 const LOJA_SINTETICA: LojaPublica = {
@@ -177,9 +191,6 @@ const MOCK = new BackendMock();
 const ERRO = new BackendErro();
 const TIMEOUT = new BackendTimeout();
 
-// Base fixa e simbólica: o host/porta/cep do destino SÃO definidos pela
-// configuração do VPC Service (binding env.CATALOGO_API) — nunca pelo
-// visitante. Qualquer host presente aqui é ignorado (sem SSRF).
 const BASE_VPC = "http://catalogo-interno";
 
 class BackendVpc implements CatalogoBackend {
@@ -192,7 +203,7 @@ class BackendVpc implements CatalogoBackend {
   }
 
   private cabecalhos(): Record<string, string> {
-    return { "Authorization": "Bearer " + this.token };
+    return { Authorization: "Bearer " + this.token };
   }
 
   async getCatalogoPublico(): Promise<CatalogoPublicoV1> {
@@ -217,7 +228,159 @@ class BackendVpc implements CatalogoBackend {
   }
 }
 
+class BackendD1 implements CatalogoBackend {
+  private db: D1Database;
+  private bucket: R2Bucket | undefined;
+
+  constructor(db: D1Database, bucket?: R2Bucket) {
+    this.db = db;
+    this.bucket = bucket;
+  }
+
+  async getCatalogoPublico(): Promise<CatalogoPublicoV1> {
+    const lojaRows = await this.db
+      .prepare("SELECT chave, valor FROM loja_config")
+      .all<{ chave: string; valor: string }>();
+    const lojaMap = new Map(lojaRows.results.map((r) => [r.chave, r.valor]));
+
+    const nome = lojaMap.get("nome_loja") || "Loja";
+    const loja: LojaPublica = { nome };
+    if (lojaMap.get("whatsapp")) loja.whatsapp = lojaMap.get("whatsapp");
+    if (lojaMap.get("endereco")) loja.endereco = lojaMap.get("endereco");
+    if (lojaMap.get("horario")) loja.horario = lojaMap.get("horario");
+    loja.manutencao_ativos = lojaMap.get("manutencao_ativos") === "1";
+    loja.pedidos_ativos = lojaMap.get("pedidos_ativos") !== "0";
+    loja.aceita_entrega = lojaMap.get("aceita_entrega") !== "0";
+    loja.aceita_retirada = lojaMap.get("aceita_retirada") === "1";
+    loja.taxa_entrega = Number(lojaMap.get("taxa_entrega")) || 0;
+
+    const zonas = await this.db
+      .prepare("SELECT id, nome, preco, ceps FROM zonas_entrega ORDER BY preco, nome")
+      .all<{ id: number; nome: string; preco: number; ceps: string | null }>();
+    if (zonas.results.length > 0) {
+      loja.zonas = zonas.results.map((z) => {
+        let ceps: string[] = [];
+        if (typeof z.ceps === "string" && z.ceps) {
+          try {
+            const parsed = JSON.parse(z.ceps);
+            if (Array.isArray(parsed)) ceps = parsed.map(String).filter((c) => c.length >= 3);
+          } catch {
+            /* ignore */
+          }
+        }
+        return { id: z.id, nome: z.nome, preco: z.preco, ceps };
+      });
+    }
+
+    const categorias = await this.db
+      .prepare("SELECT id, nome FROM categorias ORDER BY nome")
+      .all<{ id: number; nome: string }>();
+
+    const mostrarEstoque = lojaMap.get("mostrar_estoque") !== "0";
+    const semEstoque = lojaMap.get("sem_estoque") || "manter";
+
+    let produtos = await this.db
+      .prepare(
+        `SELECT p.id, p.nome, p.descricao, p.categoria_id, c.nome AS categoria,
+                p.subcategoria, p.marca, p.preco, p.preco_promo, p.tem_promo,
+                p.disponivel, p.estoque, p.ordem, p.imagem_key
+         FROM produtos p
+         LEFT JOIN categorias c ON c.id = p.categoria_id
+         ORDER BY p.ordem, p.nome`
+      )
+      .all<{
+        id: number; nome: string; descricao: string | null;
+        categoria_id: number | null; categoria: string | null;
+        subcategoria: string | null; marca: string | null;
+        preco: number; preco_promo: number | null; tem_promo: number;
+        disponivel: number; estoque: number; ordem: number;
+        imagem_key: string | null;
+      }>();
+
+    let produtosFmt: ProdutoPublicoV1[] = produtos.results.map((r) => ({
+      id: r.id,
+      nome: r.nome,
+      descricao: r.descricao,
+      categoria: r.categoria,
+      categoria_id: r.categoria_id,
+      subcategoria: r.subcategoria,
+      marca: r.marca,
+      preco: r.preco,
+      preco_promo: r.preco_promo,
+      tem_promo: r.tem_promo === 1,
+      disponivel: r.disponivel === 1,
+      estoque: mostrarEstoque ? r.estoque : undefined,
+      ordem: r.ordem,
+      imagem: r.imagem_key ? r.id : null,
+    }));
+
+    if (semEstoque === "despublicar") {
+      produtosFmt = produtosFmt.filter((p) => (p.estoque ?? 0) > 0);
+    }
+
+    return {
+      version: 1,
+      generatedAt: new Date().toISOString(),
+      loja,
+      categorias: categorias.results,
+      produtos: produtosFmt,
+    };
+  }
+
+  async getImagem(id: number): Promise<ImagemCatalogo | null> {
+    const row = await this.db
+      .prepare("SELECT imagem_key FROM produtos WHERE id = ?")
+      .bind(id)
+      .first<{ imagem_key: string | null }>();
+    if (!row?.imagem_key) return null;
+
+    if (row.imagem_key.startsWith("inline:")) {
+      const partes = row.imagem_key.slice("inline:".length).split(":");
+      const ext = partes[0] || "jpg";
+      const b64 = partes.slice(1).join(":");
+      let bytes: Uint8Array<ArrayBuffer>;
+      try {
+        const bin = atob(b64);
+        const buf = new ArrayBuffer(bin.length);
+        bytes = new Uint8Array(buf);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      } catch {
+        return null;
+      }
+      const mime =
+        ext === "png" ? "image/png" : ext === "webp" ? "image/webp" : ext === "gif" ? "image/gif" : "image/jpeg";
+      return { bytes, mime };
+    }
+
+    if (!this.bucket) return null;
+    const obj = await this.bucket.get(row.imagem_key);
+    if (!obj) return null;
+
+    const mime = detectarMime(row.imagem_key);
+    const bytes = new Uint8Array(await obj.arrayBuffer());
+    return { bytes, mime };
+  }
+}
+
+function detectarMime(key: string): string {
+  if (key.endsWith(".png")) return "image/png";
+  if (key.endsWith(".jpg") || key.endsWith(".jpeg")) return "image/jpeg";
+  if (key.endsWith(".gif")) return "image/gif";
+  if (key.endsWith(".webp")) return "image/webp";
+  return "application/octet-stream";
+}
+
 export function criarBackend(env: Env): CatalogoBackend {
+  if (env.SUPABASE_URL && env.SUPABASE_SERVICE_KEY && env.EMPRESA_ID) {
+    return new BackendSupabase({
+      SUPABASE_URL: env.SUPABASE_URL,
+      SUPABASE_SERVICE_KEY: env.SUPABASE_SERVICE_KEY,
+      EMPRESA_ID: env.EMPRESA_ID,
+    });
+  }
+  if (env.CATALOGO_DB) {
+    return new BackendD1(env.CATALOGO_DB, env.CATALOGO_BUCKET);
+  }
   if (env.CATALOGO_API) {
     return new BackendVpc(env.CATALOGO_API, env.CATALOGO_RELAY_TOKEN || "");
   }

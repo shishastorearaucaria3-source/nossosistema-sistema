@@ -13,7 +13,11 @@
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
     "servidor": "npm run build:servidor && node out/server/server/index.js",
     "relay": "npm run build:servidor && node out/server/server/relay.js",
-    "test:relay": "npm run build:servidor && node --test tests/relay-permissao.test.mjs tests/relay-supervisor.test.mjs",
+    "test:relay": "npm run build:servidor && node --test tests/relay-permissao.test.mjs tests/relay-supervisor.test.mjs tests/relay-fluxo.test.mjs",
+    "test:fila": "npm run build:servidor && node --test tests/fila-offline.test.mjs",
+    "test:pedidos": "npm run build:servidor && node --test tests/pedidos-online.test.mjs",
+    "test:estoque": "node --test tests/estoque-movimentacoes.test.ts",
+    "test:whatsapp": "npm run build:servidor && node --test tests/whatsapp-integration.test.ts",
     "servidor:instalar": "npm run build:servidor && node scripts/instalar-servidor.js",
     "build:servidor": "tsc -p tsconfig.server.json",
     "build:servidor-exe": "tsc -p tsconfig.servidor-exe.json && node scripts/copiar-servidor-exe.js",
@@ -27,6 +31,7 @@
     "publicar": "node scripts/publicar-versao.js"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.115.0",
     "adm-zip": "^0.6.0",
     "bcryptjs": "^2.4.3",
     "express": "^4.21.2",

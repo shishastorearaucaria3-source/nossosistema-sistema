@@ -7,6 +7,7 @@ import Hero from './components/Hero'
 import GradeProdutos from './components/GradeProdutos'
 import CarrinhoDrawer from './components/CarrinhoDrawer'
 import BannerConexao from './components/BannerConexao'
+import Manutencao from './components/Manutencao'
 import Rodape from './components/Rodape'
 
 export default function App() {
@@ -67,6 +68,12 @@ export default function App() {
     )
   }
 
+  const pedidosAtivos = dados.loja.pedidos_ativos !== false
+
+  if (dados.loja.manutencao_ativos) {
+    return <Manutencao loja={dados.loja} />
+  }
+
   const origem = estado.origem
   const origemGrade: 'api' | 'mock' = origem === 'api' ? 'api' : 'mock'
   const aoTentarNovamente = () => {
@@ -85,6 +92,7 @@ export default function App() {
       <BannerConexao origem={origem} aoUsarReal={aoTentarNovamente} />
       <Cabecalho
         nomeLoja={dados.loja.nome ?? ''}
+        pedidosAtivos={pedidosAtivos}
         busca={busca}
         onBusca={setBusca}
         categoriaAtiva={categoria}
@@ -96,14 +104,14 @@ export default function App() {
         {ofertas.length > 0 && (
           <section className="ofertas" aria-label="Ofertas da semana">
             <h2 className="ofertas__titulo">Ofertas da semana</h2>
-            <GradeProdutos produtos={ofertas} origem={origemGrade} />
+            <GradeProdutos produtos={ofertas} origem={origemGrade} pedidosAtivos={pedidosAtivos} />
           </section>
         )}
         <h2 className="grade-titulo">{tituloGrade}</h2>
-        <GradeProdutos produtos={visiveis} origem={origemGrade} />
+        <GradeProdutos produtos={visiveis} origem={origemGrade} pedidosAtivos={pedidosAtivos} />
       </main>
       <Rodape nomeLoja={dados.loja.nome ?? ''} />
-      <CarrinhoDrawer />
+      <CarrinhoDrawer loja={dados.loja} />
     </>
   )
 }

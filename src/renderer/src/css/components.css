@@ -1,0 +1,1244 @@
+/* ============================================================
+   COMPONENTS — regras compartilhadas entre módulos
+   (modais, forms, linhas, switch, dropdown, pagamento, etc.)
+   ============================================================ */
+
+/* — Modais — */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+
+.modal {
+  background: var(--bg2);
+  border: 1px solid var(--borda);
+  border-radius: 10px;
+  padding: 20px;
+  width: 560px;
+  max-width: 95vw;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-tela-cheia {
+  width: 100vw;
+  max-width: 100vw;
+  max-height: 100vh;
+  height: 100vh;
+  border-radius: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-tela-cheia .modal-topo,
+.modal-tela-cheia .modal-cabecalho {
+  flex-shrink: 0;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--borda);
+}
+
+.modal-tela-cheia .modal-corpo,
+.modal-tela-cheia .modal-conteudo {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+.modal-tela-cheia .modal-rodape,
+.modal-tela-cheia .modal-acoes {
+  flex-shrink: 0;
+  padding: 16px 24px;
+  border-top: 1px solid var(--borda);
+  background: var(--bg2);
+}
+
+.modal h3 {
+  margin-bottom: 16px;
+}
+
+.modal-pequeno {
+  width: 400px;
+  max-width: 95vw;
+}
+
+.modal-grande {
+  width: 640px;
+  max-width: 94vw;
+}
+
+.modal-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.modal-conteudo {
+  min-height: 320px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.modal-conteudo .form-grid {
+  margin-top: 8px;
+}
+
+.modal-acoes {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+/* — Forms — */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.form-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 13px;
+  color: var(--texto2);
+}
+
+.form-grid input,
+.form-grid select {
+  padding: 9px 10px;
+  background: var(--bg3);
+  border: 1px solid var(--borda);
+  border-radius: 6px;
+  color: var(--texto);
+  font-size: 14px;
+}
+
+.form-grid input:focus,
+.form-grid select:focus {
+  outline: none;
+  border-color: var(--primaria);
+}
+
+.form-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.form-secao {
+  margin: 16px 0;
+  border-top: 1px solid var(--borda);
+  padding-top: 14px;
+}
+
+.form-secao-titulo {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--texto2);
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+/* — Linhas — */
+.linha {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+}
+
+.linha.troco strong {
+  color: var(--verde);
+}
+
+.linha.pgto {
+  color: var(--texto2);
+  font-size: 13px;
+}
+
+/* — Tabela ação fixa / ordenação — */
+.th-acao-fixa {
+  position: sticky;
+  left: 0;
+  background: var(--bg2);
+  z-index: 3;
+  min-width: 90px;
+}
+
+.td-acoes {
+  position: sticky;
+  left: 0;
+  background: var(--bg2);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tabela tr:hover td.td-acoes {
+  background: var(--bg2);
+}
+
+.td-acoes .btn-abrir-pedido,
+.td-acoes .btn-mini {
+  flex: 0 0 auto;
+}
+
+.usuario-acoes-menu {
+  position: relative;
+}
+
+.dropdown-filtro-item-perigo {
+  color: var(--vermelho);
+}
+
+.dropdown-filtro-item-perigo:hover {
+  background: var(--perigo-bg);
+  color: var(--perigo-texto);
+}
+
+.dropdown-filtro-item:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.th-ordena {
+  cursor: pointer;
+  user-select: none;
+}
+
+.th-ordena:hover {
+  background: var(--bg3);
+}
+
+/* — Dropdown colunas — */
+.dropdown-colunas-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 40;
+  background: var(--bg2);
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  min-width: 230px;
+  max-height: 380px;
+  overflow-y: auto;
+}
+
+.dropdown-colunas-titulo {
+  font-size: 13px;
+  font-weight: 700;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--borda);
+  margin-bottom: 4px;
+}
+
+.dropdown-colunas-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+  padding: 7px 10px;
+  border: none;
+  background: transparent;
+  color: var(--texto);
+  font-size: 13px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.dropdown-colunas-item:hover {
+  background: var(--bg3);
+}
+
+.dropdown-colunas-lock {
+  margin-left: auto;
+  font-size: 12px;
+}
+
+/* — Login form dentro de modal — */
+.login-form-dentro {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.login-form-dentro label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 13px;
+  color: var(--texto2);
+}
+
+.login-form-dentro input {
+  padding: 9px 10px;
+  background: var(--bg3);
+  border: 1px solid var(--borda);
+  border-radius: 6px;
+  color: var(--texto);
+  font-family: inherit;
+  font-size: 14px;
+}
+
+/* — Switch (checkbox toggle) — */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 42px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.switch .slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background: var(--borda);
+  border-radius: 24px;
+  transition: 0.2s;
+}
+
+.switch .slider:before {
+  content: '';
+  position: absolute;
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background: #fff;
+  border-radius: 50%;
+  transition: 0.2s;
+}
+
+.switch input:checked + .slider {
+  background: var(--primaria);
+}
+
+.switch input:checked + .slider:before {
+  transform: translateX(18px);
+}
+
+/* — Home / Início — */
+.home-banner {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 24px;
+  background: var(--bg2);
+  border: 1px solid var(--borda);
+  border-radius: 10px;
+  margin-bottom: 16px;
+}
+
+.home-banner h2 {
+  font-size: 24px;
+}
+
+.home-banner p {
+  color: var(--texto2);
+}
+
+.btn-pdv-grande {
+  margin-top: 10px;
+  padding: 18px 28px;
+  font-size: 20px;
+  font-weight: 700;
+  background: var(--primaria);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.btn-pdv-grande kbd {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 6px;
+  padding: 4px 10px;
+  margin-left: 8px;
+  font-size: 14px;
+}
+
+.home-modulos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+}
+
+.home-modulo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 16px;
+  background: var(--bg2);
+  border: 1px solid var(--borda);
+  border-radius: 10px;
+  color: var(--texto);
+  cursor: pointer;
+  text-align: left;
+}
+
+.home-modulo:hover {
+  border-color: var(--primaria);
+  background: var(--bg3);
+}
+
+.home-modulo span {
+  font-size: 12px;
+  color: var(--texto2);
+}
+
+/* — Pagamento (PDV / Caixa) — */
+.pagamento-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  background: var(--bg3);
+  padding: 14px 16px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+.pagamento-total span {
+  color: var(--texto2);
+  font-size: 14px;
+}
+
+.pagamento-total strong {
+  font-size: 26px;
+}
+
+.pagamento-falta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 10px 0;
+  border-top: 1px solid var(--borda);
+  border-bottom: 1px solid var(--borda);
+  margin: 10px 0;
+}
+
+.pagamento-falta span {
+  color: var(--texto2);
+}
+
+.pagamento-falta strong {
+  font-size: 22px;
+  color: var(--vermelho);
+}
+
+.pagamento-falta.ok strong {
+  color: var(--verde);
+}
+
+.pagamento-entrada {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.pagamento-entrada select,
+.pagamento-entrada input {
+  padding: 10px;
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  background: var(--bg3);
+  color: var(--texto);
+  font-size: 15px;
+}
+
+.pagamento-entrada select {
+  flex: 0 0 auto;
+}
+
+.pagamento-entrada input {
+  flex: 1;
+  min-width: 0;
+}
+
+.pagamento-formas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.pagamento-formas button {
+  padding: 8px 12px;
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  background: var(--bg3);
+  color: var(--texto);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.pagamento-formas button.ativo {
+  background: var(--primaria);
+  color: #fff;
+  border-color: var(--primaria);
+  font-weight: 700;
+}
+
+.pagamento-ajuda {
+  font-size: 12px;
+  color: var(--texto2);
+  margin-bottom: 10px;
+}
+
+.pagamento-ajuda kbd {
+  background: var(--bg3);
+  border: 1px solid var(--borda);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 12px;
+}
+
+/* — Busca PDV (sugestões) — */
+.pdv-busca-wrap {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.pdv-busca-wrap .busca-pdv {
+  width: 100%;
+}
+
+.pdv-sugestoes {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--bg3);
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  max-height: 320px;
+  overflow-y: auto;
+  z-index: 30;
+}
+
+.pdv-sugestao {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 14px;
+  border: none;
+  border-bottom: 1px solid var(--borda);
+  background: transparent;
+  color: var(--texto);
+  cursor: pointer;
+  text-align: left;
+}
+
+.pdv-sugestao:last-child {
+  border-bottom: none;
+}
+
+.pdv-sugestao.ativo {
+  background: rgba(37, 99, 235, 0.12);
+}
+
+.pdv-sugestao .ps-imagem {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid var(--borda);
+  flex: 0 0 auto;
+}
+
+.pdv-sugestao .ps-texto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.pdv-sugestao .ps-nome {
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.pdv-sugestao .ps-info {
+  font-size: 12px;
+  color: var(--texto2);
+}
+
+.pdv-sugestao .ps-estoque {
+  font-size: 11px;
+  color: var(--texto2);
+  margin-top: 2px;
+}
+
+.pdv-sugestao .ps-estoque.zero {
+  color: var(--vermelho);
+  font-weight: 600;
+}
+
+.pdv-sugestao .ps-pedidos {
+  color: var(--primaria);
+  font-weight: 600;
+}
+
+.pdv-f3 {
+  white-space: nowrap;
+}
+
+/* — Pedido painel lateral (Vendas / Caixa) — */
+.pedido-painel-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.pedido-painel {
+  width: 35%;
+  min-width: 380px;
+  max-width: 520px;
+  height: 100%;
+  background: var(--bg2);
+  display: flex;
+  flex-direction: column;
+  box-shadow: -8px 0 24px rgba(0, 0, 0, 0.18);
+}
+
+.pedido-painel-cab {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--borda);
+}
+
+.pedido-painel-fechar {
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: var(--cinza-texto);
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.pedido-painel-fechar:hover {
+  color: var(--preto);
+}
+
+.pedido-painel-acoes {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pedido-painel-menu {
+  background: none;
+  border: none;
+  font-size: 16px;
+  color: var(--cinza-texto);
+  cursor: pointer;
+  padding: 4px 6px;
+}
+
+.pedido-painel-corpo {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 24px;
+}
+
+.pedido-painel-total-grande {
+  font-size: 34px;
+  font-weight: 800;
+  color: var(--preto-suave);
+}
+
+.pedido-painel-numero {
+  font-size: 16px;
+  color: var(--cinza-700);
+  margin-top: 2px;
+}
+
+.pedido-painel-infos {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.pedido-painel-infos .linha {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.pedido-painel-infos .linha span:first-child {
+  color: var(--cinza-medio);
+}
+
+.pedido-painel-obs-vazio {
+  color: var(--cinza-claro);
+  font-style: italic;
+}
+
+.pedido-painel-resumo {
+  margin-top: 20px;
+  border-top: 1px solid var(--borda);
+  padding-top: 14px;
+}
+
+.pedido-painel-resumo-titulo {
+  background: none;
+  border: none;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--preto-texto);
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 6px;
+}
+
+.pedido-painel-itens {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+}
+
+.pedido-painel-item {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--borda);
+}
+
+.pedido-painel-item-linha {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.pedido-painel-item-nome {
+  font-size: 14px;
+  color: var(--preto-texto);
+}
+
+.pedido-painel-item-total {
+  font-weight: 600;
+  color: var(--preto-texto);
+  white-space: nowrap;
+}
+
+.pedido-painel-item-preco {
+  font-size: 12px;
+  color: var(--cinza-claro);
+  margin-top: 2px;
+}
+
+.pedido-painel-total-linha {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  font-size: 16px;
+}
+
+.pedido-painel-total-linha strong {
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.pedido-painel-rodape {
+  border-top: 1px solid var(--borda);
+  padding: 14px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pedido-painel-cancelar {
+  background: none;
+  border: none;
+  color: var(--vermelho);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  align-self: flex-start;
+  padding: 4px 0;
+}
+
+.pedido-painel-pagar {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 8px;
+  background: var(--primaria);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.pedido-painel-obs-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+  color: var(--preto-texto);
+  font-size: 14px;
+  font-family: inherit;
+}
+
+.pedido-painel-obs-btn.pedido-painel-obs-vazio {
+  color: var(--cinza-claro);
+  font-style: italic;
+}
+
+.pedido-itens-coluna {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pedido-itens-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-left: 4px;
+}
+
+/* — Caixa linha / detalhe / venda — */
+.caixa-linha {
+  cursor: pointer;
+}
+
+.caixa-linha:hover td {
+  background: var(--bg3);
+}
+
+.caixa-detalhe-linha td {
+  background: var(--bg);
+  padding: 0 20px 16px;
+}
+
+.caixa-detalhe {
+  max-height: 420px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.caixa-venda {
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  background: var(--bg2);
+  padding: 10px 12px;
+}
+
+.caixa-venda-cab {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+}
+
+.caixa-venda-cab span {
+  color: var(--texto2);
+}
+
+.caixa-venda-itens {
+  border-top: 1px solid var(--borda);
+  margin-top: 8px;
+  padding-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.caixa-venda-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--texto2);
+}
+
+/* — Vendas / PDV shared styles — */
+.page-vendas {
+  display: flex;
+  flex-direction: column;
+}
+
+.btn-acao-venda kbd,
+.btn-acao-venda .kbd {
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 4px;
+  padding: 1px 6px;
+  margin-left: 6px;
+  font-size: 11px;
+}
+
+.abas-vendas {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--borda);
+  margin-bottom: 14px;
+}
+
+.aba {
+  padding: 10px 16px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--texto2);
+  font-size: 14px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.aba:hover {
+  color: var(--texto);
+}
+
+.aba.ativa {
+  color: var(--primaria);
+  border-bottom-color: var(--primaria);
+  font-weight: 600;
+}
+
+.filtros-vendas {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 10px 2px 14px;
+}
+
+.filtro-grupo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--texto2);
+}
+
+.check-caixa {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--texto2);
+  cursor: pointer;
+}
+
+.dropdown-periodo {
+  position: relative;
+}
+
+.dropdown-periodo-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.seta-dropdown {
+  font-size: 10px;
+  color: var(--texto2);
+}
+
+.dropdown-periodo-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 30;
+  background: var(--bg2);
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  min-width: 210px;
+}
+
+.dropdown-periodo-item {
+  text-align: left;
+  padding: 8px 10px;
+  border: none;
+  background: transparent;
+  color: var(--texto);
+  font-size: 13px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.dropdown-periodo-item:hover {
+  background: var(--bg3);
+}
+
+.dropdown-periodo-item.ativo {
+  background: var(--primaria);
+  color: #fff;
+}
+
+.tabela-wrap {
+  flex: 1;
+  overflow: auto;
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  background: var(--bg2);
+}
+
+.tabela-vendas th {
+  position: sticky;
+  top: 0;
+  background: var(--bg2);
+  z-index: 2;
+}
+
+.tabela-vendas td {
+  vertical-align: top;
+}
+
+.tabela-vendas tr {
+  cursor: pointer;
+}
+
+.coluna-itens {
+  min-width: 180px;
+  line-height: 1.5;
+}
+
+.item-linha {
+  font-size: 13px;
+}
+
+.coluna-obs {
+  max-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--texto2);
+  font-size: 13px;
+}
+
+.texto-negrito {
+  font-weight: 700;
+}
+
+/* — Linha selecionada — */
+.linha-selecionada {
+  background: rgba(37, 99, 235, 0.08);
+}
+
+.linha-selecionada:hover td {
+  background: rgba(37, 99, 235, 0.08) !important;
+}
+
+/* — Mensagem — */
+.mensagem {
+  margin-bottom: 12px;
+  padding: 10px 14px;
+  background: var(--bg3);
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+/* — Pedido config barra — */
+.pedido-config-barra {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pedido-config-label {
+  font-size: 13px;
+  color: var(--texto2);
+}
+
+.pedido-config-select {
+  padding: 6px 8px;
+  border: 1px solid var(--borda);
+  border-radius: 6px;
+  background: var(--bg2);
+  color: var(--texto);
+}
+
+/* — Painel de relatório / caixa (compartilhado) — */
+.rel-painel {
+  background: var(--bg2);
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.rel-painel h3 {
+  font-size: 14px;
+  color: var(--texto2);
+  margin-bottom: 12px;
+}
+
+.rel-cabecalho {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.rel-cabecalho h3 {
+  margin: 0;
+}
+
+.total-periodo {
+  color: var(--texto2);
+  font-size: 14px;
+}
+
+.total-periodo strong {
+  color: var(--verde);
+}
+
+/* — Formas de pagamento (config) — */
+.painel-form {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.formas-rapidas-titulo {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--texto2);
+  align-self: center;
+}
+
+.config-formas {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.config-zona {
+  display: flex;
+}
+
+.config-zona .config-forma {
+  width: 100%;
+}
+
+.config-forma {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  background: var(--bg2);
+  color: var(--texto);
+  font-size: 14px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.config-forma:hover {
+  border-color: var(--primaria);
+}
+
+.config-forma.ativa {
+  border-color: var(--primaria);
+  background: rgba(37, 99, 235, 0.06);
+}
+
+.config-forma-check {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 1px solid var(--borda);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: #fff;
+  background: var(--bg3);
+}
+
+.config-forma.ativa .config-forma-check {
+  background: var(--primaria);
+  border-color: var(--primaria);
+}
+
+/* — WhatsApp (atendimento) — */
+.wa-layout { display: flex; gap: 0; min-height: calc(100vh - 120px); }
+.wa-sidebar {
+  width: 200px; flex-shrink: 0; background: var(--card); border-right: 1px solid var(--borda);
+  padding: 8px; display: flex; flex-direction: column; gap: 2px; align-self: stretch;
+}
+.wa-nav-item {
+  display: block; width: 100%; text-align: left; background: none; border: none;
+  color: var(--texto2); padding: 7px 10px; border-radius: 6px; cursor: pointer; font-size: 13px;
+}
+.wa-nav-item:hover { background: var(--fundo2); color: var(--texto); }
+.wa-nav-item.ativa { background: var(--fundo3); color: var(--texto); font-weight: 600; }
+.wa-conteudo { flex: 1; padding: 16px; overflow: auto; }
+.wa-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; }
+.wa-card {
+  background: var(--card); border: 1px solid var(--borda); border-radius: 8px;
+  padding: 12px; display: flex; flex-direction: column; gap: 4px;
+}
+.wa-card span { color: var(--texto2); font-size: 12px; }
+.wa-card strong { font-size: 20px; }
+.wa-tag {
+  padding: 2px 8px; border-radius: 10px; font-size: 11px; display: inline-block;
+}
+.wa-tag.BOT { background: #12351f; color: #7ee2a0; }
+.wa-tag.AGUARDANDO_ATENDENTE { background: #3d3320; color: #ffd479; }
+.wa-tag.EM_ATENDIMENTO { background: #20304d; color: #9cc0ff; }
+.wa-tag.ENCERRADO { background: #3a2020; color: #ff9c9c; }
+.wa-chat {
+  max-height: 400px; overflow: auto; background: var(--fundo); border: 1px solid var(--borda);
+  border-radius: 8px; padding: 8px; margin: 8px 0;
+}
+.wa-msg {
+  white-space: pre-wrap; padding: 6px; border-bottom: 1px solid var(--borda); font-size: 13px;
+}
+.wa-msg.cliente .who { color: #ffd479; }
+.wa-msg.bot .who { color: #7ee2a0; }
+.wa-details { margin: 6px 0; padding: 8px; background: var(--card); border: 1px solid var(--borda); border-radius: 8px; }
+.wa-details summary { cursor: pointer; font-size: 13px; }
+.wa-pre {
+  background: var(--fundo); border: 1px solid var(--borda); border-radius: 6px;
+  padding: 6px; white-space: pre-wrap; font-size: 12px; max-height: 120px; overflow: auto; margin-top: 6px;
+}

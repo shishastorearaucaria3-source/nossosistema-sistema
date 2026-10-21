@@ -29,6 +29,7 @@ interface GrupoTransacao {
   categoria: string | null
   motivo: string | null
   venda_id: number | null
+  compra_id: number | null
   usuario_nome: string | null
   fornecedor_nome: string | null
   cliente_nome: string | null
@@ -54,26 +55,28 @@ interface DetalheTransacao {
   destino: string | null
   lote: string | null
   data_validade: string | null
+  estoque_anterior: number | null
+  estoque_posterior: number | null
   criado_em: string
 }
 
 export function MovimentoModal({
   usuarioId,
   tipoInicial,
+  categoriaInicial,
   produtoInicialId,
   onFechar,
   onConcluido
 }: {
   usuarioId: number
   tipoInicial: 'entrada' | 'saida'
+  categoriaInicial?: string
   produtoInicialId?: number
   onFechar: () => void
   onConcluido: (msg: string) => void
 }) {
-  const [tipo, setTipo] = useState<'entrada' | 'saida'>(tipoInicial)
-  const [categoria, setCategoria] = useState('')
-  const tipos = TIPOS_POR_DIRECAO[tipo]
-  const tipoObj: TipoMov | undefined = tipos.find((t) => t.id === categoria)
+  const [categoria] = useState(categoriaInicial ?? '')
+  const tipoObj: TipoMov | undefined = TIPOS_POR_DIRECAO[tipoInicial].find((t) => t.id === categoria)
 
   const [fornecedores, setFornecedores] = useState<{ id: number; nome: string }[]>([])
   const [clientes, setClientes] = useState<{ id: number; nome: string }[]>([])
@@ -175,7 +178,7 @@ export function MovimentoModal({
     setGravando(true)
     try {
       const r = await getEstoqueApi().movimentar({
-        tipo,
+        tipo: tipoInicial,
         categoria: categoria as string,
         itens: itensEnviar,
         fornecedor_id: fornecedorId ? Number(fornecedorId) : null,
@@ -202,25 +205,13 @@ export function MovimentoModal({
 
   return (
     <div className="modal-overlay" onClick={() => !gravando && onFechar()}>
-      <div className="modal modal-estoque" onClick={(e) => e.stopPropagation()}>
+      <div className="modal modal-tela-cheia modal-estoque" onClick={(e) => e.stopPropagation()}>
         <div className="modal-topo">
-          <h3>{tipo === 'entrada' ? 'Entrada de estoque' : 'Saída de estoque'}</h3>
+          <h3>{tipoInicial === 'entrada' ? 'Entrada de estoque' : 'Saída de estoque'} — {labelCategoria(categoria)}</h3>
           <button className="modal-fechar" onClick={onFechar} aria-label="Fechar">✕</button>
         </div>
 
         <div className="est-mov-corpo">
-          <div className="segmented est-mov-tipo">
-            <button className={tipo === 'entrada' ? 'ativo' : ''} onClick={() => { setTipo('entrada'); setCategoria(''); setFornecedorId(''); setClienteId(''); setOrigem(''); setDestino('') }}>+ Entrada</button>
-            <button className={tipo === 'saida' ? 'ativo' : ''} onClick={() => { setTipo('saida'); setCategoria(''); setFornecedorId(''); setClienteId(''); setOrigem(''); setDestino('') }}>− Saída</button>
-          </div>
-
-          <label className="config-campo">Tipo de movimentação
-            <select value={categoria} onChange={(e) => setCategoria(e.target.value)}>
-              <option value="">— selecione —</option>
-              {tipos.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
-            </select>
-          </label>
-
           {tipoObj?.precisaFornecedor && (
             <label className="config-campo">Fornecedor
               <select value={fornecedorId} onChange={(e) => setFornecedorId(e.target.value)}>
@@ -348,15 +339,15 @@ export function MovimentoModal({
           </div>
 
           {erro && <div className="mensagem" style={{ color: '#dc2626' }}>{erro}</div>}
-          <div className="est-mov-rodape">
-            <div className="est-mov-totais">
-              <span><b>{itens.length}</b> produto(s) · <b>{totalItens}</b> unidade(s)</span>
-              {tipoObj?.usaCusto && <strong>Custo total: R$ {totalCusto.toFixed(2)}</strong>}
-            </div>
-            <button className="btn-primario" onClick={confirmar} disabled={gravando}>
-              {gravando ? 'Registrando...' : 'Registrar movimentação'}
-            </button>
+        </div>
+        <div className="modal-rodape est-mov-rodape">
+          <div className="est-mov-totais">
+            <span><b>{itens.length}</b> produto(s) · <b>{totalItens}</b> unidade(s)</span>
+            {tipoObj?.usaCusto && <strong>Custo total: R$ {totalCusto.toFixed(2)}</strong>}
           </div>
+          <button className="btn-primario" onClick={confirmar} disabled={gravando}>
+            {gravando ? 'Registrando...' : 'Registrar movimentação'}
+          </button>
         </div>
       </div>
     </div>
@@ -372,20 +363,52 @@ export default function Movimentacoes({
   usuarioId: number
   produtoFiltro: number | null
   onLimparFiltro: () => void
-  onNova: (tipo: 'entrada' | 'saida') => void
+  onNova: (tipo: 'entrada' | 'saida', categoria?: string) => void
 }) {
   const [grupos, setGrupos] = useState<GrupoTransacao[]>([])
   const [total, setTotal] = useState(0)
   const [pagina, setPagina] = useState(0)
   const [filtroTipo, setFiltroTipo] = useState<'todos' | 'entrada' | 'saida'>('todos')
   const [filtroCategoria, setFiltroCategoria] = useState('')
+  const [filtroCliente, setFiltroCliente] = useState('')
+  const [filtroFornecedor, setFiltroFornecedor] = useState('')
+  const [exibirVendas, setExibirVendas] = useState(true)
   const [busca, setBusca] = useState('')
   const [carregando, setCarregando] = useState(true)
-  const [detalhe, setDetalhe] = useState<{ documento: string | null; venda_id: number | null; id: number } | null>(null)
+  const [menuTipo, setMenuTipo] = useState<'entrada' | 'saida' | null>(null)
+  const [clientes, setClientes] = useState<{ id: number; nome: string }[]>([])
+  const [fornecedores, setFornecedores] = useState<{ id: number; nome: string }[]>([])
+  const [selecionado, setSelecionado] = useState<string | null>(null)
+  const [detalhe, setDetalhe] = useState<{ documento: string | null; venda_id: number | null; compra_id: number | null; id: number } | null>(null)
   const [detalheItens, setDetalheItens] = useState<DetalheTransacao[]>([])
   const [detalheMeta, setDetalheMeta] = useState<GrupoTransacao | null>(null)
   const [mensagem, setMensagem] = useState('')
+  const [estornando, setEstornando] = useState(false)
+  const [compraCancelada, setCompraCancelada] = useState(false)
   const POR_PAGINA = 25
+
+  useEffect(() => {
+    getDbApi().all('SELECT id, nome FROM clientes ORDER BY nome').then((rows) => {
+      setClientes(rows as unknown as { id: number; nome: string }[])
+    }).catch(() => {})
+    getDbApi().all('SELECT id, nome FROM fornecedores WHERE ativo = 1 ORDER BY nome').then((rows) => {
+      setFornecedores(rows as unknown as { id: number; nome: string }[])
+    }).catch(() => {})
+  }, [])
+
+  const abrirFichaSelecionada = () => {
+    const alvo = grupos.find((g) => g.chave === selecionado) ?? grupos[0]
+    if (alvo) abrirDetalhe(alvo)
+  }
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'F2') { e.preventDefault(); abrirFichaSelecionada() }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [grupos, selecionado])
 
   const carregar = useCallback(async () => {
     setCarregando(true)
@@ -410,6 +433,11 @@ export default function Movimentacoes({
       )`)
       params.push(produtoFiltro)
     }
+    if (filtroCliente) { conds.push(`m.cliente_id = ?`); params.push(Number(filtroCliente)) }
+    if (filtroFornecedor) { conds.push(`m.fornecedor_id = ?`); params.push(Number(filtroFornecedor)) }
+    if (!exibirVendas) {
+      conds.push(`m.venda_id IS NULL AND m.tipo != 'cancelamento' AND m.categoria NOT IN ('devolucao_cliente', 'devolucao_fornecedor')`)
+    }
     const where = conds.length ? `WHERE ${conds.join(' AND ')}` : ''
     const base = `
       SELECT
@@ -420,6 +448,7 @@ export default function Movimentacoes({
         MAX(m.categoria) AS categoria,
         MAX(m.motivo) AS motivo,
         MAX(m.venda_id) AS venda_id,
+        MAX(m.compra_id) AS compra_id,
         MAX(u.nome) AS usuario_nome,
         MAX(f.nome) AS fornecedor_nome,
         MAX(c.nome) AS cliente_nome,
@@ -454,38 +483,61 @@ export default function Movimentacoes({
     } finally {
       setCarregando(false)
     }
-  }, [filtroTipo, filtroCategoria, busca, produtoFiltro, pagina])
+  }, [filtroTipo, filtroCategoria, filtroCliente, filtroFornecedor, exibirVendas, busca, produtoFiltro, pagina])
 
   useEffect(() => { carregar() }, [carregar])
 
   const abrirDetalhe = async (g: GrupoTransacao) => {
     setDetalheMeta(g)
     setDetalheItens([])
-    setDetalhe({ documento: g.documento, venda_id: g.venda_id, id: Number(g.chave.split('-')[1]) })
+    setDetalhe({ documento: g.documento, venda_id: g.venda_id, compra_id: g.compra_id, id: Number(g.chave.split('-')[1]) })
     try {
       let sql: string
       let params: unknown[]
       if (g.documento) {
-        sql = `SELECT m.id, m.produto_id, p.nome AS produto_nome, m.tipo, m.categoria, m.quantidade, m.valor, m.motivo, m.documento, m.origem, m.destino, p.lote, p.data_validade, m.criado_em
+        sql = `SELECT m.id, m.produto_id, p.nome AS produto_nome, m.tipo, m.categoria, m.quantidade, m.valor, m.motivo, m.documento, m.origem, m.destino, p.lote, p.data_validade, m.estoque_anterior, m.estoque_posterior, m.criado_em
                FROM movimentacoes m JOIN produtos p ON p.id = m.produto_id WHERE m.documento = ? ORDER BY m.id`
         params = [g.documento]
       } else if (g.venda_id) {
-        sql = `SELECT m.id, m.produto_id, p.nome AS produto_nome, m.tipo, m.categoria, m.quantidade, m.valor, m.motivo, m.documento, m.origem, m.destino, p.lote, p.data_validade, m.criado_em
+        sql = `SELECT m.id, m.produto_id, p.nome AS produto_nome, m.tipo, m.categoria, m.quantidade, m.valor, m.motivo, m.documento, m.origem, m.destino, p.lote, p.data_validade, m.estoque_anterior, m.estoque_posterior, m.criado_em
                FROM movimentacoes m JOIN produtos p ON p.id = m.produto_id WHERE m.venda_id = ? ORDER BY m.id`
         params = [g.venda_id]
       } else {
-        sql = `SELECT m.id, m.produto_id, p.nome AS produto_nome, m.tipo, m.categoria, m.quantidade, m.valor, m.motivo, m.documento, m.origem, m.destino, p.lote, p.data_validade, m.criado_em
+        sql = `SELECT m.id, m.produto_id, p.nome AS produto_nome, m.tipo, m.categoria, m.quantidade, m.valor, m.motivo, m.documento, m.origem, m.destino, p.lote, p.data_validade, m.estoque_anterior, m.estoque_posterior, m.criado_em
                FROM movimentacoes m JOIN produtos p ON p.id = m.produto_id WHERE m.id = ? ORDER BY m.id`
         params = [Number(g.chave.split('-')[1])]
       }
       const rows = (await getDbApi().all(sql, params)) as unknown as DetalheTransacao[]
       setDetalheItens(rows)
+      if (g.compra_id != null) {
+        const c = (await getDbApi().get(`SELECT cancelada FROM compras WHERE id = ?`, [g.compra_id])) as { cancelada: number } | undefined
+        setCompraCancelada(c?.cancelada === 1)
+      } else {
+        setCompraCancelada(false)
+      }
     } catch {
       setDetalheItens([])
     }
   }
 
   const totalPaginas = Math.max(Math.ceil(total / POR_PAGINA), 1)
+
+  const estornarCompra = async (compraId: number) => {
+    if (!window.confirm('Estornar esta compra? O estoque será revertido e a entrada anulada.')) return
+    setEstornando(true)
+    setMensagem('')
+    try {
+      const r = await getEstoqueApi().compraCancelar({ compra_id: compraId, usuario_id: usuarioId })
+      if (!r.ok) { setMensagem(r.erro || 'Falha ao estornar a compra.'); return }
+      setMensagem(`Compra ${r.numero} estornada — ${r.itens_revertidos} item(ns) revertido(s).`)
+      setDetalhe(null)
+      carregar()
+    } catch (e) {
+      setMensagem(`Erro ao estornar: ${(e as Error).message}`)
+    } finally {
+      setEstornando(false)
+    }
+  }
 
   const fmtDataHora = (dt: string) => {
     const d = new Date(dt)
@@ -522,12 +574,37 @@ export default function Movimentacoes({
           <option value="">Todas as categorias</option>
           {categoriasDisponiveis.map((c) => <option key={c} value={c}>{labelCategoria(c)}</option>)}
         </select>
-        <input className="busca" placeholder="Buscar documento, produto ou observação..." value={busca} onChange={(e) => { setBusca(e.target.value); setPagina(0) }} />
+        <select value={filtroCliente} onChange={(e) => { setFiltroCliente(e.target.value); setPagina(0) }}>
+          <option value="">Todos os clientes</option>
+          {clientes.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
+        </select>
+        <select value={filtroFornecedor} onChange={(e) => { setFiltroFornecedor(e.target.value); setPagina(0) }}>
+          <option value="">Todos os fornecedores</option>
+          {fornecedores.map((f) => <option key={f.id} value={f.id}>{f.nome}</option>)}
+        </select>
+        <input className="busca" placeholder="Buscar por número, produto ou observação..." value={busca} onChange={(e) => { setBusca(e.target.value); setPagina(0) }} />
+        <label className="opcao-checa est-exibir-vendas" title="Mostrar venda e devoluções realizadas no PDV">
+          <input type="checkbox" checked={exibirVendas} onChange={(e) => { setExibirVendas(e.target.checked); setPagina(0) }} />
+          <span>Exibir vendas e devoluções</span>
+        </label>
         <div className="est-toolbar-acoes">
-          <button className="btn-primario est-btn-entrada" onClick={() => onNova('entrada')} title="Nova entrada">+ Entrada</button>
-          <button className="btn-primario est-btn-saida" onClick={() => onNova('saida')} title="Nova saída">− Saída</button>
+          <button className="btn-primario est-btn-azul" onClick={() => setMenuTipo(menuTipo === 'entrada' ? null : 'entrada')} title="Nova entrada">+ Entrada</button>
+          <button className="btn-primario est-btn-azul" onClick={() => setMenuTipo(menuTipo === 'saida' ? null : 'saida')} title="Nova saída">− Saída</button>
         </div>
       </div>
+
+      {menuTipo && (
+        <div className="est-mov-menu-wrap">
+          <div className="est-mov-menu">
+            <div className="est-mov-menu-titulo">{menuTipo === 'entrada' ? 'Entrada de estoque' : 'Saída de estoque'}</div>
+            {TIPOS_POR_DIRECAO[menuTipo].map((t) => (
+              <button key={t.id} className="est-mov-menu-item" onClick={() => { setMenuTipo(null); onNova(menuTipo, t.id) }}>
+                {menuTipo === 'entrada' ? '▲' : '▼'} {t.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {produtoFiltro != null && (
         <div className="est-filtro-produto">
@@ -546,17 +623,16 @@ export default function Movimentacoes({
           <table className="tabela">
             <thead>
               <tr>
-                <th>Data/Hora</th>
+                <th>Abrir (F2)</th>
                 <th>Tipo</th>
-                <th>Documento</th>
+                <th>Número</th>
+                <th>Data/Hora</th>
+                <th className="th-direita">Total Final</th>
                 <th className="th-centro">Itens</th>
-                <th className="th-centro">Qtd</th>
-                <th className="th-direita">Valor</th>
-                <th>Fornecedor / Cliente</th>
+                <th>Cliente / Fornecedor</th>
+                <th>Observações</th>
                 <th>Funcionário</th>
-                <th>Origem / Destino</th>
                 <th className="th-centro">Status</th>
-                <th></th>
               </tr>
             </thead>
             <tbody>
@@ -565,24 +641,27 @@ export default function Movimentacoes({
                 const ehSaida = g.tipo === 'saida'
                 const cancelada = g.canceladas > 0
                 return (
-                  <tr key={g.chave} className={cancelada ? 'linha-cancelada' : ''}>
-                    <td>{fmtDataHora(g.criado_em)}</td>
+                  <tr
+                    key={g.chave}
+                    className={`${cancelada ? 'linha-cancelada' : ''} ${selecionado === g.chave ? 'linha-selecionada' : ''}`}
+                    onClick={() => setSelecionado(g.chave)}
+                  >
+                    <td className="td-centro">
+                      <button className="btn-mini btn-primario" title="Abrir detalhes (F2)" onClick={(e) => { e.stopPropagation(); abrirDetalhe(g) }}>Abrir</button>
+                    </td>
                     <td>
                       <span className={`est-tipo ${ehEntrada ? 'entrada' : ehSaida ? 'saida' : ''}`}>
                         {ehEntrada ? '▲' : ehSaida ? '▼' : ''} {label(g)}
                       </span>
                     </td>
                     <td>{g.documento || (g.venda_id ? `Venda #${g.venda_id}` : g.chave)}</td>
-                    <td className="td-centro">{g.qtd_itens}</td>
-                    <td className="td-centro">{g.quantidade_total}</td>
+                    <td>{fmtDataHora(g.criado_em)}</td>
                     <td className="td-direita">R$ {fmtNum(g.valor_total)}</td>
+                    <td className="td-centro">{g.qtd_itens} ({g.quantidade_total})</td>
                     <td>{g.fornecedor_nome || g.cliente_nome || '—'}</td>
+                    <td className="est-observer">{g.motivo || (g.origem || g.destino || '—')}</td>
                     <td>{g.usuario_nome || '—'}</td>
-                    <td>{g.origem || g.destino || '—'}</td>
                     <td className="td-centro">{cancelada ? <span className="rp-status erro">Cancelada</span> : <span className="rp-status ok">OK</span>}</td>
-                    <td className="td-centro">
-                      <button className="btn-mini" onClick={() => abrirDetalhe(g)}>Ver</button>
-                    </td>
                   </tr>
                 )
               })}
@@ -611,12 +690,14 @@ export default function Movimentacoes({
                 <div className="linha"><span>Tipo</span><strong>{label(detalheMeta)}</strong></div>
                 <div className="linha"><span>Data/hora</span><strong>{fmtDataHora(detalheMeta.criado_em)}</strong></div>
                 <div className="linha"><span>Documento</span><strong>{detalheMeta.documento || (detalheMeta.venda_id ? `Venda #${detalheMeta.venda_id}` : detalheMeta.chave)}</strong></div>
+                {detalheMeta.compra_id != null && <div className="linha"><span>Compra</span><strong>#{detalheMeta.compra_id}{compraCancelada ? ' — estornada' : ''}</strong></div>}
                 {detalheMeta.usuario_nome && <div className="linha"><span>Funcionário</span><strong>{detalheMeta.usuario_nome}</strong></div>}
                 {detalheMeta.fornecedor_nome && <div className="linha"><span>Fornecedor</span><strong>{detalheMeta.fornecedor_nome}</strong></div>}
                 {detalheMeta.cliente_nome && <div className="linha"><span>Cliente</span><strong>{detalheMeta.cliente_nome}</strong></div>}
                 {detalheMeta.origem && <div className="linha"><span>Origem</span><strong>{detalheMeta.origem}</strong></div>}
                 {detalheMeta.destino && <div className="linha"><span>Destino</span><strong>{detalheMeta.destino}</strong></div>}
                 {detalheMeta.motivo && <div className="linha"><span>Observação</span><strong>{detalheMeta.motivo}</strong></div>}
+                <div className="linha"><span>Total Final</span><strong>R$ {fmtNum(detalheMeta.valor_total)}</strong></div>
               </div>
             )}
             <div className="tabela-wrap" style={{ maxHeight: 300 }}>
@@ -625,6 +706,8 @@ export default function Movimentacoes({
                   <tr>
                     <th>Produto</th>
                     <th className="th-centro">Qtd</th>
+                    <th className="th-centro">Est. ant.</th>
+                    <th className="th-centro">Est. post.</th>
                     <th className="th-direita">Valor</th>
                     <th className="th-centro">Lote</th>
                     <th className="th-centro">Validade</th>
@@ -635,16 +718,28 @@ export default function Movimentacoes({
                     <tr key={i.id}>
                       <td>{i.produto_nome}</td>
                       <td className="td-centro">{i.quantidade}</td>
+                      <td className="td-centro">{i.estoque_anterior != null ? i.estoque_anterior : '—'}</td>
+                      <td className="td-centro">{i.estoque_posterior != null ? i.estoque_posterior : '—'}</td>
                       <td className="td-direita">R$ {fmtNum(i.valor)}</td>
                       <td className="td-centro">{i.lote || '—'}</td>
                       <td className="td-centro">{i.data_validade || '—'}</td>
                     </tr>
                   ))}
-                  {detalheItens.length === 0 && <tr><td colSpan={5} className="sem-resultado">Carregando...</td></tr>}
+                  {detalheItens.length === 0 && <tr><td colSpan={7} className="sem-resultado">Carregando...</td></tr>}
                 </tbody>
               </table>
             </div>
             <div className="modal-acoes">
+              {detalheMeta?.categoria === 'compra' && detalheMeta.compra_id != null && (
+                <button
+                  className="btn-secundario"
+                  disabled={estornando || compraCancelada}
+                  onClick={() => estornarCompra(detalheMeta.compra_id!)}
+                  title={compraCancelada ? 'Compra já estornada' : 'Reverter a entrada de estoque desta compra'}
+                >
+                  {compraCancelada ? 'Compra estornada' : estornando ? 'Estornando...' : 'Estornar compra'}
+                </button>
+              )}
               <button className="btn-secundario" onClick={() => setDetalhe(null)}>Fechar</button>
             </div>
           </div>

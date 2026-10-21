@@ -1,0 +1,60 @@
+/* CLIENTES — endereços, form, edição */
+.est-baixo {
+  color: var(--vermelho);
+  font-weight: 600;
+}
+
+.sem-resultado {
+  text-align: center;
+  color: var(--texto2);
+  padding: 30px;
+}
+
+.endereco-bloco {
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--bg3);
+}
+
+.endereco-bloco.endereco-principal {
+  border-color: var(--primaria);
+}
+
+.endereco-bloco label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 13px;
+  color: var(--texto2);
+}
+
+.endereco-bloco input {
+  padding: 9px 10px;
+  background: var(--bg2);
+  border: 1px solid var(--borda);
+  border-radius: 6px;
+  color: var(--texto);
+  font-size: 14px;
+}
+
+.endereco-bloco input:focus {
+  outline: none;
+  border-color: var(--primaria);
+}
+
+.endereco-bloco-cabecalho {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cliente-enderecos-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}

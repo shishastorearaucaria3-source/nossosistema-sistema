@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { getDbApi, getImagemApi, getVendasCancelApi } from '../../shared/db'
+import { getDbApi, getImagemApi, getVendasCancelApi, getAuthApi, dataUrlImagem } from '../../shared/db'
 import CampoDinheiro, { parseMoeda, formatarMoeda } from '../../shared/CampoDinheiro'
 import Cupom from '../../shared/Cupom'
 import ConfigPdv from './ConfigPdv'
@@ -70,6 +70,10 @@ export default function Pdv({ usuarioId, aoConcluirVenda, aoVoltar, pedidoEdicao
   const [valoresFormas, setValoresFormas] = useState<Record<string, string>>({})
   const [formaSelIdx, setFormaSelIdx] = useState(0)
   const [posVenda, setPosVenda] = useState<{ numero: string; total: number; troco: number } | null>(null)
+  const [trocoMax, setTrocoMax] = useState<number>(0)
+  const [trocoAutorizado, setTrocoAutorizado] = useState(false)
+  const [modalAutorizarTroco, setModalAutorizarTroco] = useState(false)
+  const [senhaSupervisor, setSenhaSupervisor] = useState('')
   const [sugestaoIdx, setSugestaoIdx] = useState(-1)
   const [imagens, setImagens] = useState<Record<number, string>>({})
   const valorInputRef = useRef<HTMLInputElement>(null)
@@ -122,6 +126,8 @@ export default function Pdv({ usuarioId, aoConcluirVenda, aoVoltar, pedidoEdicao
   const [vendedorSelecionado, setVendedorSelecionado] = useState<{ id: number; nome: string } | null>(null)
   const vendedorRef = useRef<HTMLButtonElement>(null)
   const [posVendaCupom, setPosVendaCupom] = useState<{ numero: string; total: number; itens: ItemCarrinho[]; pagamentos: FormaPagamento[] } | null>(null)
+  const [modalAbrirCaixa, setModalAbrirCaixa] = useState(false)
+  const [saldoInicialCaixa, setSaldoInicialCaixa] = useState('')
   const descontoRef = useRef<HTMLInputElement>(null)
   const obsRef = useRef<HTMLTextAreaElement>(null)
   const entregaEndRef = useRef<HTMLInputElement>(null)
@@ -467,6 +473,10 @@ export default function Pdv({ usuarioId, aoConcluirVenda, aoVoltar, pedidoEdicao
       )) as unknown as FormaCadastrada[]
       setFormas(f)
       if (f.length > 0) setPagamentoForma((prev) => (prev && f.some((x) => x.nome === prev) ? prev : f[0].nome))
+      const trocoCfg = (await db.get(`SELECT valor FROM config WHERE chave = 'vendas_troco_max'`)) as { valor: string | null } | undefined
+      const tc = Number(trocoCfg?.valor || '0') || 0
+      setTrocoMax(tc)
+      try { localStorage.setItem('vendas_troco_max', String(tc)) } catch { /* ignore */ }
       const vendedoresDb = (await db.all(
         `SELECT id, nome FROM usuarios WHERE ativo = 1 ORDER BY nome`
       )) as unknown as { id: number; nome: string }[]
@@ -528,6 +538,7 @@ export default function Pdv({ usuarioId, aoConcluirVenda, aoVoltar, pedidoEdicao
   const falta = totalVenda - totalPago
   const faltaComDigitacao = totalVenda - totalPago - valorEmDigitacao
   const troco = Math.max(-faltaComDigitacao, 0)
+  const trocoExcedeLimite = trocoMax > 0 && troco > trocoMax
 
   const forcarAdicionar = (p: Produto, quantidade = 1) => {
     const qtd = quantidade > 0 ? quantidade : 1
@@ -713,6 +724,7 @@ export default function Pdv({ usuarioId, aoConcluirVenda, aoVoltar, pedidoEdicao
     setObservacaoVenda('')
     setTaxaEntregaStr('')
     setEnderecoEntrega('')
+    setTrocoAutorizado(false)
   }
 
   const finalizarComoPedido = async () => {
@@ -763,17 +775,70 @@ export default function Pdv({ usuarioId, aoConcluirVenda, aoVoltar, pedidoEdicao
     }
   }
 
+  const autorizarTrocoComSenha = async () => {
+    if (!senhaSupervisor.trim()) {
+      setMensagem('Informe a senha do supervisor para autorizar o troco.')
+      return
+    }
+    try {
+      const res = await getAuthApi().verificarSenhaSupervisor(senhaSupervisor)
+      if (res.ok && res.autorizado) {
+        setTrocoAutorizado(true)
+        setModalAutorizarTroco(false)
+        setSenhaSupervisor('')
+        setMensagem('Troco acima do limite autorizado pelo supervisor.')
+      } else {
+        setMensagem(res.erro ?? 'Senha de supervisor inválida.')
+      }
+    } catch (err) {
+      setMensagem(`Erro ao validar supervisor: ${(err as Error).message}`)
+    }
+  }
+
+  const abrirCaixaDoPdv = async () => {
+    const valor = parseMoeda(saldoInicialCaixa)
+    if (isNaN(valor)) {
+      setMensagem('Informe um valor válido para abertura do caixa.')
+      return
+    }
+    setMensagem('')
+    try {
+      const db = getDbApi()
+      await db.run(
+        `INSERT INTO caixas (usuario_id, saldo_inicial, aberto) VALUES (?, ?, 1)`,
+        [usuarioId, valor]
+      )
+      setModalAbrirCaixa(false)
+      setSaldoInicialCaixa('')
+      // Recarregar estado do caixa
+      const caixa = (await db.get(
+        `SELECT id, saldo_inicial + total_vendas + total_suprimentos - total_sangrias AS saldo
+         FROM caixas WHERE aberto = 1 ORDER BY id DESC LIMIT 1`
+      )) as unknown as { id: number; saldo: number } | undefined
+      setCaixaAberto(caixa ?? null)
+      setMensagem('Caixa aberto. Pode finalizar a venda.')
+    } catch (e) {
+      setMensagem(`Erro ao abrir caixa: ${(e as Error).message}`)
+    }
+  }
+
   const finalizarVenda = async () => {
     if (carrinho.length === 0) return
     const digitados = digitadosComoPagamentos()
     const pagamentosFinais = [...pagamentos, ...digitados]
     if (modo !== 'pedido' && modo !== 'orcamento' && !caixaAberto && !edicaoPedido) {
-      setMensagem('Caixa fechado. Abra o caixa na aba Caixa para lançar vendas.')
-      setModalPagamento(false)
+      setModalAbrirCaixa(true)
+      setSaldoInicialCaixa('0,00')
       return
     }
     if (modo === 'venda' && !edicaoPedido && faltaComDigitacao > 0) {
       setMensagem(`Faltam R$ ${faltaComDigitacao.toFixed(2)}. Complete o pagamento.`)
+      return
+    }
+    if (modo === 'venda' && !edicaoPedido && trocoExcedeLimite && !trocoAutorizado) {
+      setModalAutorizarTroco(true)
+      setSenhaSupervisor('')
+      setModalPagamento(false)
       return
     }
     try {
@@ -1259,7 +1324,7 @@ export default function Pdv({ usuarioId, aoConcluirVenda, aoVoltar, pedidoEdicao
                   onMouseEnter={() => setSugestaoIdx(idx)}
                   onClick={() => selecionarSugestao(p)}
                 >
-                  {imagens[p.id] && <img className="ps-imagem" src={`data:image/png;base64,${imagens[p.id]}`} alt="" />}
+                  {imagens[p.id] && <img className="ps-imagem" src={dataUrlImagem(imagens[p.id])} alt="" />}
                   <span className="ps-texto">
                     <span className="ps-nome">{p.nome}</span>
                     <span className="ps-info">
@@ -1441,7 +1506,7 @@ export default function Pdv({ usuarioId, aoConcluirVenda, aoVoltar, pedidoEdicao
                         className={`card-produto-wrap ${ehSelecionado ? 'selecionado' : ''}`}
                       >
                         <div className={`card-produto ${p.estoque <= 0 ? 'sem-estoque' : ''}`} onClick={() => adicionarProduto(p)}>
-                          {imagens[p.id] && <img className="card-imagem" src={`data:image/png;base64,${imagens[p.id]}`} alt="" />}
+                          {imagens[p.id] && <img className="card-imagem" src={dataUrlImagem(imagens[p.id])} alt="" />}
                           <span
                             className="card-nome"
                             title="Duplo clique no nome: editar produto"
@@ -1790,9 +1855,38 @@ export default function Pdv({ usuarioId, aoConcluirVenda, aoVoltar, pedidoEdicao
         </div>
       )}
 
-      {modalDesconto && (
-        <div className="modal-overlay" onClick={() => setModalDesconto(false)}>
+      {modalAutorizarTroco && (
+        <div className="modal-overlay" onClick={() => setModalAutorizarTroco(false)}>
           <div className="modal modal-pagamento" onClick={(e) => e.stopPropagation()}>
+            <h3>Troco acima do limite</h3>
+            <div className="modal-resumo">
+              <div className="linha"><span>Troco desta venda</span><strong>R$ {troco.toFixed(2)}</strong></div>
+              <div className="linha"><span>Troco máximo permitido</span><strong>R$ {trocoMax.toFixed(2)}</strong></div>
+              <div className="linha total-periodo"><span>Excedente</span><strong className="texto-vermelho">R$ {Math.max(0, troco - trocoMax).toFixed(2)}</strong></div>
+            </div>
+            <p className="nota-config">O troco está acima do limite configurado (item 38 das Configurações de Vendas). Para concluir, é necessária a autorização de um supervisor (admin ou gerente).</p>
+            <div className="form-grid">
+              <label>Senha do supervisor
+                <input
+                  type="password"
+                  autoFocus
+                  value={senhaSupervisor}
+                  onChange={(e) => setSenhaSupervisor(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') autorizarTrocoComSenha() }}
+                  placeholder="Senha"
+                />
+              </label>
+            </div>
+            <div className="modal-acoes">
+              <button className="btn-secundario" onClick={() => setModalAutorizarTroco(false)}>Cancelar</button>
+              <button className="btn-primario" onClick={autorizarTrocoComSenha}>Autorizar e concluir</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {modalDesconto && (
+        <div className="modal-overlay" onClick={() => setModalDesconto(false)}>          <div className="modal modal-pagamento" onClick={(e) => e.stopPropagation()}>
             <h3>Desconto</h3>
             <div className="modal-resumo">
               <div className="linha"><span>Subtotal</span><strong>R$ {subtotal.toFixed(2)}</strong></div>
@@ -1906,20 +2000,19 @@ export default function Pdv({ usuarioId, aoConcluirVenda, aoVoltar, pedidoEdicao
             </p>
             <div className="modal-acoes">
               <button className="btn-secundario" onClick={() => setProdutoSemEstoque(null)}>Cancelar</button>
-              {permitirSemEstoque ? (
+              <button
+                className="btn-primario"
+                onClick={() => {
+                  const alvo = produtoSemEstoque
+                  setProdutoSemEstoque(null)
+                  forcarAdicionar(alvo.produto, alvo.qtd)
+                }}
+              >
+                Adicionar mesmo assim
+              </button>
+              {!permitirSemEstoque && (
                 <button
-                  className="btn-primario"
-                  onClick={() => {
-                    const alvo = produtoSemEstoque
-                    setProdutoSemEstoque(null)
-                    forcarAdicionar(alvo.produto, alvo.qtd)
-                  }}
-                >
-                  Adicionar mesmo assim
-                </button>
-              ) : (
-                <button
-                  className="btn-primario"
+                  className="btn-secundario"
                   onClick={() => {
                     getDbApi().run(
                       `INSERT INTO config (chave, valor) VALUES ('pdv_permitir_sem_estoque', '1')
@@ -1932,7 +2025,7 @@ export default function Pdv({ usuarioId, aoConcluirVenda, aoVoltar, pedidoEdicao
                     forcarAdicionar(alvo.produto, alvo.qtd)
                   }}
                 >
-                  Permitir venda sem estoque
+                  Permitir sempre
                 </button>
               )}
             </div>
@@ -2042,6 +2135,28 @@ export default function Pdv({ usuarioId, aoConcluirVenda, aoVoltar, pedidoEdicao
       )}
 
       {modalConfig && <ConfigPdv onFechar={() => setModalConfig(false)} />}
+      {modalAbrirCaixa && (
+        <div className="modal-overlay" onClick={() => { setModalAbrirCaixa(false); setSaldoInicialCaixa('') }}>
+          <div className="modal modal-pagamento" onClick={(e) => e.stopPropagation()}>
+            <h3>Abrir Caixa</h3>
+            <p className="nota-config">O caixa está fechado. Informe o saldo inicial para abri-lo e continuar a venda.</p>
+            <label className="config-campo">
+              Saldo inicial (R$)
+              <input
+                autoFocus
+                value={saldoInicialCaixa}
+                onChange={(e) => setSaldoInicialCaixa(e.target.value)}
+                placeholder="0,00"
+                inputMode="decimal"
+              />
+            </label>
+            <div className="modal-acoes">
+              <button className="btn-secundario" onClick={() => { setModalAbrirCaixa(false); setSaldoInicialCaixa('') }}>Cancelar</button>
+              <button className="btn-primario" onClick={abrirCaixaDoPdv}>Abrir e continuar</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

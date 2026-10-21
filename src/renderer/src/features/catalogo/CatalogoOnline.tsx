@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { getDbApi, getImagemApi, getCatalogoApi } from '../../shared/db'
+import { getDbApi, getImagemApi, getCatalogoApi, getServidorApi } from '../../shared/db'
 import Header from './components/Header'
 import SearchBar from './components/SearchBar'
 import Filters from './components/Filters'
@@ -21,7 +21,7 @@ interface LinhaBanco {
   preco_venda: number
   estoque: number
   categoria_nome: string | null
-  publicado: number
+  catalogo_publicado: number
   descricao: string | null
 }
 
@@ -55,6 +55,88 @@ export default function CatalogoOnline({
   const [limite, setLimite] = useState(50)
   const [modalLoja, setModalLoja] = useState(false)
   const [dadosLoja, setDadosLoja] = useState<DadosLoja>({ nome: 'Minha Loja', telefone: '', endereco: '', horario: '' })
+  const [reparando, setReparando] = useState(false)
+  const [etapaReparo, setEtapaReparo] = useState('')
+  const [conexaoOk, setConexaoOk] = useState<boolean | null>(null)
+  const [sincStatus, setSincStatus] = useState<{
+    status: string
+    ultima_sync: string
+    pendentes: number
+    ultimo_erro: string
+    sincronizando: boolean
+    conectado: boolean
+    auto_sync_ativos: boolean
+    auto_sync_intervalo_seg: number
+  } | null>(null)
+
+  useEffect(() => {
+    getServidorApi()
+      .catalogoStatus()
+      .then((r) => setConexaoOk(!!(r.ok && (r.token_relay_configurado || r.token_sync_configurado))))
+      .catch(() => setConexaoOk(null))
+    const tick = () => {
+      getServidorApi()
+        .catalogoSyncStatus()
+        .then(setSincStatus)
+        .catch(() => {})
+    }
+    tick()
+    const timer = setInterval(tick, 5000)
+    return () => clearInterval(timer)
+  }, [])
+
+  const alternarAutoSync = async () => {
+    const proximo = !(sincStatus?.auto_sync_ativos ?? false)
+    try {
+      await getServidorApi().catalogoAutoSync({
+        ativo: proximo,
+        intervalo_seg: sincStatus?.auto_sync_intervalo_seg || 60
+      })
+      setSincStatus((s) => (s ? { ...s, auto_sync_ativos: proximo } : s))
+      setMensagem(proximo ? 'Auto-sync do catálogo ativado.' : 'Auto-sync do catálogo desativado.')
+    } catch {
+      setMensagem('Não foi possível alterar o auto-sync.')
+    }
+  }
+
+  const repararConexao = async () => {
+    setReparando(true)
+    setConexaoOk(null)
+    try {
+      setEtapaReparo('Conectando...')
+      await new Promise((r) => setTimeout(r, 400))
+      setEtapaReparo('Atualizando configuração...')
+      const r = await getServidorApi().catalogoRepair()
+      setEtapaReparo('')
+      if (r.ok) {
+        setConexaoOk(true)
+        setMensagem('Catálogo conectado e atualizado com sucesso.')
+      } else {
+        setConexaoOk(false)
+        setMensagem(erroAmigavelReparo(r.erro))
+      }
+    } catch {
+      setEtapaReparo('')
+      setConexaoOk(false)
+      setMensagem(erroAmigavelReparo(undefined))
+    } finally {
+      setReparando(false)
+    }
+  }
+
+  const erroAmigavelReparo = (codigo?: string): string => {
+    switch (codigo) {
+      case 'nao_autorizado':
+        return 'Não foi possível autenticar no catálogo conectado. Verifique a conexão e tente novamente.'
+      case 'token_sync_ausente':
+        return 'A conexão do catálogo ainda não foi finalizada. Atualize o aplicativo ou contate o suporte.'
+      case 'sincronizacao_falhou':
+      case 'comunicacao_falhou':
+        return 'Não foi possível sincronizar com o catálogo online no momento. Tente novamente em instantes.'
+      default:
+        return 'Não foi possível conectar ao catálogo online agora. Tente novamente em instantes.'
+    }
+  }
 
   const carregar = useCallback(async () => {
     const db = getDbApi()
@@ -92,12 +174,12 @@ export default function CatalogoOnline({
     setFormas(fs)
 
     const rows = (await db.all(
-      `SELECT p.id, p.nome, p.codigo_barras, p.codigo_interno, p.preco_venda, p.estoque, p.publicado, p.descricao,
+      `SELECT p.id, p.nome, p.codigo_barras, p.codigo_interno, p.preco_venda, p.estoque, p.descricao,
               p.catalogo_publicado, p.catalogo_ordem, c.nome AS categoria_nome
        FROM produtos p
        LEFT JOIN categorias c ON c.id = p.categoria_id
        ORDER BY p.nome`
-    )) as unknown as (LinhaBanco & { catalogo_publicado: number; catalogo_ordem: number })[]
+    )) as unknown as (LinhaBanco & { catalogo_ordem: number })[]
     const lista = rows.map((r) => ({
       id: r.id,
       nome: r.nome,
@@ -105,7 +187,6 @@ export default function CatalogoOnline({
       preco: r.preco_venda,
       estoque: r.estoque,
       categoria: r.categoria_nome,
-      publicado: !!r.publicado,
       catalogo_publicado: !!r.catalogo_publicado,
       catalogo_ordem: r.catalogo_ordem,
       imagem: null,
@@ -125,14 +206,14 @@ export default function CatalogoOnline({
     if (filtros.categoria !== 'Todas' && p.categoria !== filtros.categoria) return false
     if (filtros.imagem === 'Com imagem' && !p.imagem) return false
     if (filtros.imagem === 'Sem imagem' && p.imagem) return false
-    if (filtros.publicacao === 'Publicados' && !p.publicado) return false
-    if (filtros.publicacao === 'Não publicados' && p.publicado) return false
+    if (filtros.publicacao === 'Publicados' && !p.catalogo_publicado) return false
+    if (filtros.publicacao === 'Não publicados' && p.catalogo_publicado) return false
     if (filtros.estoque === 'Com estoque' && p.estoque <= 0) return false
     if (filtros.estoque === 'Sem estoque' && p.estoque > 0) return false
     return true
   })
 
-  const naoPublicados = produtos.filter((p) => !p.publicado).length
+  const naoPublicados = produtos.filter((p) => !p.catalogo_publicado).length
   const produtosExibidos = filtrados.slice(0, limite)
   const temMais = filtrados.length > limite
 
@@ -148,9 +229,13 @@ export default function CatalogoOnline({
   }, [filtros.categoria, filtros.publicacao, filtros.estoque, filtros.imagem, busca, limite])
 
   const alternarPublicacao = async (p: CatalogoProduto) => {
-    await getDbApi().run(`UPDATE produtos SET publicado = ? WHERE id = ?`, [p.publicado ? 0 : 1, p.id])
-    setProdutos((prev) => prev.map((x) => (x.id === p.id ? { ...x, publicado: !p.publicado } : x)))
-    setMensagem(p.publicado ? `"${p.nome}" despublicado.` : `"${p.nome}" publicado.`)
+    const novo = p.catalogo_publicado ? 0 : 1
+    await getDbApi().run(
+      `UPDATE produtos SET catalogo_publicado = ?, alterado_em = datetime('now') WHERE id = ?`,
+      [novo, p.id]
+    )
+    setProdutos((prev) => prev.map((x) => (x.id === p.id ? { ...x, catalogo_publicado: !p.catalogo_publicado } : x)))
+    setMensagem(novo ? `"${p.nome}" publicado no catálogo.` : `"${p.nome}" removido do catálogo.`)
   }
 
   const salvarDescricao = async (p: CatalogoProduto, texto: string) => {
@@ -229,28 +314,28 @@ export default function CatalogoOnline({
   }
 
   const publicarTodos = async () => {
-    const qtd = produtos.filter((p) => !p.publicado).length
+    const qtd = produtos.filter((p) => !p.catalogo_publicado).length
     if (qtd === 0) {
-      setMensagem('Todos os produtos já estão publicados.')
+      setMensagem('Todos os produtos já estão publicados no catálogo.')
       return
     }
-    if (!confirm(`Publicar todos os ${qtd} produto(s) não publicados?`)) return
-    await getDbApi().run(`UPDATE produtos SET publicado = 1`)
-    setProdutos((prev) => prev.map((p) => ({ ...p, publicado: true })))
-    setMensagem(`${qtd} produto(s) publicado(s).`)
+    if (!confirm(`Publicar todos os ${qtd} produto(s) não publicados no catálogo?`)) return
+    await getDbApi().run(`UPDATE produtos SET catalogo_publicado = 1, alterado_em = datetime('now')`, [])
+    setProdutos((prev) => prev.map((p) => ({ ...p, catalogo_publicado: true })))
+    setMensagem(`${qtd} produto(s) publicado(s) no catálogo.`)
   }
 
   const despublicarTodos = async () => {
-    const qtd = produtos.filter((p) => p.publicado).length
+    const qtd = produtos.filter((p) => p.catalogo_publicado).length
     if (qtd === 0) {
-      setMensagem('Nenhum produto publicado.')
+      setMensagem('Nenhum produto publicado no catálogo.')
       return
     }
-    if (!confirm(`Despublicar todos os ${qtd} produto(s) do catálogo?`)) return
-    await getDbApi().run(`UPDATE produtos SET publicado = 0`)
-    setProdutos((prev) => prev.map((p) => ({ ...p, publicado: false })))
+    if (!confirm(`Remover todos os ${qtd} produto(s) do catálogo?`)) return
+    await getDbApi().run(`UPDATE produtos SET catalogo_publicado = 0, alterado_em = datetime('now')`, [])
+    setProdutos((prev) => prev.map((p) => ({ ...p, catalogo_publicado: false })))
     setFiltros((prev) => ({ ...prev, publicacao: 'Todos' }))
-    setMensagem(`${qtd} produto(s) despublicado(s).`)
+    setMensagem(`${qtd} produto(s) removido(s) do catálogo.`)
   }
 
   return (
@@ -261,6 +346,47 @@ export default function CatalogoOnline({
           onAlternarManutencao={alternarManutencao}
           usuarioNome={usuarioNome}
         />
+        <div className="cat-rele">
+          <span className="cat-rele-titulo">Conexão do catálogo</span>
+          <button
+            className="btn-primario"
+            onClick={repararConexao}
+            disabled={reparando}
+          >
+            {reparando ? 'Conectando...' : 'Atualizar conexão do catálogo'}
+          </button>
+          {conexaoOk !== null && !reparando && (
+            <span className={conexaoOk ? 'cat-rele-ok' : 'cat-rele-erro'}>
+              {conexaoOk ? 'Conectado.' : 'Não conectado.'}
+            </span>
+          )}
+          {sincStatus && (
+            <div className="cat-rele-detalhe">
+              <span className={sincStatus.conectado ? 'cat-rele-ok' : 'cat-rele-erro'}>
+                {sincStatus.conectado ? 'Online' : 'Sem conexão com o Worker'}
+              </span>
+              {sincStatus.sincronizando && <span className="cat-rele-ok"> · Sincronizando…</span>}
+              <span className="cat-rele-info">
+                {' '}· Última sync: {sincStatus.ultima_sync}
+              </span>
+              {sincStatus.pendentes > 0 && (
+                <span className="cat-rele-info"> · {sincStatus.pendentes} pendente(s)</span>
+              )}
+              {sincStatus.ultimo_erro && !sincStatus.conectado && (
+                <div className="cat-rele-erro">Erro: {sincStatus.ultimo_erro}</div>
+              )}
+              <label className="cat-rele-auto">
+                <input
+                  type="checkbox"
+                  checked={!!sincStatus.auto_sync_ativos}
+                  onChange={alternarAutoSync}
+                />
+                Auto-sync a cada {sincStatus.auto_sync_intervalo_seg}s
+              </label>
+            </div>
+          )}
+        </div>
+        {reparando && etapaReparo && <div className="mensagem">{etapaReparo}</div>}
         <SearchBar valor={busca} onChange={setBusca} />
         <Filters
           categorias={categorias}

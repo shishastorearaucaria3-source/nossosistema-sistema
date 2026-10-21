@@ -1,9 +1,9 @@
-import { ReactNode, useEffect } from 'react'
+import { CSSProperties, ReactNode, useEffect } from 'react'
 
 export interface UiModalProps {
   aberto: boolean
   titulo: string
-  tamanho?: 'normal' | 'grande'
+  tamanho?: 'normal' | 'grande' | 'telaCheia'
   aoFechar: () => void
   children: ReactNode
   rodape?: ReactNode
@@ -21,10 +21,30 @@ export default function Modal({ aberto, titulo, tamanho = 'normal', aoFechar, ch
 
   if (!aberto) return null
 
+  const modalClass = [
+    'ui-modal',
+    tamanho === 'grande' ? 'ui-modal--grande' : '',
+    tamanho === 'telaCheia' ? 'ui-modal--full' : '',
+  ].filter(Boolean).join(' ')
+
+  const modalStyle: CSSProperties = tamanho === 'telaCheia' ? {
+    position: 'fixed',
+    inset: 0,
+    width: '100vw',
+    height: '100vh',
+    maxWidth: '100vw',
+    maxHeight: '100vh',
+    margin: 'auto',
+    borderRadius: 0,
+    zIndex: 9999,
+    overflowY: 'auto',
+  } : {}
+
   return (
     <div className="ui-modal-overlay" onClick={aoFechar}>
       <div
-        className={`ui-modal ${tamanho === 'grande' ? 'ui-modal--grande' : ''}`}
+        className={modalClass}
+        style={modalStyle}
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"

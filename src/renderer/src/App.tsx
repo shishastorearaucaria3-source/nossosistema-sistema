@@ -11,6 +11,7 @@ import Usuarios from './features/usuarios/Usuarios'
 import Delivery from './features/delivery/Delivery'
 import Zonas from './features/zonas/Zonas'
 import CatalogoOnline from './features/catalogo/CatalogoOnline'
+import PedidosOnline from './features/pedidasonline/PedidosOnline'
 import Caixa from './features/caixa/Caixa'
 import CaixaTransacoes from './features/caixa/CaixaTransacoes'
 import FormasPagamento from './features/formaspagamento/FormasPagamento'
@@ -18,10 +19,10 @@ import AlterarPrecos from './features/precos/AlterarPrecos'
 import AtendimentoWhatsApp from './features/whatsapp/AtendimentoWhatsApp'
 import Home from './features/inicio/Home'
 import Login from './features/login/Login'
-import { getDbApi, hasDbApi, getAuthApi, Usuario, fazerBackupManual, setFullscreen, getServidorApi } from './shared/db'
+import { getDbApi, hasDbApi, getAuthApi, Usuario, fazerBackupManual, setFullscreen } from './shared/db'
 import Toasts from './components/ui/Toast'
 
-type Tela = 'inicio' | 'pdv' | 'produtos' | 'clientes' | 'vendas' | 'estoque' | 'financeiro' | 'comissoes' | 'relatorios' | 'usuarios' | 'delivery' | 'zonas' | 'catalogo' | 'caixa' | 'formaspagamento' | 'precos' | 'nfe' | 'sobre' | 'whatsapp'
+type Tela = 'inicio' | 'pdv' | 'produtos' | 'clientes' | 'vendas' | 'estoque' | 'financeiro' | 'comissoes' | 'relatorios' | 'usuarios' | 'delivery' | 'zonas' | 'catalogo' | 'caixa' | 'formaspagamento' | 'precos' | 'nfe' | 'sobre' | 'whatsapp' | 'pedidasonline'
 
 const ICONES: Record<string, string> = {
   inicio: 'M3 10.5 12 3l9 7.5V21h-6v-6h-6v6H3z',
@@ -43,7 +44,8 @@ const ICONES: Record<string, string> = {
   formas: 'M2 7a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2z M2 10h20',
   precos: 'M3 6h18v13H3z M12 12a2 2 0 1 0 0-4 2 2 0 0 0 0 4z M5 9h3 M5 13h3',
   usuarios: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M4 21v-2a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v2',
-  whatsapp: 'M12 2C6.48 2 2 6.48 2 12c0 1.82.5 3.53 1.35 5L2 22l5.14-1.34A9.94 9.94 0 0 0 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2z M16.5 14.5c-.25-.13-1.5-.74-1.73-.82-.23-.09-.4-.13-.56.13-.17.27-.64.82-.79.98-.14.17-.29.19-.54.06-.25-.13-1.04-.38-1.98-1.22-.74-.65-1.23-1.46-1.38-1.71-.14-.25-.02-.38.1-.51.1-.11.25-.29.37-.43.13-.15.17-.25.25-.42.08-.17.04-.31-.02-.44-.06-.13-.56-1.35-.76-1.85-.2-.48-.4-.42-.56-.42h-.48c-.17 0-.43.06-.66.31-.23.25-.87.85-.87 2.07 0 1.22.89 2.4 1.01 2.56.13.17 1.75 2.67 4.24 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.56.1.47-.07 1.5-.61 1.71-1.2.22-.59.22-1.1.15-1.2-.06-.11-.23-.17-.48-.3z'
+  whatsapp: 'M12 2C6.48 2 2 6.48 2 12c0 1.82.5 3.53 1.35 5L2 22l5.14-1.34A9.94 9.94 0 0 0 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2z M16.5 14.5c-.25-.13-1.5-.74-1.73-.82-.23-.09-.4-.13-.56.13-.17.27-.64.82-.79.98-.14.17-.29.19-.54.06-.25-.13-1.04-.38-1.98-1.22-.74-.65-1.23-1.46-1.38-1.71-.14-.25-.02-.38.1-.51.1-.11.25-.29.37-.43.13-.15.17-.25.25-.42.08-.17.04-.31-.02-.44-.06-.13-.56-1.35-.76-1.85-.2-.48-.4-.42-.56-.42h-.48c-.17 0-.43.06-.66.31-.23.25-.87.85-.87 2.07 0 1.22.89 2.4 1.01 2.56.13.17 1.75 2.67 4.24 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.56.1.47-.07 1.5-.61 1.71-1.2.22-.59.22-1.1.15-1.2-.06-.11-.23-.17-.48-.3z',
+  pedidasonline: 'M14 3v5h5 M14 3H8a2 2 0 0 0-2 2v1 M10 14l2 2 4-4 M12 4v5h5'
 }
 
 interface MenuItem {
@@ -70,10 +72,9 @@ const MENU_PRINCIPAL: MenuItem[] = [
 ]
 
 const MENU_GESTAO: MenuItem[] = [
-  { id: 'comissoes', label: 'Comissões', icon: 'comissoes' },
   { id: 'precos', label: 'Alterar preços', icon: 'precos' },
-  { id: 'whatsapp', label: 'Atendimento WhatsApp', icon: 'whatsapp', admin: true },
-  { id: 'usuarios', label: 'Gerenciar usuários', icon: 'usuarios', admin: true }
+  { id: 'pedidasonline', label: 'Pedidos Online', icon: 'pedidasonline', admin: true },
+  { id: 'whatsapp', label: 'Atendimento WhatsApp', icon: 'whatsapp', admin: true }
 ]
 
 export default function App() {
@@ -82,6 +83,12 @@ export default function App() {
   const [usuario, setUsuario] = useState<Usuario | null>(null)
   const [carregado, setCarregado] = useState(false)
   const [msgBackup, setMsgBackup] = useState('')
+  const [pedirConfig, setPedirConfig] = useState(0)
+  const [menuPerfilAberto, setMenuPerfilAberto] = useState(false)
+  const [modalSenhaAberto, setModalSenhaAberto] = useState(false)
+  const [senhaAtual, setSenhaAtual] = useState('')
+  const [novaSenha, setNovaSenha] = useState('')
+  const [senhaMsg, setSenhaMsg] = useState('')
   const [pdvFocado, setPdvFocado] = useState(false)
   const [sidebarRecolhida, setSidebarRecolhida] = useState(false)
   const [caixaTransacoesId, setCaixaTransacoesId] = useState<number | null>(null)
@@ -135,6 +142,14 @@ export default function App() {
   }, [usuario])
 
   useEffect(() => {
+    const fechar = (e: MouseEvent) => {
+      if (!(e.target as HTMLElement).closest('.menu-avatar-dropdown')) setMenuPerfilAberto(false)
+    }
+    window.addEventListener('mousedown', fechar)
+    return () => window.removeEventListener('mousedown', fechar)
+  }, [])
+
+  useEffect(() => {
     if (!hasDbApi() || !usuario) return
     getDbApi()
       .get(`SELECT valor FROM config WHERE chave = 'nome_loja'`)
@@ -172,43 +187,40 @@ export default function App() {
     carregarPermissoes()
   }, [usuario])
 
-  // Monitor de conexão com o servidor: se perder a conexão, desconecta o usuário
+  // Monitor de conexão com o servidor: se perder a conexão OU se a sessão for
+  // invalidada no servidor (ex.: importação que apagou as sessões), desconecta
+  // o usuário IMEDIATAMENTE e volta para o login, com mensagem de perda de
+  // conexão. O check usa /api/auth/sessao (validado no servidor) para detectar
+  // tanto queda de rede quanto sessão tornada inválida por uma importação.
   useEffect(() => {
     if (!usuario) return
-    let falhas = 0
     let desconectou = false
+    const desconectar = (mensagem: string) => {
+      if (desconectou) return
+      desconectou = true
+      setMsgBackup(mensagem)
+      setUsuario(null)
+      setTela('inicio')
+      setPdvFocado(false)
+      setFullscreen(false).catch(() => {})
+    }
     const checar = async () => {
       if (desconectou) return
-      const desconectar = () => {
-        desconectou = true
-        setMsgBackup('Conexão com o servidor perdida. Você foi desconectado.')
-        setUsuario(null)
-        setTela('inicio')
-        setPdvFocado(false)
-        setFullscreen(false).catch(() => {})
-      }
       try {
-        const s = await getServidorApi().status()
-        const online = !!(s && s.online && s.api === 'conectada')
-        if (online) {
-          falhas = 0
-          return
-        }
-        falhas++
-        if (falhas >= 2) {
-          getAuthApi().logout().catch(() => {})
-          desconectar()
-        }
-      } catch {
-        falhas++
-        if (falhas >= 2) {
-          getAuthApi().logout().catch(() => {})
-          desconectar()
-        }
+        const r = await getAuthApi().sessao()
+        if (!r?.ok || !r.usuario) throw new Error('Sessão inválida')
+      } catch (err) {
+        // Sessão inválida ou servidor sem resposta → desconecta na hora.
+        const msg =
+          String((err as Error)?.message || '').includes('Sessão')
+            ? 'A sessão foi atualizada (importação feita). Volte a entrar quando a importação terminar.'
+            : 'Conexão com o servidor perdida. Você foi desconectado.'
+        getAuthApi().logout().catch(() => {})
+        desconectar(msg)
       }
     }
     checar()
-    const t = setInterval(checar, 2000)
+    const t = setInterval(checar, 1500)
     return () => clearInterval(t)
   }, [usuario])
 
@@ -303,25 +315,27 @@ export default function App() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (pdvFocado) return
+      if (tela !== 'inicio' && tela !== 'vendas') return
       if (e.key === 'F3') {
         e.preventDefault()
-        if (pdvFocado) {
-          return
-        }
         irPdv()
+        return
       }
-      if (e.key === 'F4' && !pdvFocado) {
-        e.preventDefault()
-        novoPedido()
-      }
-      if (e.key === 'F5' && !pdvFocado) {
-        e.preventDefault()
-        novoOrcamento()
+      if (tela === 'inicio') {
+        if (e.key === 'F4') {
+          e.preventDefault()
+          novoPedido()
+        }
+        if (e.key === 'F5') {
+          e.preventDefault()
+          novoOrcamento()
+        }
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [irPdv, sairPdv, pdvFocado, novoPedido, novoOrcamento])
+  }, [irPdv, sairPdv, pdvFocado, novoPedido, novoOrcamento, tela])
 
   const sair = async () => {
     await getAuthApi().logout()
@@ -329,6 +343,39 @@ export default function App() {
     setTela('inicio')
     setPdvFocado(false)
     setFullscreen(false).catch(() => {})
+  }
+
+  const abrirAlterarSenha = () => {
+    setMenuPerfilAberto(false)
+    setSenhaAtual('')
+    setNovaSenha('')
+    setSenhaMsg('')
+    setModalSenhaAberto(true)
+  }
+
+  const salvarMinhaSenha = async () => {
+    if (!novaSenha || novaSenha.length < 4) {
+      setSenhaMsg('A nova senha deve ter ao menos 4 caracteres.')
+      return
+    }
+    const r = await getAuthApi().alterarMinhaSenha(senhaAtual, novaSenha)
+    if (r.ok) {
+      setModalSenhaAberto(false)
+      setMsgBackup('Senha alterada com sucesso.')
+    } else {
+      setSenhaMsg(r.erro ?? 'Não foi possível alterar a senha.')
+      setNovaSenha('')
+    }
+  }
+
+  const abrirGerenciarUsuarios = () => {
+    setMenuPerfilAberto(false)
+    if (usuario && (usuario.perfil !== 'admin' && usuario.perfil !== 'gerente')) {
+      setMsgBackup('Acesso restrito ao administrador ou gerente.')
+      return
+    }
+    setTela('usuarios')
+    setMsgBackup('')
   }
 
   if (!carregado) return <div className="login-loading">Carregando...</div>
@@ -394,16 +441,31 @@ export default function App() {
     setMsgBackup('')
   }
 
+  // Engrenagem única no topo: abre a configuração da página atual (contexto).
+  const configDaTela = (): boolean => {
+    if (tela === 'caixa') return caixaTransacoesId == null
+    return tela === 'vendas' || tela === 'produtos' || tela === 'clientes'
+  }
+  const abrirConfigPagina = () => {
+    setMenuPerfilAberto(false)
+    if (!configDaTela()) {
+      setMsgBackup('Não há configurações extras para esta página.')
+      return
+    }
+    setMsgBackup('')
+    setPedirConfig((v) => v + 1)
+  }
+
   const renderTela = () => {
     switch (tela) {
       case 'inicio':
         return <Home usuarioNome={usuario.nome} onAbrirPdv={irPdv} onNavegar={navegarPara} />
       case 'produtos':
-        return <Produtos />
+        return <Produtos pedirConfig={pedirConfig} />
       case 'clientes':
-        return <Clientes />
+        return <Clientes pedirConfig={pedirConfig} />
       case 'vendas':
-        return <Vendas onNovaVenda={irPdv} onEditarPedido={editarPedido} onNovoPedido={novoPedido} onNovoOrcamento={novoOrcamento} />
+        return <Vendas onNovaVenda={irPdv} onEditarPedido={editarPedido} onNovoPedido={novoPedido} onNovoOrcamento={novoOrcamento} pedirConfig={pedirConfig} />
       case 'estoque':
         return <Estoque usuarioId={usuario.id} onAbrirProduto={(id) => { setProdutoEdicaoId(id); setTela('produtos') }} />
       case 'financeiro':
@@ -424,7 +486,7 @@ export default function App() {
         return caixaTransacoesId != null ? (
           <CaixaTransacoes caixaId={caixaTransacoesId} onVoltar={() => setCaixaTransacoesId(null)} />
         ) : (
-          <Caixa usuarioId={usuario.id} usuarioNome={usuario.nome} onAbrirCaixa={(id) => setCaixaTransacoesId(id)} />
+          <Caixa usuarioId={usuario.id} usuarioNome={usuario.nome} onAbrirCaixa={(id) => setCaixaTransacoesId(id)} pedirConfig={pedirConfig} />
         )
       case 'formaspagamento':
         return <FormasPagamento />
@@ -432,6 +494,8 @@ export default function App() {
         return <AlterarPrecos usuarioId={usuario.id} />
       case 'whatsapp':
         return <AtendimentoWhatsApp />
+      case 'pedidasonline':
+        return <PedidosOnline />
       case 'nfe':
       case 'sobre':
         return <EmBreve titulo={MENU_PRINCIPAL.find((m) => m.id === tela)?.label ?? ''} />
@@ -478,19 +542,53 @@ export default function App() {
         <div className="header-direita">
           <span className="loja-nome">{loja}</span>
           <span className="usuario-logado">
-            {usuario.nome}
-            {usuario.perfil === 'admin' ? (
+            <span className="menu-avatar-dropdown">
               <button
-                className="perfil-badge perfil-badge-btn"
-                onClick={() => { setTela('usuarios'); setMsgBackup('') }}
-                title="Gerenciar usuários"
+                className="avatar-btn"
+                onClick={() => setMenuPerfilAberto((v) => !v)}
+                title={`${usuario.nome} — ${usuario.perfil}`}
               >
-                admin ▾
+                <span className="avatar-letra">{usuario.nome.charAt(0).toUpperCase() || '?'}</span>
+                <span className="avatar-nome">{usuario.nome}</span>
+                <span className={`perfil-selo perfil-${usuario.perfil}`}>{usuario.perfil}</span>
+                <span className="avatar-seta">▾</span>
               </button>
-            ) : (
-              <span className="perfil-badge">{usuario.perfil}</span>
-            )}
+              {menuPerfilAberto && (
+                <div className="dropdown-avatar">
+                  <button className="dropdown-config-item" onClick={abrirAlterarSenha}>
+                    <span className="nav-icone-mini">🔑</span> Alterar Senha
+                  </button>
+                  {(usuario.perfil === 'admin' || usuario.perfil === 'gerente') && (
+                    <button className="dropdown-config-item" onClick={abrirGerenciarUsuarios}>
+                      <span className="nav-icone-mini">👤</span> Gerenciar Usuários
+                    </button>
+                  )}
+                  {temModulo('comissoes') && (
+                    <button
+                      className="dropdown-config-item"
+                      onClick={() => { setMenuPerfilAberto(false); setTela('comissoes'); setMsgBackup('') }}
+                    >
+                      <span className="nav-icone-mini">₡</span> Comissões
+                    </button>
+                  )}
+                  <div className="dropdown-avatar-sep" />
+                  <button className="dropdown-config-item" onClick={sair}>
+                    <span className="nav-icone-mini">⏻</span> Sair
+                  </button>
+                </div>
+              )}
+            </span>
           </span>
+          <button
+            className="btn-icone-gear btn-mini"
+            onClick={abrirConfigPagina}
+            title="Configurações desta página"
+          >
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="3" />
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+            </svg>
+          </button>
           <button
             className="btn-mini"
             onClick={async () => setMsgBackup(await fazerBackupManual())}
@@ -510,6 +608,41 @@ export default function App() {
         </nav>
         <main className="main">{renderTela()}</main>
       </div>
+      {modalSenhaAberto && (
+        <div className="modal-overlay">
+          <div className="modal modal-pequeno">
+            <div className="modal-topo">
+              <h3>Alterar Senha</h3>
+              <button className="btn-icone" onClick={() => setModalSenhaAberto(false)}>✕</button>
+            </div>
+            <form
+              className="login-form-dentro"
+              onSubmit={(e) => { e.preventDefault(); salvarMinhaSenha() }}
+            >
+              <label>Senha atual
+                <input
+                  type="password"
+                  value={senhaAtual}
+                  onChange={(e) => setSenhaAtual(e.target.value)}
+                  autoFocus
+                />
+              </label>
+              <label>Nova senha
+                <input
+                  type="password"
+                  value={novaSenha}
+                  onChange={(e) => setNovaSenha(e.target.value)}
+                />
+              </label>
+              {senhaMsg && <div className="login-erro">{senhaMsg}</div>}
+              <div className="modal-acoes">
+                <button type="button" className="btn-secundario" onClick={() => setModalSenhaAberto(false)}>Cancelar</button>
+                <button type="submit" className="btn-primario">Alterar senha</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
       <Toasts />
     </div>
   )

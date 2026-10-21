@@ -3,7 +3,7 @@ import type { ProdutoPublicoV1 } from '../types'
 import { useCarrinho } from '../state/carrinho'
 import ImagemProduto from './ImagemProduto'
 
-export default function CartaoProduto({ produto, origem }: { produto: ProdutoPublicoV1; origem: 'api' | 'mock' }) {
+export default function CartaoProduto({ produto, origem, pedidosAtivos }: { produto: ProdutoPublicoV1; origem: 'api' | 'mock'; pedidosAtivos: boolean }) {
   const { adicionar } = useCarrinho()
 
   return (
@@ -23,13 +23,13 @@ export default function CartaoProduto({ produto, origem }: { produto: ProdutoPub
           ) : (
             <span className="preco-promo">{formatarMoeda(produto.preco)}</span>
           )}
-          {produto.disponivel ? (
+          {produto.disponivel && pedidosAtivos ? (
             <button className="btn-add" onClick={() => adicionar(produto, 1)}>
               Adicionar
             </button>
           ) : (
             <button className="btn-add btn-add--bloqueado" disabled>
-              Indisponível
+              {!produto.disponivel ? 'Indisponível' : 'Pedidos pausados'}
             </button>
           )}
         </div>

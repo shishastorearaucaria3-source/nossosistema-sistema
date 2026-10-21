@@ -11,9 +11,22 @@
     "enabled": false
   },
   "vars": {
-    "CATALOGO_BACKEND_MODE": "mock",
+    "CATALOGO_BACKEND_MODE": "erro",
     "CATALOGO_CORS_ORIGEM": "https://catalogo-shishastore.pages.dev"
   },
+  "d1_databases": [
+    {
+      "binding": "CATALOGO_DB",
+      "database_name": "catalogo-db",
+      "database_id": "d21959e5-cc53-4811-8dfa-0f6bd783883b"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "CATALOGO_BUCKET",
+      "bucket_name": "catalogo-imagens"
+    }
+  ],
   "vpc_services": [
     {
       "binding": "CATALOGO_API",

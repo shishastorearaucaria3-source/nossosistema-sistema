@@ -124,6 +124,17 @@ export function importarEmHomologacao(pendentes: VendaProntaIportar[], snapshot:
       const exist = existe.get(num) as { id: number } | undefined
       if (exist) {
         resultado.duplicadas++
+        // Vendas já importadas sem itens (importações antigas) recebem os itens
+        // reais do MovEst agora disponíveis, sem duplicar as que já os têm.
+        if (v.itensNX.length > 0) {
+          const qtde = db.prepare('SELECT COUNT(*) AS n FROM venda_itens WHERE venda_id = ?').get(exist.id) as { n: number }
+          if (qtde.n === 0) {
+            for (const it of v.itensNX) {
+              insItem.run(exist.id, it.produto_id, it.nome_produto, it.quantidade, it.preco_unitario, it.subtotal)
+            }
+            resultado.atualizadas++
+          }
+        }
         const ag = porArquivo.get(v.xls.origemArquivo) || { arquivo: v.xls.origemArquivo, inseridas: 0, duplicadas: 0 }
         ag.duplicadas++
         porArquivo.set(v.xls.origemArquivo, ag)

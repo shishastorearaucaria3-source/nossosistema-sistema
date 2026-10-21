@@ -4,7 +4,7 @@ import Delivery from '../delivery/Delivery'
 import EditarPedido from '../delivery/EditarPedido'
 import PainelPedido from './PainelPedido'
 import PainelVenda from './PainelVenda'
-import ConfigPdv from '../pdv/ConfigPdv'
+import ConfigVendas from '../pdv/ConfigVendas'
 
 interface Venda {
   id: number
@@ -97,7 +97,7 @@ const COLUNAS_PEDIDO_PADRAO: Record<string, boolean> = {
   vendedor: true
 }
 
-export default function Vendas({ onNovaVenda, onEditarPedido, onNovoPedido, onNovoOrcamento }: { onNovaVenda?: () => void; onEditarPedido?: (pedidoId: number) => void; onNovoPedido?: () => void; onNovoOrcamento?: () => void }) {
+export default function Vendas({ onNovaVenda, onEditarPedido, onNovoPedido, onNovoOrcamento, pedirConfig }: { onNovaVenda?: () => void; onEditarPedido?: (pedidoId: number) => void; onNovoPedido?: () => void; onNovoOrcamento?: () => void; pedirConfig?: number }) {
   const [aba, setAba] = useState<Aba>('historico')
   const [visualizacao, setVisualizacao] = useState<Visualizacao>('resumida')
   const [periodo, setPeriodo] = useState<Periodo>('caixa_atual')
@@ -116,6 +116,13 @@ export default function Vendas({ onNovaVenda, onEditarPedido, onNovoPedido, onNo
   const [pedidoPainelId, setPedidoPainelId] = useState<number | null>(null)
   const [vendaPainelId, setVendaPainelId] = useState<number | null>(null)
   const [modalConfigPdv, setModalConfigPdv] = useState(false)
+  const ultimoPedirConfig = useRef(pedirConfig ?? 0)
+  useEffect(() => {
+    if ((pedirConfig ?? 0) > ultimoPedirConfig.current) {
+      setModalConfigPdv(true)
+      ultimoPedirConfig.current = pedirConfig ?? 0
+    }
+  }, [pedirConfig])
   const [ordemPedido, setOrdemPedido] = useState<{ chave: string; dir: 'asc' | 'desc' } | null>(null)
   const [menuColunas, setMenuColunas] = useState(false)
   const [colunasPedido, setColunasPedido] = useState<Record<string, boolean>>(() => {
@@ -645,16 +652,6 @@ export default function Vendas({ onNovaVenda, onEditarPedido, onNovoPedido, onNo
       <div className="page-header">
         <h2>Vendas</h2>
         <div className="page-acoes">
-          <button
-            className="btn-gear"
-            onClick={() => setModalConfigPdv(true)}
-            title="Configurações do PDV"
-          >
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="3" />
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-            </svg>
-          </button>
           <button className="btn-primario btn-acao-venda" onClick={onNovaVenda}>
             Nova Venda <kbd>F3</kbd>
           </button>
@@ -1118,7 +1115,7 @@ export default function Vendas({ onNovaVenda, onEditarPedido, onNovoPedido, onNo
         />
       )}
 
-      {modalConfigPdv && <ConfigPdv onFechar={() => setModalConfigPdv(false)} />}
+      {modalConfigPdv && <ConfigVendas onFechar={() => setModalConfigPdv(false)} />}
     </div>
   )
 }

@@ -1,8 +1,10 @@
+import { dataUrlImagem } from '../../../shared/db'
+
 export default function ProductImage({ base64, nome }: { base64: string | null; nome: string }) {
   return (
     <div className="cp-imagem-wrap">
       {base64 ? (
-        <img className="cp-imagem" src={`data:image/png;base64,${base64}`} alt={nome} />
+        <img className="cp-imagem" src={dataUrlImagem(base64)} alt={nome} />
       ) : (
         <div className="cp-imagem-vazia">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.6">

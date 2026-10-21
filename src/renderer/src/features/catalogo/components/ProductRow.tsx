@@ -9,7 +9,6 @@ export interface CatalogoProduto {
   preco: number
   estoque: number
   categoria: string | null
-  publicado: boolean
   catalogo_publicado: boolean
   catalogo_ordem: number
   imagem: string | null
@@ -37,11 +36,11 @@ export default function ProductRow({
     <div className="cp-linha">
       <div className="cp-col-publicar">
         <button
-          className={`cat-switch pequeno ${produto.publicado ? 'ligado' : ''}`}
+          className={`cat-switch pequeno ${produto.catalogo_publicado ? 'ligado' : ''}`}
           role="switch"
-          aria-checked={produto.publicado}
+          aria-checked={produto.catalogo_publicado}
           onClick={() => onAlternarPublicacao(produto)}
-          title={produto.publicado ? 'Publicado' : 'Não publicado'}
+          title={produto.catalogo_publicado ? 'Publicado' : 'Não publicado'}
         >
           <span className="cat-switch-bola" />
         </button>

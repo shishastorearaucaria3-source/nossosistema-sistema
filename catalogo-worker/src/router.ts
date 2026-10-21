@@ -1,6 +1,9 @@
 export type VerdictoRota =
   | { tipo: "publico" }
   | { tipo: "imagem"; id: number | null }
+  | { tipo: "sync" }
+  | { tipo: "pedido" }
+  | { tipo: "pedidos" }
   | { tipo: "nenhuma" };
 
 export function analisarRota(pathname: string): VerdictoRota {
@@ -16,6 +19,24 @@ export function analisarRota(pathname: string): VerdictoRota {
   }
 
   if (
+    partes.length === 3 &&
+    partes[0] === "api" &&
+    partes[1] === "catalogo" &&
+    partes[2] === "pedido"
+  ) {
+    return { tipo: "pedido" };
+  }
+
+  if (
+    partes.length === 3 &&
+    partes[0] === "api" &&
+    partes[1] === "catalogo" &&
+    partes[2] === "pedidos"
+  ) {
+    return { tipo: "pedidos" };
+  }
+
+  if (
     partes.length === 4 &&
     partes[0] === "api" &&
     partes[1] === "catalogo" &&
@@ -26,6 +47,15 @@ export function analisarRota(pathname: string): VerdictoRota {
       return { tipo: "imagem", id: Number(raw) };
     }
     return { tipo: "imagem", id: null };
+  }
+
+  if (
+    partes.length === 3 &&
+    partes[0] === "api" &&
+    partes[1] === "catalogo" &&
+    partes[2] === "sync"
+  ) {
+    return { tipo: "sync" };
   }
 
   return { tipo: "nenhuma" };

@@ -8,3 +8,11 @@ CATALOGO_BACKEND_MODE=mock
 
 # Tempo limite da chamada ao backend em ms (opcional, default 3000)
 #CATALOGO_BACKEND_TIMEOUT_MS=3000
+
+# ============================================================
+# SUPABASE (Worker lê dados públicos)
+# ============================================================
+# Em produção defina via `wrangler secret put SUPABASE_URL`, etc.
+SUPABASE_URL=https://SEU-PROJETO.supabase.co
+SUPABASE_SERVICE_KEY=SUA_CHAVE_SERVICE_ROLE
+EMPRESA_ID=SEU-UUID-DE-EMPRESA

@@ -10,13 +10,46 @@ import { migrations, SCHEMA_VERSION } from '../shared/schema'
 import { encontrarZona, Zona } from '../shared/geo'
 import { getDefaultDbPath, getPortFilePath, getImportDir, getDataDir } from '../shared/data-dir'
 export { getDefaultDbPath }
-import { getConfig, salvarConfig, getStatus, notificarAlteracaoProduto, getExibicao, salvarExibicao, gerarCatalogoPublico } from './catalogo'
+import { getConfig, salvarConfig, getStatus, notificarAlteracaoProduto, getExibicao, salvarExibicao, gerarCatalogoPublico, pegarConfig } from './catalogo'
+import { garantirTokenRelay } from '../shared/relay-token'
+import { sincronizarCatalogo, garantirSyncToken } from './catalogo-sync'
+import { puxarPedidosOnline, listarPedidosOnline, listarPedidoOnlineDetalhe, atualizarStatusPedidoOnline, agendarPollingPedidosOnline } from './pedidos-online'
+import { carregarConexoesSupabase, salvarConexoesSupabase, statusCredenciaisSupabase, resetClienteSupabase, type ConexaoSupabase } from './supabase-client'
+import { conectarCatalogoNoStartup, agendarSyncAutomatico } from './catalogo-auto'
+import { repararConexaoCatalogo } from './repair-catalogo'
+import { inicializarFilaOffline, iniciarLoopFilaOffline, enqueueOperacao } from './fila-offline'
+import { urlWorkerCatalogo, setUrlWorkerCatalogo } from './config-catalogo'
 import { getStatusServidor, getLogs, limparLogs, getBackupInfo, diagnosticar, corrigir, zerarDados, restaurarBackup, registrarLog, versaoSistema } from './servidor'
 import { extrairZip, listarArquivosImportacao, lerArquivoImportacao, importarProdutos, limparPastaImportacao, getProgressoImportacao } from './importar'
-import { importarNex, getProgressoNex, analisarNex, importarNexDeZip, analisarNexDeZip } from './importar-nex'
+import { importarNex, getProgressoNex, analisarNex, importarNexDeZip, importarNexDeArquivo, analisarNexDeZip } from './importar-nex'
 import * as nexImportador from './auditoria/servidor-importador'
 import { registerWhatsAppRoutes, stopWhatsApp } from '../whatsapp/index'
 import bcrypt from 'bcryptjs'
+
+// Carrega a configuração do catálogo online a partir do arquivo `.env` (se
+// existir), sem depender de dotenv (evita problema de empacotamento ao não
+// estar nas dependencies). Só preenche chaves ainda ausentes no ambiente —
+// variáveis de ambiente do sistema/terminal têm prioridade sobre o arquivo.
+(function carregarEnv(): void {
+  const candidatos = [resolve(process.cwd(), '.env'), resolve(getDataDir(), '.env')]
+  for (const caminho of candidatos) {
+    try {
+      if (!existsSync(caminho)) continue
+      const texto = readFileSync(caminho, 'utf8')
+      for (const linha of texto.split(/\r?\n/)) {
+        const t = linha.trim()
+        if (!t || t.startsWith('#')) continue
+        const eq = t.indexOf('=')
+        if (eq <= 0) continue
+        const chave = t.slice(0, eq).trim()
+        const valor = t.slice(eq + 1).trim().replace(/^["']|["']$/g, '')
+        if (chave && process.env[chave] === undefined && valor) {
+          process.env[chave] = valor
+        }
+      }
+    } catch { /* .env é opcional */ }
+  }
+})()
 
 function notificarProdutoSeNecessario(sql: string, params: unknown[]): void {
   try {
@@ -87,10 +120,10 @@ function migrate(database: DatabaseSync): void {
   while (current < SCHEMA_VERSION) {
     const next = current + 1
     const sql = migrations[next]
-    if (!sql) throw new Error(`Migration ${next} not found`)
+    if (sql === undefined) throw new Error(`Migration ${next} not found`)
     database.exec('BEGIN')
     try {
-      database.exec(sql)
+      if (sql) database.exec(sql)
       database.exec(`PRAGMA user_version = ${next}`)
       database.exec('COMMIT')
     } catch (err) {
@@ -162,17 +195,28 @@ function backupName(): string {
 export function fazerBackup(): { ok: boolean; arquivo: string } {
   try {
     const d = getDb()
-    d.exec('PRAGMA wal_checkpoint(TRUNCATE)')
+    // Gera backup consistente sem depender da janela checkpoint→copy: VACUUM INTO cria arquivo único
     const dir = backupDir()
-    const arquivo = join(dir, backupName())
-    copyFileSync(getDefaultDbPath(), arquivo)
+    const arquivoTmp = join(dir, `backup-temp-${Date.now()}.sqlite`)
+    const arquivoFinal = join(dir, backupName())
+    d.exec(`VACUUM INTO '${arquivoTmp.replace(/'/g, "''")}'`)
+    // move para nome final
+    try {
+      copyFileSync(arquivoTmp, arquivoFinal)
+      rmSync(arquivoTmp, { force: true })
+    } catch (e) {
+      rmSync(arquivoTmp, { force: true })
+      throw e
+    }
 
-    const arquivos = readdirSync(dir).filter((f) => f.endsWith('.sqlite')).sort()
+    const arquivos = readdirSync(dir)
+      .filter((f) => f.endsWith('.sqlite') && f !== 'backup-temp.sqlite' && !f.startsWith('backup-temp-'))
+      .sort()
     while (arquivos.length > MAX_BACKUPS) {
       const antigo = arquivos.shift()!
-      rmSync(join(dir, antigo))
+      try { rmSync(join(dir, antigo)) } catch { /* ignore */ }
     }
-    return { ok: true, arquivo }
+    return { ok: true, arquivo: arquivoFinal }
   } catch (err) {
     return { ok: false, arquivo: String((err as Error).message) }
   }
@@ -379,10 +423,14 @@ export function iniciarServidor(porta = 3210): void {
     return token ? sessoes.get(token) : undefined
   }
 
-  // Exige sessão válida com perfil 'admin'. NÃO abre exceção por localidade —
-  // a regra é idêntica em qualquer computador. Sem sessão → 401; sessão sem
-  // perfil admin → 403.
+  // Exige sessão válida com perfil 'admin'. Regra de EXCEÇÃO por localidade:
+  // requisições de LOOPBACK (o próprio computador do servidor — ex.: painel do
+  // servidor, ferramentas administrativas locais) são aceitas como admin direto,
+  // pois o host já é dono do banco, do token do réle e do relay. Qualquer terminal
+  // da REDE continua exigindo sessão com perfil 'admin'. Sem sessão → 401; sessão
+  // sem perfil admin (rede) → 403.
   const requerAdmin = (req: express.Request, res: express.Response, next: express.NextFunction): void => {
+    if (ehLocalEfetivo(req)) { next(); return }
     const sessao = sessaoAtualDoReq(req)
     if (sessao && sessao.perfil === 'admin') { next(); return }
     if (!sessao) {
@@ -627,6 +675,48 @@ export function iniciarServidor(porta = 3210): void {
     res.json({ ok: true })
   })
 
+  // Verifica se uma senha pertence a um usuário com perfil de supervisor
+  // (admin ou gerente). Usado para autorizar ações sensíveis no PDV, como
+  // troco acima do limite configurado. A sessão atual é a do terminal; o
+  // supervisor pode ser o mesmo usuário da sessão ou qualquer outro ativo.
+  app.post('/api/auth/verificarSupervisor', (req, res) => {
+    const senha = String(req.body?.senha ?? '')
+    if (!senha) {
+      res.json({ ok: false, autorizado: false, erro: 'Senha obrigatória.' })
+      return
+    }
+    const user = database
+      .prepare(`SELECT id, senha_hash, perfil, ativo FROM usuarios WHERE ativo = 1 AND perfil IN ('admin', 'gerente')`)
+      .all() as { id: number; senha_hash: string; perfil: string; ativo: number }[]
+    for (const u of user) {
+      const ver = verificarSenha(u.senha_hash, senha)
+      if (ver.ok) {
+        res.json({ ok: true, autorizado: true, supervisor: { id: u.id, perfil: u.perfil } })
+        return
+      }
+    }
+    res.json({ ok: true, autorizado: false, erro: 'Senha de supervisor inválida.' })
+  })
+
+  // Retorna a sessão atual (autenticada pelo middleware global). Se o token não
+  // for mais válido (ex.: importação que invalidou todas as sessões), o middleware
+  // global responde 401 e o terminal redireciona para o login.
+  app.get('/api/auth/sessao', (req, res) => {
+    const sessao = sessaoAtualDoReq(req)
+    if (!sessao) {
+      res.status(401).json({ ok: false, erro: 'Sessão inválida ou ausente.' })
+      return
+    }
+    const user = database.prepare(`SELECT id, nome, login, perfil, comissao_percent FROM usuarios WHERE id = ?`).get(sessao.usuario_id) as
+      | { id: number; nome: string; login: string; perfil: string; comissao_percent: number }
+      | undefined
+    if (!user) {
+      res.status(401).json({ ok: false, erro: 'Usuário da sessão não existe mais (dados foram importados).' })
+      return
+    }
+    res.json({ ok: true, usuario: user })
+  })
+
   // Retorna 403 com mensagem de erro padrão quando o usuário da sessão não pode
   // operar sobre um usuário-alvo (não-admin tentando tocar em admin).
   function bloquearEscalada(alvo: { id: number; perfil: string } | undefined, res: express.Response): boolean {
@@ -647,9 +737,10 @@ export function iniciarServidor(porta = 3210): void {
       return
     }
     const hash = hashSenhaForte(String(dados.senha ?? ''))
+    const email = String(dados.email ?? '').trim() || null
     const result = database
-      .prepare(`INSERT INTO usuarios (nome, login, senha_hash, perfil, comissao_percent) VALUES (?, ?, ?, ?, ?)`)
-      .run(String(dados.nome), String(dados.login), hash, perfil, Number(dados.comissao) || 0)
+      .prepare(`INSERT INTO usuarios (nome, login, senha_hash, perfil, comissao_percent, email) VALUES (?, ?, ?, ?, ?, ?)`)
+      .run(String(dados.nome), String(dados.login), hash, perfil, Number(dados.comissao) || 0, email)
     res.json({ ok: true, id: Number(result.lastInsertRowid) })
   })
 
@@ -665,8 +756,45 @@ export function iniciarServidor(porta = 3210): void {
     res.json({ ok: true })
   })
 
+  // Troca da própria senha pelo usuário autenticado (self-service). Exige a
+  // senha atual para confirmar a identidade e invalida as demais sessões ativas
+  // do usuário (mantém apenas a sessão atual do token usado aqui).
+  app.post('/api/auth/alterarMinhaSenha', (req, res) => {
+    const sessao = sessaoAtualDoReq(req)
+    if (!sessao) {
+      res.status(401).json({ ok: false, erro: 'Sessão inválida ou ausente. Faça login no terminal.' })
+      return
+    }
+    const { senhaAtual, novaSenha } = req.body ?? {}
+    if (!novaSenha || String(novaSenha).length < 4) {
+      res.json({ ok: false, erro: 'A nova senha deve ter ao menos 4 caracteres.' })
+      return
+    }
+    const row = database.prepare(`SELECT senha_hash FROM usuarios WHERE id = ? AND ativo = 1`).get(sessao.usuario_id) as
+      | { senha_hash: string }
+      | undefined
+    if (!row) {
+      res.status(401).json({ ok: false, erro: 'Usuário não encontrado ou inativo.' })
+      return
+    }
+    const ver = verificarSenha(row.senha_hash, String(senhaAtual ?? ''))
+    if (!ver.ok) {
+      res.json({ ok: false, erro: 'A senha atual está incorreta.' })
+      return
+    }
+    const hash = hashSenhaForte(String(novaSenha))
+    database.prepare(`UPDATE usuarios SET senha_hash = ? WHERE id = ?`).run(hash, sessao.usuario_id)
+    // Invalida as outras sessões (mantém apenas a atual, pois o token usada já
+    // foi validado nesta requisição).
+    for (const [t, s] of sessoes) {
+      if (s.usuario_id === sessao.usuario_id && t !== String(req.get('x-sessao-token') || '')) sessoes.delete(t)
+    }
+    registrarLog('INFO', `Senha alterada pelo próprio usuário: ${sessao.login}`)
+    res.json({ ok: true })
+  })
+
   app.post('/api/auth/atualizarUsuario', requerAdminOuGerente, (req, res) => {
-    const { usuarioId, nome, login, perfil, comissao, senha } = req.body ?? {}
+    const { usuarioId, nome, login, perfil, comissao, senha, email } = req.body ?? {}
     const id = Number(usuarioId)
     const sessao = sessaoAtualDoReq(req)
     const alvo = database.prepare(`SELECT id, perfil FROM usuarios WHERE id = ?`).get(id) as
@@ -680,15 +808,16 @@ export function iniciarServidor(porta = 3210): void {
       return
     }
     const mudouPerfil = alvo && alvo.perfil !== novoPerfil
+    const novoEmail = String(email ?? '').trim() || null
     if (senha) {
       const hash = hashSenhaForte(String(senha))
       database
-        .prepare(`UPDATE usuarios SET nome = ?, login = ?, perfil = ?, comissao_percent = ?, senha_hash = ? WHERE id = ?`)
-        .run(String(nome), String(login), novoPerfil, Number(comissao) || 0, hash, id)
+        .prepare(`UPDATE usuarios SET nome = ?, login = ?, perfil = ?, comissao_percent = ?, senha_hash = ?, email = ? WHERE id = ?`)
+        .run(String(nome), String(login), novoPerfil, Number(comissao) || 0, hash, novoEmail, id)
     } else {
       database
-        .prepare(`UPDATE usuarios SET nome = ?, login = ?, perfil = ?, comissao_percent = ? WHERE id = ?`)
-        .run(String(nome), String(login), novoPerfil, Number(comissao) || 0, id)
+        .prepare(`UPDATE usuarios SET nome = ?, login = ?, perfil = ?, comissao_percent = ?, email = ? WHERE id = ?`)
+        .run(String(nome), String(login), novoPerfil, Number(comissao) || 0, novoEmail, id)
     }
     // Se o perfil mudou (ou a senha), invalida as sessões do alvo para o novo
     // perfil valer (ex.: rebaixado de admin → não pode mais agir como admin).
@@ -875,6 +1004,18 @@ export function iniciarServidor(porta = 3210): void {
     res.json(getStatus())
   })
 
+  // Configura o auto-sync contínuo do Catálogo Online (ativar + intervalo em
+  // segundos). Persiste em `config` e o loop de auto-sync re-lê a cada ciclo.
+  app.post('/api/catalogo/auto-sync', requerAdmin, (req, res) => {
+    const { ativo, intervalo_seg } = req.body ?? {}
+    const gravar = (chave: string, valor: string) =>
+      database.prepare(`INSERT INTO config (chave, valor) VALUES (?, ?) ON CONFLICT(chave) DO UPDATE SET valor = excluded.valor`).run(chave, valor)
+    if (typeof ativo === 'boolean') gravar('auto_sync_ativos', ativo ? '1' : '0')
+    if (typeof intervalo_seg === 'number' && intervalo_seg > 0) gravar('auto_sync_intervalo_seg', String(Math.round(intervalo_seg)))
+    res.json(getStatus())
+  })
+
+
 app.post('/api/catalogo/config', requerAdmin, (req, res) => {
     const { site_url, nome_loja } = req.body ?? {}
     const novo = salvarConfig({
@@ -949,6 +1090,96 @@ app.post('/api/catalogo/exibicao', (req, res) => {
 
   app.post('/api/servidor/apikey/regenerar', requerAdmin, somenteLocal, (_req, res) => {
     res.json({ ok: true, api_key: regenerarApiKey() })
+  })
+
+  // Status da conexão do catálogo — NUNCA expõe token, credencial ou URL
+  // interna. Apenas indica se a infraestrutura de autenticação local existe.
+  app.get('/api/catalogo/conexao', requerAdmin, (_req, res) => {
+    const tokenRelay = !!garantirTokenRelay()
+    const syncOk = !!garantirSyncToken()
+    res.json({ ok: true, token_relay_configurado: tokenRelay, token_sync_configurado: syncOk })
+  })
+
+  // Sincronização com D1 (nuvem) — usa a URL central de produção (não vem do
+  // cliente). O token de sincronização fica no ambiente seguro do servidor.
+  app.post('/api/catalogo/sync', requerAdmin, async (_req, res) => {
+    const resultado = await sincronizarCatalogo(urlWorkerCatalogo())
+    res.json(resultado)
+  })
+
+  // Puxa pedidos criados no catálogo online (salvos em D1) e os importa no
+  // ERP local, baixando o estoque de forma idempotente (cada pedido só entra
+  // e decrementa uma única vez). URL do Worker vem da configuração central.
+  app.post('/api/catalogo/pedidos/puxar', requerAdmin, async (_req, res) => {
+    const resultado = await puxarPedidosOnline()
+    res.json(resultado)
+  })
+
+  // Lista pedidos online já importados (painel "Pedidos Online/Comandas").
+  // Aceita filtros opcionais por busca (número/cliente/telefone), status e
+  // período (de/ate) via query string.
+  app.get('/api/catalogo/pedidos/lista', requerAdminOuGerente, (req, res) => {
+    const q = req.query ?? {}
+    const filtro = {
+      busca: typeof q.busca === 'string' ? q.busca : undefined,
+      status: typeof q.status === 'string' ? q.status : undefined,
+      de: typeof q.de === 'string' ? q.de : undefined,
+      ate: typeof q.ate === 'string' ? q.ate : undefined
+    }
+    res.json(listarPedidosOnline(filtro))
+  })
+
+  // Detalhe de um pedido online (itens + tracking de status).
+  app.get('/api/catalogo/pedidos/detalhe', requerAdminOuGerente, (req, res) => {
+    const id = typeof req.query.id === 'string' ? req.query.id : ''
+    if (!id) {
+      res.status(400).json({ ok: false, erro: 'dados_incompletos' })
+      return
+    }
+    res.json(listarPedidoOnlineDetalhe(String(id)))
+  })
+
+  // Atualiza o status de atendimento de um pedido online importado. Persiste
+  // no banco local e propaga ao Supabase (tracking do catálogo público).
+  app.post('/api/catalogo/pedidos/status', requerAdminOuGerente, async (req, res) => {
+    const { id, status } = req.body ?? {}
+    if (!id || typeof status !== 'string') {
+      res.status(400).json({ ok: false, erro: 'dados_incompletos' })
+      return
+    }
+    res.json(await atualizarStatusPedidoOnline(String(id), status))
+  })
+
+  // "Reparar/Atualizar conexão do catálogo": garante o token local, reenvia o
+  // catálogo ao Worker, confirma que voltou a responder e reimporta pedidos.
+  // Retorna apenas sucesso/erro amigável — nunca token, URL interna ou credencial.
+  app.post('/api/catalogo/repair', requerAdmin, async (_req, res) => {
+    const resultado = await repararConexaoCatalogo()
+    res.json(resultado)
+  })
+
+  // Configuração do Supabase (catálogo online) gerenciada pelo painel:
+  // múltiplas conexões salvas, persistidas no banco e recuperáveis a qualquer
+  // momento. Por expor a service role key, fica restrita AO PRÓPRIO SERVIDOR
+  // (loopback) + admin — nunca acessível de um terminal da rede.
+  app.get('/api/catalogo/supabase/conexoes', requerAdmin, somenteLocal, (_req, res) => {
+    const conexoes = carregarConexoesSupabase()
+    const status = statusCredenciaisSupabase()
+    res.json({ ok: true, conexoes, status })
+  })
+
+  app.post('/api/catalogo/supabase/conexoes', requerAdmin, somenteLocal, (req, res) => {
+    const entrada = Array.isArray(req.body?.conexoes) ? (req.body.conexoes as ConexaoSupabase[]) : []
+    const salvo = salvarConexoesSupabase(entrada)
+    resetClienteSupabase()
+    res.json({ ok: salvo.ok, conexoes: salvo.lista, status: statusCredenciaisSupabase() })
+  })
+
+  // Sobrescrita da URL central do Worker (apenas administração técnica local;
+  // nunca exposta na tela). '' restaura a URL oficial de produção.
+  app.post('/api/catalogo/worker-url', requerAdmin, somenteLocal, (req, res) => {
+    const url = typeof req.body?.url === 'string' ? String(req.body.url) : ''
+    res.json(setUrlWorkerCatalogo(url))
   })
 
   app.post('/api/servidor/zerar', requerAdmin, (req, res) => {
@@ -1052,8 +1283,21 @@ app.post('/api/servidor/encerrar', requerAdmin, (_req, res) => {
     const arquivo = validarArquivoNex(req)
     if (!arquivo) { res.status(400).json({ ok: false, erro: 'Arquivo obrigatório.' }); return }
     const confiancaMin = req.body?.confiancaMin === 'ALTA CONFIANÇA' ? 'ALTA CONFIANÇA' as const : 'EXATA' as const
+    // Importação modifica/recria usuários e dados: invalida todas as sessões para
+    // que os terminais voltem ao login e evitem estado obsoleto durante a migração.
+    sessoes.clear()
     nexImportador.importar(arquivo, confiancaMin).then((r) => {
       registrarLog('INFO', `Nex: importação homolog em ${r.snapshotDir} — inseridas ${r.resultado.inseridas}, duplicadas ${r.resultado.duplicadas}, caso-C ${r.resultado.naoImportadasCasoC}, ambíguas ${r.resultado.ambiguas}, sem correlação ${r.resultado.semCorrelacao}`)
+      res.json({ ok: true, ...r })
+    }).catch((err: Error) => respondErroNex(res, err))
+  })
+
+  app.post('/api/nex/importar-todos', somenteLocal, (req, res) => {
+    const confiancaMin = req.body?.confiancaMin === 'ALTA CONFIANÇA' ? 'ALTA CONFIANÇA' as const : 'EXATA' as const
+    const reusar = req.body?.reusar !== false
+    sessoes.clear()
+    nexImportador.importarTodos(confiancaMin, reusar).then((r) => {
+      registrarLog('INFO', `Nex: importação multi-arquivo homolog em ${r.snapshotDir} — ${r.arquivos.length} arquivo(s), inseridas ${r.resultado.inseridas}, duplicadas ${r.resultado.duplicadas}, pendentes ${r.vendasXLS}`)
       res.json({ ok: true, ...r })
     }).catch((err: Error) => respondErroNex(res, err))
   })
@@ -1187,10 +1431,27 @@ app.post('/api/servidor/encerrar', requerAdmin, (_req, res) => {
     }
     database.exec('BEGIN')
     try {
+      // Para compra, cria o cabeçalho ANTES das movimentações para poder vincular
+      // cada entrada ao compra_id (equivale ao venda_id das saídas de venda).
+      let compraId: number | null = null
+      if (categoria === 'compra') {
+        compraId = Number(
+          database.prepare(`INSERT INTO compras (fornecedor_id, numero, total, status) VALUES (?, ?, ?, 'paga')`)
+            .run(fornecedorId, documento, total).lastInsertRowid
+        )
+      }
+      const insMov = database.prepare(
+        `INSERT INTO movimentacoes (produto_id, tipo, categoria, quantidade, motivo, documento, valor, origem, destino, cliente_id, fornecedor_id, usuario_id, criado_em, estoque_anterior, estoque_posterior, compra_id)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      )
+      const insCompraItem = database.prepare(
+        `INSERT INTO compra_itens (compra_id, produto_id, quantidade, preco_custo, subtotal) VALUES (?, ?, ?, ?, ?)`
+      )
       for (const [pid, linha] of linhas) {
         const p = produtoParaMovimento(pid)!
         const custo = linha.preco_custo ?? p.preco_custo
         const valor = linha.quantidade * custo
+        const estoqueAnterior = p.estoque
         total += valor
         if (tipo === 'entrada') {
           if (linha.preco_custo != null) {
@@ -1201,26 +1462,22 @@ app.post('/api/servidor/encerrar', requerAdmin, (_req, res) => {
         } else {
           database.prepare(`UPDATE produtos SET estoque = estoque - ? WHERE id = ?`).run(linha.quantidade, pid)
         }
+        const estoquePosterior = estoqueAnterior + (tipo === 'entrada' ? linha.quantidade : -linha.quantidade)
         if (linha.lote || linha.data_validade || linha.data_fabricacao) {
           database.prepare(
             `UPDATE produtos SET lote = COALESCE(?, lote), data_validade = COALESCE(?, data_validade), data_fabricacao = COALESCE(?, data_fabricacao) WHERE id = ?`
           ).run(linha.lote, linha.data_validade, linha.data_fabricacao, pid)
         }
-        database.prepare(
-          `INSERT INTO movimentacoes (produto_id, tipo, categoria, quantidade, motivo, documento, valor, origem, destino, cliente_id, fornecedor_id, usuario_id, criado_em)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-        ).run(pid, tipo, categoria, linha.quantidade, motivo, documento, valor, origem, destino, clienteId, fornecedorId, usuarioId, agora)
+        insMov.run(
+          pid, tipo, categoria, linha.quantidade, motivo, documento, valor,
+          origem, destino, clienteId, fornecedorId, usuarioId, agora,
+          estoqueAnterior, estoquePosterior, compraId
+        )
+        if (compraId != null) {
+          insCompraItem.run(compraId, pid, linha.quantidade, custo, linha.quantidade * custo)
+        }
         notificarAlteracaoProduto(pid)
         aplicados++
-      }
-      if (categoria === 'compra') {
-        const compraId = Number(database.prepare(`INSERT INTO compras (fornecedor_id, numero, total, status) VALUES (?, ?, ?, 'paga')`).run(fornecedorId, documento, total).lastInsertRowid)
-        for (const [pid, linha] of linhas) {
-          const p = produtoParaMovimento(pid)!
-          const custo = linha.preco_custo ?? p.preco_custo
-          database.prepare(`INSERT INTO compra_itens (compra_id, produto_id, quantidade, preco_custo, subtotal) VALUES (?, ?, ?, ?, ?)`)
-            .run(compraId, pid, linha.quantidade, custo, linha.quantidade * custo)
-        }
       }
       database.exec('COMMIT')
     } catch (err) {
@@ -1230,6 +1487,90 @@ app.post('/api/servidor/encerrar', requerAdmin, (_req, res) => {
       return
     }
     res.json({ ok: true, documento, total, itens: aplicados, tipo, categoria })
+  })
+
+  // ---------- Estorno de compra (cancelamento com reversão do estoque) ----------
+  // Reverte a entrada de estoque de uma compra, registra movimentação reversa
+  // (saída categoria 'devolucao_fornecedor') e impede dupla reversão.
+  app.post('/api/estoque/compra/cancelar', (req, res) => {
+    const corpo = req.body ?? {}
+    const compraId = Number(corpo.compra_id)
+    if (!Number.isInteger(compraId) || compraId <= 0) {
+      res.status(400).json({ ok: false, erro: 'compra_id obrigatório.' })
+      return
+    }
+    const autenticado = usuarioAutenticadoDoReq(req)
+    const podeCancelar =
+      !!autenticado &&
+      (autenticado.perfil === 'admin' || autenticado.perfil === 'gerente' || usuarioTemPermissao(autenticado.id, 'estoque_cancelar'))
+    if (!autenticado) {
+      res.status(401).json({ ok: false, erro: 'Sessão inválida ou ausente. Faça login no terminal.' })
+      return
+    }
+    if (!podeCancelar) {
+      res.status(403).json({ ok: false, erro: 'Somente administrador, gerente ou usuário com permissão de cancelar movimentações.' })
+      return
+    }
+    const compra = database.prepare(`SELECT * FROM compras WHERE id = ?`).get(compraId) as
+      | { id: number; numero: string; total: number; cancelada: number; cancelada_em: string | null }
+      | undefined
+    if (!compra) {
+      res.status(400).json({ ok: false, erro: 'Compra não encontrada.' })
+      return
+    }
+    if (compra.cancelada === 1) {
+      res.status(400).json({ ok: false, erro: `Compra ${compra.numero} já está cancelada (dupla reversão não permitida).` })
+      return
+    }
+    const itens = database
+      .prepare(
+        `SELECT ci.produto_id, ci.quantidade, p.controla_estoque FROM compra_itens ci
+         JOIN produtos p ON p.id = ci.produto_id WHERE ci.compra_id = ?`
+      )
+      .all(compraId) as { produto_id: number; quantidade: number; controla_estoque: number }[]
+    if (itens.length === 0) {
+      res.status(400).json({ ok: false, erro: 'Compra sem itens para reverter.' })
+      return
+    }
+    const usuarioId = corpo.usuario_id != null ? Number(corpo.usuario_id) : null
+    const agora = new Date().toISOString()
+    const documento = `EST-${compra.numero}`
+
+    database.exec('BEGIN IMMEDIATE')
+    try {
+      const reverter = database.prepare(`UPDATE produtos SET estoque = estoque - ? WHERE id = ?`)
+      const insMov = database.prepare(
+        `INSERT INTO movimentacoes (produto_id, tipo, categoria, quantidade, motivo, documento, valor, compra_id, usuario_id, criado_em, estoque_anterior, estoque_posterior)
+         VALUES (?, 'saida', 'devolucao_fornecedor', ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      )
+      for (const it of itens) {
+        if (it.controla_estoque !== 1) continue
+        const p = database.prepare(`SELECT estoque, preco_custo FROM produtos WHERE id = ?`).get(it.produto_id) as
+          | { estoque: number; preco_custo: number }
+          | undefined
+        if (!p) continue
+        const anterior = p.estoque
+        reverter.run(it.quantidade, it.produto_id)
+        insMov.run(
+          it.produto_id, it.quantidade,
+          `Estorno da compra ${compra.numero}`,
+          documento, it.quantidade * p.preco_custo, compraId, usuarioId, agora,
+          anterior, anterior - it.quantidade
+        )
+        notificarAlteracaoProduto(it.produto_id)
+      }
+      database.prepare(
+        `UPDATE compras SET cancelada = 1, cancelada_em = ?, cancelada_por = ? WHERE id = ?`
+      ).run(agora, usuarioId, compraId)
+      database.exec('COMMIT')
+    } catch (err) {
+      database.exec('ROLLBACK')
+      registrarLog('ERROR', `Estoque/compra/cancelar: ${(err as Error).message}`)
+      res.status(500).json({ ok: false, erro: (err as Error).message })
+      return
+    }
+    registrarLog('WARNING', `Compra ${compra.numero} estornada por ${autenticado.nome}`)
+    res.json({ ok: true, numero: compra.numero, documento, itens_revertidos: itens.length })
   })
 
   app.post('/api/estoque/inventario/abrir', (req, res) => {
@@ -1313,8 +1654,8 @@ app.post('/api/servidor/encerrar', requerAdmin, (_req, res) => {
       const updItem = database.prepare(`UPDATE inventario_itens SET diferenca = ?, conferido = 1 WHERE id = ?`)
       const updEstoque = database.prepare(`UPDATE produtos SET estoque = ? WHERE id = ?`)
       const insMov = database.prepare(
-        `INSERT INTO movimentacoes (produto_id, tipo, categoria, quantidade, motivo, documento, valor, usuario_id, criado_em)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        `INSERT INTO movimentacoes (produto_id, tipo, categoria, quantidade, motivo, documento, valor, usuario_id, criado_em, estoque_anterior, estoque_posterior)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       )
       for (const item of itens) {
         if (!item.conferido || item.quantidade_fisica == null) continue
@@ -1323,13 +1664,15 @@ app.post('/api/servidor/encerrar', requerAdmin, (_req, res) => {
         if (Math.abs(dif) < 0.0001) continue
         divergencias++
         const p = produtoParaMovimento(item.produto_id)!
+        const anterior = p.estoque
         updEstoque.run(item.quantidade_fisica, item.produto_id)
         const ajuste = dif > 0 ? 'ajuste_entrada' : 'ajuste_saida'
         const tipo = dif > 0 ? 'entrada' : 'saida'
         insMov.run(
           item.produto_id, tipo, ajuste, Math.abs(dif),
           `Inventário ${inv.numero}${inv.observacao ? ` — ${inv.observacao}` : ''}`,
-          documento, Math.abs(dif) * p.preco_custo, usuarioId, new Date().toISOString()
+          documento, Math.abs(dif) * p.preco_custo, usuarioId, new Date().toISOString(),
+          anterior, item.quantidade_fisica
         )
         notificarAlteracaoProduto(item.produto_id)
         ajustados++
@@ -1381,17 +1724,6 @@ app.post('/api/servidor/encerrar', requerAdmin, (_req, res) => {
     if (!autenticado) {
       res.status(401).json({ ok: false, erro: 'Sessão inválida ou ausente. Faça login no terminal.' })
       return
-    }
-
-    // Regra de estoque: bloqueia venda sem saldo, SALVO se a configuração da loja
-    // permitir ou o operador tiver a permissão específica.
-    let permitirSemEstoque = false
-    try {
-      const cfgRow = database.prepare(`SELECT valor FROM config WHERE chave = 'pdv_permitir_sem_estoque'`).get() as { valor: string } | undefined
-      if ((cfgRow?.valor ?? '0') === '1') permitirSemEstoque = true
-    } catch { /* ignore */ }
-    if (!permitirSemEstoque && usuarioTemPermissao(autenticado.id, 'vender_sem_estoque')) {
-      permitirSemEstoque = true
     }
 
     // Limite de desconto: se o usuário autenticado tem limitar_desconto ativo,
@@ -1453,7 +1785,7 @@ app.post('/api/servidor/encerrar', requerAdmin, (_req, res) => {
       )
       const baixa = database.prepare(`UPDATE produtos SET estoque = estoque - ? WHERE id = ?`)
       const insMov = database.prepare(
-        `INSERT INTO movimentacoes (produto_id, tipo, quantidade, motivo, venda_id) VALUES (?, 'saida', ?, 'venda', ?)`
+        `INSERT INTO movimentacoes (produto_id, tipo, quantidade, motivo, venda_id, estoque_anterior, estoque_posterior) VALUES (?, 'saida', ?, 'venda', ?, ?, ?)`
       )
       for (const item of itens) {
         const pid = Number(item?.produto_id)
@@ -1466,13 +1798,12 @@ app.post('/api/servidor/encerrar', requerAdmin, (_req, res) => {
           | { controla_estoque: number; estoque: number; nome: string }
           | undefined
         if (p && p.controla_estoque === 1) {
-          if (p.estoque < qtd && !permitirSemEstoque) {
-            const e = new Error(`Estoque insuficiente para "${p.nome}" (disponível ${p.estoque}, pedido ${qtd}).`) as Error & { codigo?: string }
-            e.codigo = 'ESTOQUE_INSUFICIENTE'
-            throw e
-          }
+          // A autorização para vender sem estoque é feita no momento da adição
+          // (popup no PDV). Aqui a baixa é sempre realizada, permitindo saldo
+          // negativo, conforme a venda.
+          const anterior = p.estoque
           baixa.run(qtd, pid)
-          insMov.run(pid, qtd, vendaId)
+          insMov.run(pid, qtd, vendaId, anterior, anterior - qtd)
         }
       }
       const insPag = database.prepare(`INSERT INTO pagamentos (venda_id, forma, valor) VALUES (?, ?, ?)`)
@@ -1483,8 +1814,8 @@ app.post('/api/servidor/encerrar', requerAdmin, (_req, res) => {
           insPag.run(vendaId, String(pg.forma ?? ''), valor)
         }
       }
-      if (caixaId != null) {
-        database.prepare(`UPDATE caixas SET total_vendas = total_vendas + ?, qtd_vendas = qtd_vendas + 1 WHERE id = ?`).run(total, caixaId)
+if (caixaId != null) {
+        database.prepare(`UPDATE caixas SET total_vendas = total_vendas + ?, qtd_vendas = qtd_vendas + 1, descontos = descontos + ? WHERE id = ?`).run(total, desconto, caixaId)
       }
       database.exec('COMMIT')
       res.json({ ok: true, numero, venda_id: vendaId })
@@ -1520,8 +1851,8 @@ app.post('/api/servidor/encerrar', requerAdmin, (_req, res) => {
       return
     }
     const u = autenticado
-    const venda = database.prepare(`SELECT id, numero, total, status, caixa_id FROM vendas WHERE id = ?`).get(vid) as
-      | { id: number; numero: string; total: number; status: string; caixa_id: number | null }
+    const venda = database.prepare(`SELECT id, numero, total, desconto, status, caixa_id FROM vendas WHERE id = ?`).get(vid) as
+      | { id: number; numero: string; total: number; desconto: number; status: string; caixa_id: number | null }
       | undefined
     if (!venda) {
       res.status(400).json({ ok: false, erro: 'Venda não encontrada.' })
@@ -1541,22 +1872,64 @@ app.post('/api/servidor/encerrar', requerAdmin, (_req, res) => {
         )
         .all(vid) as { produto_id: number; quantidade: number }[]
       const devolve = database.prepare(`UPDATE produtos SET estoque = estoque + ? WHERE id = ?`)
-      for (const it of itens) devolve.run(it.quantidade, it.produto_id)
-
+      const reduzMov = database.prepare(
+        `UPDATE movimentacoes SET tipo = 'cancelamento', estoque_anterior = ?, estoque_posterior = ?
+         WHERE venda_id = ? AND produto_id = ? AND (tipo = 'saida' OR tipo = 'cancelamento')`
+      )
+      for (const it of itens) {
+        const antes = database.prepare(`SELECT estoque FROM produtos WHERE id = ?`).get(it.produto_id) as { estoque: number }
+        devolve.run(it.quantidade, it.produto_id)
+        reduzMov.run(antes.estoque, antes.estoque + it.quantidade, vid, it.produto_id)
+      }
+      // Garante que devoluções sem produto controlado também não fiquem duplicadas
       database.prepare(`UPDATE movimentacoes SET tipo = 'cancelamento' WHERE venda_id = ?`).run(vid)
 
+      let canceladoPosFechamento = false
       if (venda.caixa_id != null) {
-        database
-          .prepare(
-            `UPDATE caixas SET total_vendas = MAX(0, total_vendas - ?), qtd_vendas = MAX(0, qtd_vendas - 1), cancelamentos = cancelamentos + ? WHERE id = ?`
-          )
-          .run(venda.total, venda.total, venda.caixa_id)
+        const cx = database.prepare(`SELECT id, aberto, fechado_em FROM caixas WHERE id = ?`).get(venda.caixa_id) as
+          | { id: number; aberto: number; fechado_em: string | null }
+          | undefined
+        if (!cx) {
+          database.exec('ROLLBACK')
+          registrarLog('ERROR', `Cancelar venda ${vid}: caixa ${venda.caixa_id} não encontrado.`)
+          res.status(400).json({ ok: false, erro: `Caixa ${venda.caixa_id} não encontrado. Impossível cancelar venda sem identificar caixa com segurança.` })
+          return
+        }
+        if (cx.aberto === 0) {
+          // Caixa FECHADO: preservar agregados. Registrar em tabela auditável.
+          const ja = database.prepare(`SELECT id FROM vendas_canceladas_pos_fechamento WHERE venda_id = ?`).get(vid) as { id: number } | undefined
+          if (ja) {
+            database.exec('ROLLBACK')
+            registrarLog('WARNING', `Cancelar venda ${vid}: tentativa de estorno pós-fechamento duplicado.`)
+            res.status(400).json({ ok: false, erro: 'Venda já está cancelada.' })
+            return
+          }
+          database.prepare(
+            `INSERT INTO vendas_canceladas_pos_fechamento (venda_id, caixa_id, numero, total, desconto, itens_devolvidos, motivo, usuario_id, criado_em)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`
+          ).run(vid, cx.id, venda.numero, venda.total, venda.desconto || 0, itens.length, null, u.id)
+          canceladoPosFechamento = true
+        } else {
+          // Caixa ABERTO: comportamento existente — reverte agregados
+          database
+            .prepare(
+              `UPDATE caixas SET total_vendas = MAX(0, total_vendas - ?), qtd_vendas = MAX(0, qtd_vendas - 1), cancelamentos = cancelamentos + ?, descontos = MAX(0, descontos - ?) WHERE id = ?`
+            )
+            .run(venda.total, venda.total, venda.desconto || 0, venda.caixa_id)
+        }
+      }
+      // Se não há caixa_id, não é possível identificar caixa com segurança: interromper
+      if (venda.caixa_id == null) {
+        database.exec('ROLLBACK')
+        registrarLog('ERROR', `Cancelar venda ${vid}: venda sem caixa_id vinculado.`)
+        res.status(400).json({ ok: false, erro: 'Venda não está vinculada a um caixa. Não é possível cancelar com segurança (bloqueio por segurança).' })
+        return
       }
 
       database.prepare(`UPDATE vendas SET status = 'cancelada', cancelada_em = datetime('now') WHERE id = ?`).run(vid)
       database.exec('COMMIT')
-      registrarLog('WARNING', `Venda ${venda.numero} cancelada por ${u.nome}. Caixa ajustado.`)
-      res.json({ ok: true, numero: venda.numero, itens_devolvidos: itens.length })
+      registrarLog('WARNING', canceladoPosFechamento ? `Venda ${venda.numero} cancelada (estorno pós-fechamento) por ${u.nome}.` : `Venda ${venda.numero} cancelada por ${u.nome}. Caixa ajustado.`)
+      res.json({ ok: true, numero: venda.numero, itens_devolvidos: itens.length, estorno_pos_fechamento: canceladoPosFechamento })
     } catch (err) {
       database.exec('ROLLBACK')
       registrarLog('ERROR', `Cancelar venda ${vid}: ${(err as Error).message}`)
@@ -1614,16 +1987,18 @@ app.post('/api/servidor/encerrar', requerAdmin, (_req, res) => {
           .all(pid) as { produto_id: number; quantidade: number }[]
         const devolve = database.prepare(`UPDATE produtos SET estoque = estoque + ? WHERE id = ?`)
         const insMov = database.prepare(
-          `INSERT INTO movimentacoes (produto_id, tipo, categoria, quantidade, motivo, documento, usuario_id, criado_em)
-           VALUES (?, 'entrada', 'outras_entradas', ?, ?, ?, ?, ?)`
+          `INSERT INTO movimentacoes (produto_id, tipo, categoria, quantidade, motivo, documento, usuario_id, criado_em, estoque_anterior, estoque_posterior)
+           VALUES (?, 'entrada', 'outras_entradas', ?, ?, ?, ?, ?, ?, ?)`
         )
         const documento = `PC-${pedido.numero}`
         for (const it of itens) {
+          const antes = database.prepare(`SELECT estoque FROM produtos WHERE id = ?`).get(it.produto_id) as { estoque: number }
           devolve.run(it.quantidade, it.produto_id)
           insMov.run(
             it.produto_id, it.quantidade,
             `Cancelamento do pedido ${pedido.numero}`,
-            documento, u.id, new Date().toISOString()
+            documento, u.id, new Date().toISOString(),
+            antes.estoque, antes.estoque + it.quantidade
           )
         }
       }
@@ -1693,6 +2068,16 @@ app.post('/api/servidor/encerrar', requerAdmin, (_req, res) => {
     res.json({ ok: true })
   })
 
+// Caminho padrão de fotos extraídas (D:\backup nex\fotos_nex) usado quando o
+// usuário não configura pasta própria nem manda o header. Só aciona se existir.
+function pastaFotosPadrao(): string {
+  try {
+    const candidatos = ['D:\\backup nex\\fotos_nex']
+    for (const p of candidatos) if (existsSync(p)) return p
+  } catch { /* ignora */ }
+  return ''
+}
+
 // Grava o corpo (ZIP de até GBs) diretamente num arquivo temporário — nunca o
   // deixa inteiro na memória (um Dados.zip de 757MB + os .nx1 descomprimidos
   // travaram o servidor em máquinas sem RAM). O nome é único por upload.
@@ -1712,6 +2097,7 @@ app.post('/api/servidor/encerrar', requerAdmin, (_req, res) => {
     const nome = (() => {
       try { return decodeURIComponent(req.get('x-zip-nome') || 'backup.zip') } catch { return req.get('x-zip-nome') || 'backup.zip' }
     })()
+    sessoes.clear()
     let tmp: string | null = null
     try {
       tmp = await gravarBodyEmTemp(req)
@@ -1719,7 +2105,10 @@ app.post('/api/servidor/encerrar', requerAdmin, (_req, res) => {
         res.status(400).json({ ok: false, erro: 'Arquivo ZIP obrigatório.' })
         return
       }
-      const r = await importarNexDeZip(tmp, nome)
+      const pastaFotos = (() => {
+        try { return decodeURIComponent(req.get('x-pasta-fotos') || '') } catch { return '' }
+      })() || pegarConfig('pasta_fotos') || pastaFotosPadrao()
+      const r = await importarNexDeZip(tmp, nome, pastaFotos ? { pastaFotos } : undefined)
       res.json(r)
     } catch (err) {
       registrarLog('ERROR', `Falha ao receber ZIP Nex: ${(err as Error).message}`)
@@ -1729,8 +2118,36 @@ app.post('/api/servidor/encerrar', requerAdmin, (_req, res) => {
     }
   })
 
-  app.get('/api/importar/nex/progresso', (_req, res) => {
+app.get('/api/importar/nex/progresso', (_req, res) => {
     res.json({ ok: true, ...getProgressoNex() })
+  })
+
+  // Importa UM arquivo .nx1 avulso (arquivo por arquivo). Mantém a mesma pipeline do ZIP,
+  // mas com uma única tabela — útil para complementar/atualizar um cadastro específico.
+  app.post('/api/importar/nex/arquivo', async (req, res) => {
+    const nome = (() => {
+      try { return decodeURIComponent(req.get('x-zip-nome') || 'arquivo.nx1') } catch { return req.get('x-zip-nome') || 'arquivo.nx1' }
+    })()
+    if (!/\.nx1?$/i.test(nome)) {
+      res.status(400).json({ ok: false, erro: 'Envie um arquivo .nx ou .nx1.' })
+      return
+    }
+    sessoes.clear()
+    let tmp: string | null = null
+    try {
+      tmp = await gravarBodyEmTemp(req)
+      if ((statSync(tmp)?.size ?? 0) === 0) {
+        res.status(400).json({ ok: false, erro: 'Arquivo .nx1 obrigatório.' })
+        return
+      }
+      const r = await importarNexDeArquivo(tmp, nome)
+      res.json(r)
+    } catch (err) {
+      registrarLog('ERROR', `Falha ao receber arquivo Nex avulso: ${(err as Error).message}`)
+      res.status(500).json({ ok: false, erro: (err as Error).message })
+    } finally {
+      if (tmp) { try { rmSync(tmp, { force: true }) } catch { /* ignora */ } }
+    }
   })
 
 app.post('/api/importar/nex/analisar', async (req, res) => {
@@ -1780,6 +2197,20 @@ app.post('/api/importar/nex/analisar', async (req, res) => {
       registrarLog('SUCCESS', `API iniciada em http://${ip}:${p}`)
 console.log(`[servidor] API em http://${ip}:${p} (local: http://localhost:${p})`)
       agendarBackupAutomatico()
+      // Fila offline de sync (retry com backoff quando o Supabase fica indisponível).
+      inicializarFilaOffline()
+      iniciarLoopFilaOffline(async (operacao, dados) => {
+        if (operacao === 'sincronizar') {
+          const res = await sincronizarCatalogo()
+          return res.ok
+        }
+        return true
+      })
+      agendarPollingPedidosOnline()
+      // Sequência de primeira inicialização: conecta/testa o Catálogo Online no
+      // boot e (se habilitado) inicia o auto-sync contínuo em segundo plano.
+      conectarCatalogoNoStartup()
+      agendarSyncAutomatico()
     })
   }
 

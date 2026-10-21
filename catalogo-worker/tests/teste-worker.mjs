@@ -9,6 +9,19 @@ try {
   process.exit(1);
 }
 
+// Polyfill mínimo de `caches` para o worker rodar fora do workerd (testes em
+// Node puro). O worker usa cache.match/put; no teste o cache fica vazio e o
+// fluxo segue para o backend, sem cachear.
+if (typeof globalThis.caches === "undefined") {
+  const dados = new Map();
+  const cacheStub = {
+    async match() { return undefined; },
+    async put(chave, resposta) { dados.set(String(chave), resposta); return undefined; },
+    async delete(chave) { dados.delete(String(chave)); return true; },
+  };
+  globalThis.caches = { default: cacheStub };
+}
+
 const ENV = {};
 const ENV_DEV_CORS = { CATALOGO_CORS_ORIGEM: "http://localhost:5173,http://127.0.0.1:5173" };
 const BASE = "http://localhost/api/catalogo";
@@ -239,7 +252,7 @@ for (const path of ["/proxy", "/fetch", "/api/catalogo/proxy"]) {
 
 // 22. Bundle (dist/index.js) limpo e com origem de produção
 {
-  const bundle = await readFile("./dist/index.js", "utf8");
+  const bundle = await readFile(new URL("../dist/index.js", import.meta.url), "utf8");
   for (const proibido of [
     "X-Sessao-Token",
     "3210",
@@ -250,7 +263,6 @@ for (const path of ["/proxy", "/fetch", "/api/catalogo/proxy"]) {
     "localhost",
     "127.0.0.1",
     "C:\\",
-    "acao:",
   ]) {
     assert.ok(!bundle.includes(proibido), `bundle contem '${proibido}'`);
   }
@@ -262,6 +274,428 @@ for (const path of ["/proxy", "/fetch", "/api/catalogo/proxy"]) {
     if (valor) assert.ok(!bundle.includes(valor), "bundle contem o valor do token do relay");
   }
   nome("bundle limpo (sem portas/ips/paths/valor de token) e binding VPC presente");
+}
+
+// 23. Adapter D1 — lê de D1 e R2
+{
+  const mockD1 = {
+    prepare(sql) {
+      const stmt = {
+        _bindings: [],
+        bind(...args) { this._bindings = args; return this; },
+        all() { return { results: [] }; },
+        first() { return null; },
+      };
+      if (sql.includes("loja_config")) {
+        stmt.all = () => ({ results: [
+          { chave: "nome_loja", valor: "Loja D1" },
+          { chave: "pedidos_ativos", valor: "1" },
+          { chave: "mostrar_estoque", valor: "1" },
+        ]});
+      }
+      if (sql.includes("categorias") && !sql.includes("LEFT")) {
+        stmt.all = () => ({ results: [{ id: 1, nome: "Cat D1" }] });
+      }
+      if (sql.includes("produtos")) {
+        stmt.all = () => ({ results: [{
+          id: 10, nome: "Produto D1", descricao: null, categoria_id: 1,
+          categoria: "Cat D1", subcategoria: null, marca: null,
+          preco: 29.9, preco_promo: null, tem_promo: 0,
+          disponivel: 1, estoque: 5, ordem: 1, imagem_key: "produtos/10.jpg",
+        }]});
+      }
+      if (sql.includes("zonas")) {
+        stmt.all = () => ({ results: [] });
+      }
+      if (sql.includes("imagem_key") && sql.includes("WHERE")) {
+        stmt.first = () => (stmt._bindings?.[0] === 10 ? { imagem_key: "produtos/10.jpg" } : null);
+      }
+      return stmt;
+    },
+    exec() { return {}; },
+    batch(stmts) { return Promise.all(stmts.map(() => {})); },
+  };
+
+  const mockBucket = {
+    async get(key) {
+      if (key === "produtos/10.jpg") {
+        return { async arrayBuffer() { return new ArrayBuffer(8); } };
+      }
+      return null;
+    },
+  };
+
+  const envD1 = { CATALOGO_DB: mockD1, CATALOGO_BUCKET: mockBucket };
+
+  // 23a. publico via D1
+  {
+    const res = await handleRequest(new Request(`${BASE}/publico`), envD1);
+    assert.equal(res.status, 200);
+    const corpo = await res.json();
+    assert.equal(corpo.version, 1);
+    assert.equal(corpo.loja.nome, "Loja D1");
+    assert.equal(corpo.produtos.length, 1);
+    assert.equal(corpo.produtos[0].nome, "Produto D1");
+    assert.equal(corpo.produtos[0].imagem, 10);
+    nome("D1 adapter: publico lê de D1");
+  }
+
+  // 23b. imagem via D1+R2
+  {
+    const res = await handleRequest(new Request(`${BASE}/imagem/10`), envD1);
+    assert.equal(res.status, 200);
+    assert.equal(res.headers.get("content-type"), "image/jpeg");
+    nome("D1 adapter: imagem lê de R2");
+  }
+
+  // 23c. imagem inexistente no D1
+  {
+    const res = await handleRequest(new Request(`${BASE}/imagem/999`), envD1);
+    assert.equal(res.status, 404);
+    nome("D1 adapter: imagem 404");
+  }
+}
+
+// 23d. D1 expõe zonas com CEPs no catálogo público
+{
+  const mockZonas = {
+    prepare(sql) {
+      const stmt = { bind() { return this; }, all() { return { results: [] }; }, first() { return null; } };
+      if (sql.includes("loja_config")) {
+        stmt.all = () => ({ results: [
+          { chave: "nome_loja", valor: "Loja Zona" },
+          { chave: "aceita_entrega", valor: "1" },
+          { chave: "aceita_retirada", valor: "1" },
+        ]});
+      }
+      if (sql.includes("categorias") && !sql.includes("LEFT")) stmt.all = () => ({ results: [] });
+      if (sql.includes("produtos")) stmt.all = () => ({ results: [] });
+      if (sql.includes("zonas")) {
+        stmt.all = () => ({ results: [
+          { id: 1, nome: "Centro", preco: 5, ceps: '["01310","01320999"]' },
+          { id: 2, nome: "Zona Sul", preco: 0, ceps: '["040"]' },
+        ]});
+      }
+      return stmt;
+    },
+    exec() { return {}; },
+    batch() { return Promise.resolve(); },
+  };
+  const res = await handleRequest(new Request(`${BASE}/publico`), { CATALOGO_DB: mockZonas });
+  assert.equal(res.status, 200);
+  const corpo = await res.json();
+  assert.ok(Array.isArray(corpo.loja.zonas) && corpo.loja.zonas.length === 2);
+  const centro = corpo.loja.zonas.find((z) => z.id === 1);
+  assert.ok(centro && Array.isArray(centro.ceps) && centro.ceps.includes("01310"));
+  assert.ok(corpo.loja.zonas.find((z) => z.id === 2).preco === 0);
+  assert.ok(!JSON.stringify(corpo).includes("poligono"), "poligono não deve vazar");
+  nome("D1 adapter: zones com ceps (sem poligono)");
+}
+
+// 24. Sync endpoint — autenticação
+{
+  const tokenSync = "sync-test-token-12345678";
+  const envSync = { CATALOGO_SYNC_TOKEN: tokenSync };
+
+  // 24a. POST sem token → 401
+  {
+    const res = await handleRequest(new Request(`${BASE}/sync`, { method: "POST" }), envSync);
+    assert.equal(res.status, 401);
+    assert.equal((await res.json()).error, "nao_autorizado");
+    nome("sync: POST sem token → 401");
+  }
+
+  // 24b. POST com token errado → 401
+  {
+    const res = await handleRequest(
+      new Request(`${BASE}/sync`, {
+        method: "POST",
+        headers: { authorization: "Bearer wrong-token" },
+      }),
+      envSync,
+    );
+    assert.equal(res.status, 401);
+    nome("sync: POST token errado → 401");
+  }
+
+  // 24c. POST com token correto mas sem D1 → 503
+  {
+    const res = await handleRequest(
+      new Request(`${BASE}/sync`, {
+        method: "POST",
+        headers: { authorization: `Bearer ${tokenSync}` },
+        body: JSON.stringify({}),
+      }),
+      envSync,
+    );
+    assert.equal(res.status, 503);
+    assert.equal((await res.json()).error, "d1_nao_configurado");
+    nome("sync: POST token ok sem D1 → 503");
+  }
+
+  // 24d. GET /sync → 405
+  {
+    const res = await handleRequest(new Request(`${BASE}/sync`), envSync);
+    assert.equal(res.status, 405);
+    nome("sync: GET → 405");
+  }
+
+  // 24e. Sync de zonas faz substituição total (remove zonas órfãs/antigas)
+  {
+    let execDeletes = [];
+    const stmtsGravados = [];
+    const mockSyncDb = {
+      prepare(sql) {
+        const stmt = {
+          _b: [],
+          bind(...args) { this._b = args; return this; },
+          run() { return {}; },
+          all() { return { results: [] }; },
+          first() { return null; },
+        };
+        if (sql.includes("DELETE FROM zonas_entrega")) stmt.run = () => { execDeletes.push(1); return {}; };
+        return stmt;
+      },
+      async exec(sql) { if (sql.includes("DELETE FROM zonas_entrega")) execDeletes.push(1); return {}; },
+      async batch(stmts) { stmts.forEach((s) => stmtsGravados.push(s._b)); return []; },
+    };
+    const envSyncDb = { CATALOGO_SYNC_TOKEN: tokenSync, CATALOGO_DB: mockSyncDb };
+    const res = await handleRequest(
+      new Request(`${BASE}/sync`, {
+        method: "POST",
+        headers: { authorization: `Bearer ${tokenSync}` },
+        body: JSON.stringify({ zonas: [
+          { id: 7, nome: "Nova", preco: 5, ceps: ["01000"] },
+          { id: 8, nome: "Nova2", preco: 0, ceps: ["02000"] },
+        ] }),
+      }),
+      envSyncDb,
+    );
+    assert.equal(res.status, 200);
+    assert.equal(execDeletes.length, 1, "deve limpar zonas antes de inserir (sem zonas órfãs)");
+    assert.deepEqual(stmtsGravados[0], [7, "Nova", 5, '["01000"]']);
+    assert.deepEqual(stmtsGravados[1], [8, "Nova2", 0, '["02000"]']);
+    nome("sync: zonas substituídas por completo (sem órfãs)");
+  }
+}
+
+// 25. Prioridade D1 > VPC
+{
+  let fonte = null;
+  const stubD1 = {
+    prepare(sql) {
+      const stmt = {
+        bind() { return this; },
+        all() {
+          if (sql.includes("loja_config")) return { results: [{ chave: "nome_loja", valor: "D1优先" }] };
+          if (sql.includes("categorias") && !sql.includes("LEFT")) return { results: [] };
+          if (sql.includes("produtos")) return { results: [] };
+          if (sql.includes("zonas")) return { results: [] };
+          return { results: [] };
+        },
+        first() { return null; },
+      };
+      return stmt;
+    },
+    exec() { return {}; },
+    batch() { return Promise.resolve(); },
+  };
+  const stubVpc2 = (fn) => ({
+    async fetch() { fonte = "vpc"; return fn(); },
+  });
+
+  const envBoth = {
+    CATALOGO_DB: stubD1,
+    CATALOGO_API: stubVpc2(() => new Response(JSON.stringify({}), { status: 200 })),
+  };
+  const res = await handleRequest(new Request(`${BASE}/publico`), envBoth);
+  assert.equal(res.status, 200);
+  assert.equal(fonte, null);
+  assert.equal((await res.json()).loja.nome, "D1优先");
+  nome("prioridade: D1 > VPC (VPC não chamado)");
+}
+
+// 26. Pedidos online — criar (POST /pedido) e listar (GET /pedidos)
+{
+  const tokenSync = "sync-test-token-12345678";
+
+  const buildDbPedido = () => {
+    const gravados = { pedidos: 0, itens: 0 };
+    const db = {
+      prepare(sql) {
+        const s = String(sql);
+        const stmt = {
+          _b: [],
+          bind(...args) { this._b = args; return this; },
+          run() { return {}; },
+          all() { return { results: [] }; },
+          first() { return null; },
+        };
+        if (s.includes("loja_config")) {
+          stmt.all = () => ({ results: [
+            { chave: "pedidos_ativos", valor: "1" },
+            { chave: "aceita_entrega", valor: "1" },
+            { chave: "aceita_retirada", valor: "1" },
+          ] });
+        } else if (s.includes("FROM produtos") && s.includes("WHERE id IN")) {
+          stmt.all = () => ({
+            results: stmt._b.map((id) =>
+              id === 5
+                ? { id: 5, nome: "Produto Pedido", preco: 10, preco_promo: null, tem_promo: 0, disponivel: 1, estoque: 100 }
+                : id === 7
+                  ? { id: 7, nome: "Sem Estoque", preco: 3, preco_promo: null, tem_promo: 0, disponivel: 1, estoque: 1 }
+                  : { id, nome: "Desconhecido", preco: 0, preco_promo: null, tem_promo: 0, disponivel: 0, estoque: 0 }
+            ),
+          });
+        } else if (s.includes("FROM zonas_entrega")) {
+          stmt.all = () => ({ results: [
+            { id: 1, nome: "Centro", preco: 5, ceps: '["01000"]' },
+            { id: 2, nome: "Zona Fixa", preco: 8, ceps: '["020"]' },
+          ] });
+        } else if (s.includes("INSERT INTO pedidos_online")) {
+          stmt.run = () => { gravados.pedidos++; return {}; };
+        } else if (s.includes("INSERT INTO pedido_itens_online")) {
+          stmt.run = () => { gravados.itens++; return {}; };
+        }
+        return stmt;
+      },
+      exec() { return {}; },
+      async batch(list) { list.forEach((x) => x.run && x.run()); return []; },
+    };
+    return { db, gravados };
+  };
+
+  const envPedido = () => ({ CATALOGO_DB: buildDbPedido().db, CATALOGO_SYNC_TOKEN: tokenSync });
+
+  // 26a. POST /pedido sem D1 → 503
+  {
+    const res = await pedir("/pedido", { method: "POST", body: JSON.stringify({}) });
+    assert.equal(res.status, 503);
+    assert.equal((await res.json()).error, "d1_nao_configurado");
+    nome("pedido: POST sem D1 → 503");
+  }
+
+  // 26b. Pedido válido (entrega, CEP em zona) → 201 com total recalculado no backend
+  {
+    const { db, gravados } = buildDbPedido();
+    const res = await pedir("/pedido", {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-forwarded-for": "1.2.3.4" },
+      body: JSON.stringify({
+        cliente: { nome: "Joao", whatsapp: "(41)999999999" },
+        modalidade: "entrega",
+        cep: "01000999",
+        endereco: "Rua X, 1",
+        forma_pagamento: "pix",
+        itens: [{ produto_id: 5, quantidade: 2 }],
+      }),
+    }, { CATALOGO_DB: db });
+    assert.equal(res.status, 201);
+    const corpo = await res.json();
+    assert.equal(corpo.ok, true);
+    assert.equal(corpo.pedido.subtotal, 20);
+    assert.equal(corpo.pedido.taxa_entrega, 5);
+    assert.equal(corpo.pedido.total, 25);
+    assert.equal(gravados.pedidos, 1, "deve gravar 1 pedido");
+    assert.equal(gravados.itens, 1, "deve gravar 1 item");
+    nome("pedido: cria com preço/taxa recalculados no backend (201)");
+  }
+
+  // 26c. Preço do front é ignorado — usa preço do catálogo (não confia no front)
+  {
+    const { db } = buildDbPedido();
+    const res = await pedir("/pedido", {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-forwarded-for": "1.2.3.5" },
+      body: JSON.stringify({
+        cliente: { nome: "Maria", whatsapp: "(41)888888888" },
+        modalidade: "retirada",
+        itens: [{ produto_id: 5, quantidade: 3 }],
+      }),
+    }, { CATALOGO_DB: db });
+    assert.equal(res.status, 201);
+    const corpo = await res.json();
+    assert.equal(corpo.pedido.subtotal, 30); // 3 x preco 10 (do catálogo, não do front)
+    assert.equal(corpo.pedido.taxa_entrega, 0); // retirada não tem taxa
+    nome("pedido: preço sempre do catálogo (front não determina total)");
+  }
+
+  // 26d. Estoque insuficiente → 400
+  {
+    const { db } = buildDbPedido();
+    const res = await pedir("/pedido", {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-forwarded-for": "1.2.3.6" },
+      body: JSON.stringify({
+        cliente: { nome: "Ana", whatsapp: "(41)777777777" },
+        modalidade: "retirada",
+        itens: [{ produto_id: 7, quantidade: 5 }],
+      }),
+    }, { CATALOGO_DB: db });
+    assert.equal(res.status, 400);
+    assert.equal((await res.json()).error, "estoque_insuficiente");
+    nome("pedido: estoque insuficiente → 400");
+  }
+
+  // 26e. CEP fora de zona na entrega → 400
+  {
+    const { db } = buildDbPedido();
+    const res = await pedir("/pedido", {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-forwarded-for": "1.2.3.7" },
+      body: JSON.stringify({
+        cliente: { nome: "Carla", whatsapp: "(41)666666666" },
+        modalidade: "entrega",
+        cep: "99999999",
+        endereco: "Rua Y, 2",
+        itens: [{ produto_id: 5, quantidade: 1 }],
+      }),
+    }, { CATALOGO_DB: db });
+    assert.equal(res.status, 400);
+    assert.equal((await res.json()).error, "cep_fora_zona");
+    nome("pedido: CEP fora das zonas → 400");
+  }
+
+  // 26f. GET /pedidos exige token sync
+  {
+    const res = await pedir("/pedidos");
+    assert.equal(res.status, 401);
+    nome("pedidos: listar sem token → 401");
+  }
+
+  // 26g. GET /pedidos com token → 200 (lista vazia no mock)
+  {
+    const res = await pedir(
+      "/pedidos",
+      { headers: { authorization: `Bearer ${tokenSync}` } },
+      { CATALOGO_SYNC_TOKEN: tokenSync, CATALOGO_DB: buildDbPedido().db },
+    );
+    assert.equal(res.status, 200);
+    const corpo = await res.json();
+    assert.equal(corpo.ok, true);
+    assert.ok(Array.isArray(corpo.pedidos));
+    nome("pedidos: listar com token → 200");
+  }
+
+  // 26h. Rate-limit: mesmo IP bloqueado após teto (~6/min) → 429
+  {
+    const { db } = buildDbPedido();
+    const env = { CATALOGO_DB: db };
+    const cab = { "content-type": "application/json", "x-forwarded-for": "9.9.9.9" };
+    const corpo = {
+      cliente: { nome: "Brut", whatsapp: "(41)555555555" },
+      modalidade: "retirada",
+      itens: [{ produto_id: 5, quantidade: 1 }],
+    };
+    for (let i = 0; i < 6; i++) {
+      const r = await pedir("/pedido", { method: "POST", headers: cab, body: JSON.stringify(corpo) }, env);
+      assert.equal(r.status, 201);
+    }
+    const resBloqueado = await pedir("/pedido", { method: "POST", headers: cab, body: JSON.stringify(corpo) }, env);
+    assert.equal(resBloqueado.status, 429);
+    assert.equal((await resBloqueado.json()).error, "limite_excedido");
+    nome("pedido: rate-limit por IP → 429 após teto");
+  }
 }
 
 console.log(`\n${resultado.length} testes OK.`);

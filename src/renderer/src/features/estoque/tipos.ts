@@ -20,7 +20,8 @@ export const TIPOS_MOVIMENTACAO: TipoMov[] = [
   { id: 'devolucao_fornecedor', label: 'Devolução ao Fornecedor', entrada: false, precisaFornecedor: true },
   { id: 'transferencia_saida', label: 'Transferência entre Lojas (saída)', entrada: false, destino: true },
   { id: 'uso_interno', label: 'Uso e Consumo Interno', entrada: false, requerMotivo: true },
-  { id: 'remessa_conserto', label: 'Remessa para Conserto / Demonstração', entrada: false, destino: true },
+  { id: 'remessa_conserto', label: 'Remessa para Conserto', entrada: false, destino: true },
+  { id: 'remessa_demonstracao', label: 'Remessa para Demonstração', entrada: false, destino: true },
   { id: 'ajuste_saida', label: 'Ajuste de Estoque (−)', entrada: false, requerMotivo: true },
   { id: 'outras_saidas', label: 'Outras Saídas', entrada: false },
   { id: 'bonificacao', label: 'Bonificação', entrada: false }

@@ -48,7 +48,7 @@ const UFS = new Set(['AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA',
 // carregavam ~4GB de buffers na memória e travavam o servidor).
 const ARQUIVOS_NECESSARIOS = new Set([
     'catalogo_json.nx1', 'cliente.nx1', 'categoria.nx1', 'marca.nx1', 'subcategoria.nx1',
-    'unidade.nx1', 'usuario.nx1', 'caixa.nx1', 'produto.nx1', 'ncm.nx1', 'br_cest.nx1',
+    'unidade.nx1', 'usuario.nx1', 'caixa.nx1', 'produto.nx1', 'card.nx1', 'ncm.nx1', 'br_cest.nx1',
     'cfop.nx1', 'tran.nx1', 'movest.nx1', 'pagespecies.nx1', 'registrosremovidos.nx1',
     'syslog.nx1', 'terminal.nx1'
 ]);
@@ -118,6 +118,25 @@ function extrairStringsUtf16(buf) {
     }
     return strs;
 }
+// Detecta a paridade canônica (offset em que costumam começar as strings de
+// texto UTF-16 alinhado) e reextrai apenas as strings dessa paridade.
+// No Cliente.nx1, por exemplo, os nomes/campos alinhados ficam em offsets
+// ímpares precedidos do byte-flag 0xFE; ler a partir da outra paridade gera
+// lixo desalinhado (prefixo "ü", nomes concatenados tipo "Adriano abriel...").
+function extrairStringsUtf16Alinhado(buf) {
+    const crudes = extrairStringsUtf16(buf);
+    if (!crudes.length)
+        return crudes;
+    let comFe = [0, 0], total = [0, 0];
+    for (const s of crudes) {
+        total[s.par]++;
+        if (s.off > 0 && buf[s.off - 1] === 0xfe)
+            comFe[s.par]++;
+    }
+    // Paridade canônica = aquela cujas strings quase todas são precedidas do flag.
+    const parada = comFe[1] >= comFe[0] ? 1 : 0;
+    return crudes.filter(s => s.par === parada);
+}
 function extrairProdutosDoCatalogo(buf) {
     const tam = buf.length;
     const produtos = [];
@@ -181,11 +200,18 @@ function ehNome(s) { return /^[A-Za-zÀ-ÿ]/.test(s) && s.length > 3 && !ehCPF(s
 function ehRuido(s) { return s.length === 2 && /[^A-Za-zÀ-ÿ0-9 .\-/,()+]/.test(s); }
 function ehTelDig(s) { return /^\d{8,11}$/.test(s); }
 async function extrairClientes(buf) {
-    const strs = extrairStringsUtf16(buf);
+    const strs = extrairStringsUtf16Alinhado(buf);
     const registros = [];
     for (const s of strs) {
-        const m = s.s.match(/^(\d{1,3})([A-Za-zÀ-ÿ].*)$/);
-        if (m && m[2].length >= 3 && /[a-zà-ÿ]/.test(m[2]))
+        const m = s.s.match(/^(\d{1,7})([A-Za-zÀ-ÿ].*)$/);
+        const t = s.s.trim();
+        const soLetras1Palavra = /^[A-Za-zÀ-ÿ]{3,22}$/.test(t);
+        const multiPalavra = /\s/.test(t) && /^[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ .'\-]*$/.test(t)
+            && !/^(R\.|Rua|Av\.|Avenida|Travessa|Alameda|Rod\.|Rodovia|Estrada|Praça)/i.test(t)
+            && !/@/.test(t);
+        const nomePuro = soLetras1Palavra || multiPalavra;
+        if ((m && m[2].length >= 3 && m[2].length <= 90 && /[a-zà-ÿ]/.test(m[2]))
+            || (nomePuro && t.length <= 90 && /[a-zà-ÿA-ZÀ-Ý]/.test(t)))
             registros.push(s);
     }
     registros.sort((a, b) => a.off - b.off);
@@ -194,7 +220,7 @@ async function extrairClientes(buf) {
     for (let i = 0; i < registros.length; i++) {
         await cooperar(++resp, i);
         const reg = registros[i];
-        const fim = i + 1 < registros.length ? registros[i + 1].off : buf.length;
+        const fim = Math.min(i + 1 < registros.length ? registros[i + 1].off : buf.length, reg.off + 700);
         const m = reg.s.match(/^(\d{1,3})([A-Za-zÀ-ÿ].*)$/);
         const campos = [];
         for (const s of strs) {
@@ -203,7 +229,7 @@ async function extrairClientes(buf) {
         }
         const cli = {
             codigo: m?.[1] ?? null,
-            nome: m?.[2] ?? reg.s,
+            nome: (m?.[2] ?? reg.s).trim(),
             cpf: null,
             rg: null,
             telefone: null,
@@ -313,7 +339,26 @@ async function extrairClientes(buf) {
         }
         clientes.push(cli);
     }
-    return clientes;
+    // O arquivo traz cada cliente repetido em várias passagens/índices (mesmo
+    // nome em diferente posições). Dedup por nome normalizado, ficando com a
+    // ocorrência mais bem preenchida.
+    const norm = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '').trim();
+    const melhores = new Map();
+    for (const c of clientes) {
+        const n = norm(c.nome);
+        if (!n) continue;
+        const chave = n;
+        const prev = melhores.get(chave);
+        if (!prev || preenchido(c) > preenchido(prev))
+            melhores.set(chave, c);
+    }
+    return [...melhores.values()];
+}
+function preenchido(c) {
+    let total = 0;
+    for (const k of ['nome', 'cpf', 'rg', 'telefone', 'email', 'endereco', 'numero', 'bairro', 'cidade', 'uf', 'cep', 'observacoes'])
+        if (c[k]) total++;
+    return total;
 }
 function extrairNomesSimples(buf) {
     const strs = extrairStringsUtf16(buf);
@@ -403,6 +448,8 @@ async function extrairVendasComId(buf) {
     const bin = (0, nex_binary_1.lerVendasTran)(buf);
     // data por venda (heurística legada): id lido no offset binário
     const datas = new Map();
+    // operador (vendedor) por venda: string ANSI (nome) a ~+491 bytes do marcador
+    const operadores = new Map();
     const vendaUtf16 = Buffer.from('Venda', 'utf16le');
     // Buffer.indexOf é nativo (bem mais rápido que o loop char-a-char em arquivos
     // de centenas de MB como o Tran.nx1 — a varredura manual travava o servidor).
@@ -440,8 +487,31 @@ async function extrairVendasComId(buf) {
                     }
                 }
             }
-            if (id > 0 && id < 5e8 && dataHora)
-                datas.set(id, dataHora);
+            if (id > 0 && id < 5e8) {
+                if (dataHora)
+                    datas.set(id, dataHora);
+                let operador = null;
+                for (let o = idx + 460; o < idx + 560 && o < buf.length; o++) {
+                    const c = buf[o];
+                    if (c >= 0x20 && c < 0x7f) {
+                        let j = o;
+                        const ch = [];
+                        while (j < buf.length && buf[j] >= 0x20 && buf[j] < 0x7f && ch.length < 40) {
+                            ch.push(buf[j]);
+                            j++;
+                        }
+                        const s = Buffer.from(ch).toString('latin1').trim();
+                        if (ch.length >= 3 && /^[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ0-9 .\-_]*$/.test(s)) {
+                            operador = s;
+                            o = j;
+                            break;
+                        }
+                        o = j - 1;
+                    }
+                }
+                if (operador)
+                    operadores.set(id, operador);
+            }
         }
         idx = buf.indexOf(vendaUtf16, idx + 10);
     }
@@ -450,6 +520,7 @@ async function extrairVendasComId(buf) {
         uid: v.uid,
         caixa: v.caixa,
         data: datas.get(v.id) ?? null,
+        operador: operadores.get(v.id) ?? null,
     }));
 }
 // Itens do MovEst.nx1 pelo parser binário (produto/quant/unit/total), vinculados
@@ -917,6 +988,71 @@ function extrairCatalogoJson(buf) {
     }
     return produtos;
 }
+// Fornecedores do Card.nx1: cada card de produto traz objetos Suppliers no
+// formato JSON UTF-16 {"SupplierCode":N,"SupplierName":"...","Email":"...","ContactPhone":...}.
+// Varre com indexOf (rápido) e faz parse do pequeno trecho JSON de cada
+// fornecedor, deduplicando por SupplierCode (evita nomes duplicados/incorretos).
+async function extrairFornecedoresCard(buf) {
+    const nam = Buffer.from('SupplierName', 'utf16le');
+    const scm = Buffer.from('SupplierCode', 'utf16le');
+    const fornecedores = new Map();
+    const norm = (s) => String(s ?? '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
+    let pos = 0;
+    let resp = 0;
+    while (pos !== -1) {
+        pos = buf.indexOf(nam, pos);
+        if (pos === -1)
+            break;
+        let start = -1;
+        for (let k = Math.max(0, pos - 300); k < pos - 1; k += 2) {
+            if (buf[k] === 0x7b && buf[k + 1] === 0x00)
+                start = k;
+        }
+        if (start !== -1 && buf.includes(scm, start, pos)) {
+            let fim = -1, depth = 0, inStr = false, esc = false;
+            for (let k = start; k + 1 < Math.min(buf.length, start + 800); k += 2) {
+                const code = buf[k] | (buf[k + 1] << 8);
+                if (inStr) {
+                    if (esc) esc = false;
+                    else if (code === 0x5c) esc = true;
+                    else if (code === 0x22) inStr = false;
+                }
+                else {
+                    if (code === 0x22) inStr = true;
+                    else if (code === 0x7b) depth++;
+                    else if (code === 0x7d) {
+                        depth--;
+                        if (depth === 0) { fim = k + 2; break; }
+                    }
+                }
+            }
+            if (fim !== -1 && fim - start < 1000) {
+                let parsed = null;
+                try { parsed = JSON.parse(decodificarUtf16(buf, start, fim - start)); } catch { /* objeto inválido */ }
+                if (parsed && typeof parsed === 'object') {
+                    const cod = parsed.SupplierCode != null ? Number(parsed.SupplierCode) : null;
+                    const nome = String(parsed.SupplierName ?? '').trim();
+                    const chave = cod != null ? String(cod) : 'n:' + norm(nome);
+                    if (!fornecedores.has(chave)) {
+                        fornecedores.set(chave, {
+                            codigo: cod,
+                            nome,
+                            email: vazioParaNull(String(parsed.Email ?? '').trim()),
+                            telefone: vazioParaNull(String(parsed.ContactPhone ?? '').trim())
+                        });
+                    }
+                }
+            }
+        }
+        pos += nam.length;
+        if (++resp % 1000 === 0)
+            await cooperar(1, pos);
+    }
+    return [...fornecedores.values()];
+}
+function vazioParaNull(s) {
+    return s ? s : null;
+}
 // Produtos do Produto.nx1 ancorados pelos GUIDs das categorias conhecidas.
 // Cada registro do produto contém: [GUID categoria][nome categoria][GUID subcategoria][nome subcategoria][código][EAN][nome produto]
 async function extrairProdutosNx1Guid(buf, catGuids, catNomesNorm, subNomesNorm) {
@@ -1025,7 +1161,116 @@ async function extrairProdutosNx1Guid(buf, catGuids, catNomesNorm, subNomesNorm)
     }
     return produtos;
 }
-async function montarImportacao(carregar) {
+// Extrai as FOTO dos produtos embutidas no Produto.nx1, mapeadas pelo hash do
+// catálogo (campo ProductImg / Photos, 32 hex). Cada imagem fica no arquivo como
+// [hash ASCII][bytes PNG/JPG][fim]. Devolve Map hash→Buffer (bytes crus do arquivo).
+async function extrairImagensProdutoNx1(buf) {
+    const map = new Map();
+    const total = buf.length;
+    let resp = 0;
+    const ehHex = (b) => (b >= 0x30 && b <= 0x39) || (b >= 0x61 && b <= 0x66) || (b >= 0x41 && b <= 0x46);
+    const assina = (off) => {
+        const png = buf[off] === 0x89 && buf[off + 1] === 0x50 && buf[off + 2] === 0x4e && buf[off + 3] === 0x47;
+        const jpg = buf[off] === 0xff && buf[off + 1] === 0xd8 && buf[off + 2] === 0xff;
+        return png ? 'png' : jpg ? 'jpg' : null;
+    };
+    const fimPng = (off) => {
+        const fim = Math.min(total, off + 8 * 1024 * 1024);
+        for (let p = off + 8; p + 12 <= fim; p++) {
+            if (buf[p] === 0x49 && buf[p + 1] === 0x45 && buf[p + 2] === 0x4e && buf[p + 3] === 0x44 &&
+                buf[p - 4] === 0 && buf[p - 3] === 0 && buf[p - 2] === 0 && buf[p - 1] === 0) {
+                return p + 8;
+            }
+        }
+        return -1;
+    };
+    const fimJpg = (off) => {
+        const fim = Math.min(total, off + 8 * 1024 * 1024);
+        for (let p = off + 2; p + 2 <= fim; p++) {
+            if (buf[p] === 0xff && buf[p + 1] === 0xd9)
+                return p + 2;
+        }
+        return -1;
+    };
+    // 1) todos os inícios de imagem
+    const starts = [];
+    for (let i = 0; i + 8 <= total; i++) {
+        if ((i & 0xfffff) === 0)
+            await cooperar(++resp, i);
+        const ext = assina(i);
+        if (ext)
+            starts.push({ off: i, ext });
+    }
+    // 2) todos os Ids de imagem (ImagemMD5/ImagemUrl = run 32 hex isolado)
+    const ids = [];
+    for (let i = 0; i + 32 <= total; i++) {
+        if ((i & 0xfffff) === 0)
+            await cooperar(++resp, i);
+        const h = buf.toString('ascii', i, i + 32);
+        if (!/^[0-9a-fA-F]{32}$/.test(h))
+            continue;
+        const b = i > 0 ? buf[i - 1] : -1;
+        const a = i + 32 < total ? buf[i + 32] : -1;
+        if ((b !== -1 && ehHex(b)) || (a !== -1 && ehHex(a)))
+            continue;
+        ids.push({ off: i, h: h.toLowerCase() });
+    }
+    // 3) associa cada Id à imagem do MESMO registro: a foto fica logo ANTES do
+    //    campo ImagemMD5/ImagemUrl (layout padrão do Nex). Janela ampla (sem
+    //    truncar blobs grandes) limitada por distância p/ não roubar do registro anterior.
+    //    NX1 binário: cada 4096 bytes alinhados há um header NXHD (20 bytes)
+    //    preceded by 2 null bytes que são intercalados com os dados da imagem.
+    //    Esses headers são removidos para gerar imagens limpas.
+    const removerNxhd = (from, to) => {
+        const nxhd = [];
+        for (let i = from; i + 20 <= to; i++) {
+            if (buf[i] === 0x4e && buf[i + 1] === 0x58 && buf[i + 2] === 0x48 && buf[i + 3] === 0x44)
+                nxhd.push(i);
+        }
+        if (nxhd.length === 0)
+            return buf.slice(from, to);
+        const cleanLen = to - from - nxhd.length * 22;
+        if (cleanLen <= 0)
+            return buf.slice(from, to);
+        const out = Buffer.allocUnsafe(cleanLen);
+        let w = 0, r = from;
+        for (const nx of nxhd) {
+            const rmStart = nx - 2;
+            if (rmStart > r) {
+                buf.copy(out, w, r, rmStart);
+                w += rmStart - r;
+            }
+            r = nx + 20;
+        }
+        if (r < to) {
+            buf.copy(out, w, r, to);
+            w += to - r;
+        }
+        return out.slice(0, w);
+    };
+    const WIN = 1 * 1024 * 1024;
+    for (const id of ids) {
+        let lo = 0, hi = starts.length;
+        while (lo < hi) { const mid = (lo + hi) >> 1; if (starts[mid].off <= id.off) lo = mid + 1; else hi = mid; }
+        const antes = lo - 1;
+        if (antes < 0)
+            continue;
+        const s = starts[antes];
+        const d = id.off - s.off;
+        if (d < 64 || d > WIN)
+            continue;
+        const fim = s.ext === 'png' ? fimPng(s.off) : fimJpg(s.off);
+        if (fim === -1 || fim <= s.off + 50)
+            continue;
+        const bytes = removerNxhd(s.off, fim);
+        if (!assina(s.off))
+            continue;
+        if (!map.has(id.h))
+            map.set(id.h, bytes);
+    }
+    return map;
+}
+async function montarImportacao(carregar, opcoes) {
     const passo = async (arquivo) => { atualizarProgresso({ ativo: true, etapa: 'lendo', atual: 1, total: 1, mensagem: `Lendo ${arquivo}...` }); await pausar(); };
     let produtos = [];
     if (await carregar('catalogo_json.nx1')) {
@@ -1052,7 +1297,7 @@ async function montarImportacao(carregar) {
         await passo('Subcategoria.nx1');
         subcategorias = extrairSubcategorias((await carregar('Subcategoria.nx1')));
     }
-    let unidades = [];
+        let unidades = [];
     if (await carregar('Unidade.nx1')) {
         await passo('Unidade.nx1');
         unidades = extrairNomesSimples((await carregar('Unidade.nx1')));
@@ -1067,13 +1312,46 @@ async function montarImportacao(carregar) {
         await passo('Caixa.nx1');
         caixas = extrairCaixas((await carregar('Caixa.nx1')));
     }
+    let fornecedores = [];
+    if (await carregar('Card.nx1')) {
+        await passo('Card.nx1');
+        fornecedores = await extrairFornecedoresCard((await carregar('Card.nx1')));
+    }
     const catGuids = new Map(categorias.map((c) => [c.guid, c.nome]));
     const catNomesNorm = new Set(categorias.map((c) => normalizarNome(c.nome)));
     const subNomesNorm = new Set(subcategorias.map((s) => normalizarNome(s.nome)));
     let produtosNx1 = [];
-    if (await carregar('Produto.nx1')) {
+    let imagens = new Map();
+    const bufProdutoNx1 = await carregar('Produto.nx1');
+    if (bufProdutoNx1) {
         await passo('Produto.nx1');
-        produtosNx1 = await extrairProdutosNx1Guid((await carregar('Produto.nx1')), catGuids, catNomesNorm, subNomesNorm);
+        produtosNx1 = await extrairProdutosNx1Guid(bufProdutoNx1, catGuids, catNomesNorm, subNomesNorm);
+        imagens = await extrairImagensProdutoNx1(bufProdutoNx1);
+    }
+    // Fotos extraídas para disco (scripts/extrair-fotos-nex.js) reutilizáveis nas
+    // próximas importações. Se opcoes.pastaFotos apontar para `fotos_nex`, cada
+    // <hash>.png/.jpg vira um candidato (hash -> bytes) que preenche produtos sem
+    // imagem embutida no Produto.nx1.
+    const pastaFotos = opcoes?.pastaFotos;
+    if (pastaFotos) {
+        let nomes = [];
+        try {
+            nomes = (0, node_fs_1.readdirSync)(pastaFotos).filter((f) => /\.(png|jpe?g)$/i.test(f));
+        }
+        catch { nomes = []; }
+        let carregadas = 0;
+        for (const nome of nomes) {
+            const hash = nome.replace(/\.(png|jpe?g)$/i, '').toLowerCase();
+            if (!hash || imagens.has(hash)) continue;
+            try {
+                const buf = (0, node_fs_1.readFileSync)((0, node_path_1.join)(pastaFotos, nome));
+                imagens.set(hash, buf);
+                carregadas++;
+            }
+            catch { /* ignora arquivo ilegível */ }
+            if (carregadas % 200 === 0) await pausar();
+        }
+        atualizarProgresso({ ativo: true, etapa: 'lendo', atual: 1, total: 1, mensagem: `Lendo ${carregadas} fotos de ${pastaFotos}...` });
     }
     let ncmCadastro = [];
     if (await carregar('NCM.nx1')) {
@@ -1121,10 +1399,50 @@ async function montarImportacao(carregar) {
         await passo('Terminal.nx1');
         terminais = extrairTerminais((await carregar('Terminal.nx1')));
     }
-    return { produtos, clientes, categorias, marcas, subcategorias, unidades, usuarios, caixas, produtosNx1, ncmCadastro, cestCadastro, cfopCadastro, vendas, itens, pagamentos, naoInterpretados, remocoes, syslogs, terminais };
+    return { produtos, clientes, categorias, marcas, subcategorias, unidades, usuarios, caixas, fornecedores, produtosNx1, imagens, ncmCadastro, cestCadastro, cfopCadastro, vendas, itens, pagamentos, naoInterpretados, remocoes, syslogs, terminais };
 }
 function normalizarNome(s) {
     return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
+}
+function ehNomeGarbage(s) {
+    if (!s || s.trim().length < 4) return true;
+    const t = s.trim();
+    if (/^[!+\-&"@=\[\]#%*]/.test(t)) return true;
+    const c = t.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const toks = c.split(/\s+/).filter(x => x.length >= 3 && /[A-Za-z]/.test(x));
+    const seen = new Set<string>();
+    let wordRepeat = false;
+    for (const tk of toks) {
+        const lo = tk.toLowerCase();
+        if (seen.has(lo)) { wordRepeat = true; break; }
+        seen.add(lo);
+    }
+    let garbledTail = false;
+    const m = c.match(/[a-z]{4,}/g);
+    if (m) {
+        for (const run of m) {
+            const idx = c.indexOf(run);
+            if (idx < 0) continue;
+            const before = idx === 0 ? ' ' : c[idx - 1];
+            const after = idx + run.length >= c.length ? ' ' : c[idx + run.length];
+            const boundStart = before === ' ' || before === '-' || before === '/' || before === '(' || before === '[';
+            const boundEnd = after === ' ' || after === '-' || after === '/' || after === ')' || after === ']' || after === '.' || after === ',';
+            if (!(boundStart && boundEnd)) { garbledTail = true; break; }
+        }
+    }
+    if (wordRepeat && garbledTail) return true;
+    if (garbledTail && t.length > 50) return true;
+    return false;
+}
+function filtrarFornecedoresValidos(fornecedores) {
+    return fornecedores.filter(f => {
+        const t = String(f?.nome ?? f ?? '').trim();
+        if (!t || t.length < 3) return false;
+        if (/^[!+\-&"@=\[\]#%*]/.test(t)) return false;
+        if (/[^\x20-\x7eÀ-ÿ0-9\s\.\-\/\(\)&,']/.test(t)) return false;
+        if (/^(FORNECEDOR|FORNECED|FORNEC|ou|beb|ajuste|Ra|arte|old|zin|Murilo)$/i.test(t)) return false;
+        return true;
+    });
 }
 // Extrai o dicionário de campos de um arquivo .nx1 (nomes e tipos de campo)
 function extrairDicionario(buf) {
@@ -1327,13 +1645,35 @@ async function importarNexDePasta(pasta, opcoes) {
     montarNotaArquivosGrandes(r, pulados);
     return r;
 }
+// Importa UM arquivo .nx1 avulso (arquivo por arquivo, sem ZIP nem pasta completa).
+// O nome do arquivo define a tabela (Tran.nx1 → vendas, MovEst.nx1 → itens, Produto.nx1,
+// Categoria.nx1, etc.). Aceita extensão .nx ou .nx1 — normaliza para o nome canônico .nx1
+// que o montarImportacao usa como chave.
+async function importarNexDeArquivo(caminhoArquivo, nomeArquivo, opcoes = {}) {
+    const baseOriginal = (nomeArquivo || '').replace(/\\/g, '/').split('/').pop() || 'arquivo.nx';
+    const tabela = baseOriginal.replace(/\.nx1?$/i, '');
+    const nomeBase = tabela ? `${tabela}.nx1` : baseOriginal;
+    const padrao = nomeBase.toLowerCase();
+    const carregar = (nomeProcurado) => {
+        if (String(nomeProcurado || '').toLowerCase() !== padrao)
+            return undefined;
+        try {
+            return node_fs_1.readFileSync(caminhoArquivo);
+        }
+        catch {
+            return undefined;
+        }
+    };
+    const r = await importarNexComCarregador(carregar, [nomeBase], nomeBase, opcoes);
+    return r;
+}
 async function importarNexComCarregador(carregar, arquivos, nomeZip, opcoes) {
     const erros = [];
     try {
         const db = (0, index_1.getDb)();
         db.exec('BEGIN');
         atualizarProgresso({ ativo: true, etapa: 'lendo', atual: 0, total: 1, mensagem: `Lendo dados ${nomeZip}...` });
-        const dados = await montarImportacao(carregar);
+        const dados = await montarImportacao(carregar, opcoes);
         // Preservar estruturas do Nex sem suporte no sistema (zero perda de dados).
         // Cada buffer é lido um por vez e descartado em seguida — sem segurar tudo na RAM.
         atualizarProgresso({ ativo: true, etapa: 'dados_brutos', atual: 0, total: Math.max(1, arquivos.length), mensagem: 'Preservando dados brutos de estruturas sem suporte...' });
@@ -1435,6 +1775,73 @@ async function importarNexComCarregador(carregar, arquivos, nomeZip, opcoes) {
             }
         }
         const normNome = (s) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
+        // Parse robusto de preços Nex: aceita number, string com vírgula ("12,90"),
+        // símbolo de moeda ("R$ 12,90") e campos alternativos do JSON.
+        const extrairPreco = (...candidatos) => {
+            for (const raw of candidatos) {
+                if (raw == null) continue;
+                if (typeof raw === 'number' && raw > 0) return raw;
+                const s = String(raw).trim();
+                if (!s || s === '0') continue;
+                const limpo = s.replace(/[R$\s]/g, '').replace(/,/g, '.');
+                const n = Number(limpo);
+                if (!isNaN(n) && n > 0) return n;
+            }
+            return 0;
+        };
+        // Gera código sequencial de produto (sem ProductCode no Nex).
+        // Atualiza a tabela sequencias para ficar consistente com o frontend.
+        let seqProduto = 0;
+        const initSeqProduto = () => {
+            const maxRow = db.prepare(`SELECT COALESCE(MAX(CAST(codigo_interno AS INTEGER)), 0) AS m FROM produtos WHERE codigo_interno GLOB '[0-9]*'`).get();
+            const base = Math.max(Number(maxRow?.m ?? 0), 0);
+            const seqRow = db.prepare(`SELECT valor FROM sequencias WHERE chave = 'produto_codigo'`).get();
+            seqProduto = Math.max(base, Number(seqRow?.valor ?? 0));
+        };
+        initSeqProduto();
+        const proximoCodigoProduto = () => {
+            seqProduto++;
+            return String(seqProduto).padStart(6, '0');
+        };
+        // Gera código sequencial de cliente (sem código no Nex).
+        let seqCliente = 0;
+        const initSeqCliente = () => {
+            const maxRow = db.prepare(`SELECT COALESCE(MAX(CAST(codigo AS INTEGER)), 0) AS m FROM clientes WHERE codigo GLOB '[0-9]*'`).get();
+            seqCliente = Math.max(Number(maxRow?.m ?? 0), 0);
+        };
+        initSeqCliente();
+        const proximoCodigoCliente = () => {
+            seqCliente++;
+            return String(seqCliente).padStart(6, '0');
+        };
+        // Fornecedores do Card.nx1 (lista Suppliers dos cards de produto)
+        const fornecedoresValidos = filtrarFornecedoresValidos(dados.fornecedores);
+        atualizarProgresso({ ativo: true, etapa: 'fornecedores', atual: 0, total: fornecedoresValidos.length, mensagem: `Importando fornecedores (${fornecedoresValidos.length})...` });
+        const mapaFornecedores = new Map();
+        for (let i = 0; i < fornecedoresValidos.length; i++) {
+            const f = fornecedoresValidos[i];
+            const nome = String(f?.nome ?? '').trim();
+            if (!nome)
+                continue;
+            try {
+                const ex = db.prepare(`SELECT id FROM fornecedores WHERE nome = ?`).get(nome) as { id: number } | undefined;
+                let id = ex?.id ?? null;
+                if (id == null) {
+                    id = Number(db.prepare(`INSERT INTO fornecedores (nome, cnpj, telefone, email, endereco, observacoes) VALUES (?, NULL, ?, ?, NULL, 'Importado do Nex (Card.nx1)')`).run(nome, f?.telefone ?? null, f?.email ?? null).lastInsertRowid);
+                }
+                else if (f?.email || f?.telefone) {
+                    db.prepare(`UPDATE fornecedores SET email = COALESCE(NULLIF(email, ''), ?), telefone = COALESCE(NULLIF(telefone, ''), ?) WHERE id = ?`).run(f.email ?? '', f.telefone ?? '', id);
+                }
+                mapaFornecedores.set(nome.toLowerCase(), id);
+                mapaFornecedores.set(normNome(nome), id);
+            }
+            catch (e) {
+                erros.push(`Fornecedor ${nome}: ${e.message}`);
+            }
+            atualizarProgresso({ atual: i + 1 });
+            if ((i + 1) % 100 === 0)
+                await pausar();
+        }
         // Categorias (com GUID do Nex preservado em nex_uid)
         const mapaCategorias = new Map();
         const mapaCategoriasGuid = new Map();
@@ -1527,6 +1934,18 @@ async function importarNexComCarregador(carregar, arquivos, nomeZip, opcoes) {
         let catComSub = 0;
         let produtosNomeSubcat = 0;
         const nomesJaImportados = new Set();
+        const imagens = dados.imagens instanceof Map ? dados.imagens : new Map();
+        // Mapa nome normalizado -> produto existente (dedup consistente com normalizarNome,
+        // que remove acentos/pontuação — a query SQL lower(replace(...,' ','')) não casa esses casos).
+        const mapaNomesProdutos = new Map();
+        const mapaProdutoNex = new Map(); // produtoNex -> id (para MovEst)
+        const mapaInfoProduto = new Map(); // codigo_interno / id -> {id, nome} (para itens de venda sem SQL)
+        for (const reg of db.prepare(`SELECT id, nome, codigo_interno, codigo_barras, codigo_extra FROM produtos`).all()) {
+            if (reg.id != null) { mapaNomesProdutos.set(normalizarNome(String(reg.id)), reg.id); mapaProdutoNex.set(String(reg.id), reg.id); mapaInfoProduto.set(String(reg.id), { id: reg.id, nome: reg.nome }); }
+            if (reg.codigo_interno != null && reg.codigo_interno !== '') { mapaNomesProdutos.set(normNome(String(reg.codigo_interno)), reg.id); mapaProdutoNex.set(String(reg.codigo_interno), reg.id); mapaInfoProduto.set(String(reg.codigo_interno), { id: reg.id, nome: reg.nome }); }
+            if (reg.codigo_barras != null && reg.codigo_barras !== '') { mapaNomesProdutos.set(normNome(String(reg.codigo_barras)), reg.id); mapaProdutoNex.set(String(reg.codigo_barras), reg.id); }
+            if (reg.codigo_extra != null && reg.codigo_extra !== '') { mapaNomesProdutos.set(normNome(String(reg.codigo_extra)), reg.id); mapaProdutoNex.set(String(reg.codigo_extra), reg.id); }
+        }
         for (let i = 0; i < dados.produtos.length; i++) {
             const p = dados.produtos[i];
             try {
@@ -1539,22 +1958,50 @@ async function importarNexComCarregador(carregar, arquivos, nomeZip, opcoes) {
                     continue;
                 }
                 const codigo = String(p.ProductCode ?? '').trim() || null;
+                // Todo produto precisa de um código. Se o Nex não trouxe, gera um
+                // sequencial e o usa como codigo_interno (visível na coluna Código).
+                const codigoInterno = codigo || proximoCodigoProduto();
                 const categoriaNome = String(p.Category ?? '').trim();
                 const subcategoriaNome = String(p.SubCategory ?? '').trim() || null;
                 const marcaNome = String(p.Brand ?? '').trim();
                 const unidade = String(p.Unit ?? '').trim() || 'un';
-                const preco = Number(p.SalePrice) || 0;
-                const precoPromo = p.PromoSalePrice != null ? Number(p.PromoSalePrice) : null;
+                // Preço de venda robusto: tenta SalePrice e campos alternativos do Nex,
+                // aceitando número ou string com vírgula/símbolo. Nunca deixa 0 por parsing errado.
+                const preco = extrairPreco(p.SalePrice, p.ListPrice, p.PrecoVenda, p.Price, p.SalePriceText);
+                const precoPromo = extrairPreco(p.PromoSalePrice, p.PromotionalPrice) || null;
+                const custo = extrairPreco(p.CostPrice, p.PurchasePrice, p.PrecoCusto, p.PrecoCompra, p.Cost, p.PrecoMinimo);
                 const estoque = p.CurrentStock != null ? Number(p.CurrentStock) : 0;
                 const estoqueMin = p.CurrentStock != null ? Number(p.CurrentStock) : 0;
-                const inativo = p.Inactive === true ? 1 : 0;
-                const publicado = p.ProductPublished === true ? 1 : 1;
+                const inativo = (
+                    p.Inactive === true || p.Inactive === 1 || p.Inactive === '1' || p.Inactive === 'true' || p.Inactive === 'S' || p.Inactive === 'Sim' ||
+                    p.ProductInactive === true || p.ProductInactive === 1 || p.ProductInactive === '1' || p.ProductInactive === 'true' ||
+                    p.InactiveFlag === true || p.InactiveFlag === 1 ||
+                    p.Deleted === true || p.Deleted === 1 || p.Deleted === '1' || p.Deleted === 'true' || p.Deleted === 'Sim' ||
+                    p.Excluido === true || p.Excluido === 1 || p.Excluido === '1' || p.Excluido === 'true' || p.Excluido === 'Sim' ||
+                    p.Inativo === true || p.Inativo === 1 || p.Inativo === '1' || p.Inativo === 'true' || p.Inativo === 'Sim'
+                ) ? 1 : 0;
+                const publicado = p.ProductPublished === true || p.ProductPublished === 1 || p.ProductPublished === '1' ? 1 : 0;
                 const descricao = p.ProductDescr != null ? String(p.ProductDescr) : null;
                 const observacoes = p.Observations != null ? String(p.Observations) : null;
                 const categoriaId = categoriaNome ? (mapaCategorias.get(normNome(categoriaNome)) ?? null) : null;
                 const marcaId = marcaNome ? (mapaMarcas.get(normNome(marcaNome)) ?? null) : null;
                 const promoAtiva = p.PromoActive === true ? 1 : 0;
                 const guidProduto = p.ProductUId != null ? String(p.ProductUId).replace(/[{}]/g, '').toLowerCase() : null;
+                // Foto do produto: ProductImg é o hash de 32 hex que indexa o blob dentro do Produto.nx1;
+                // fallback para o primeiro hash do campo Photos (array), se existir.
+                let imagemNex = null;
+                const hashImg = String(p.ProductImg ?? '').trim().toLowerCase().replace(/[{}]/g, '');
+                if (hashImg && imagens.has(hashImg))
+                    imagemNex = imagens.get(hashImg);
+                if (!imagemNex) {
+                    const photos = p.Photos;
+                    if (Array.isArray(photos)) {
+                        for (const ph of photos) {
+                            const k = String(ph ?? '').trim().toLowerCase().replace(/[{}]/g, '');
+                            if (k && imagens.has(k)) { imagemNex = imagens.get(k); break; }
+                        }
+                    }
+                }
                 let subcategoriaId = null;
                 if (subcategoriaNome) {
                     subcategoriaId = mapaSubcategorias.get(`${normNome(subcategoriaNome)}|${categoriaId ?? ''}`)
@@ -1565,24 +2012,31 @@ async function importarNexComCarregador(carregar, arquivos, nomeZip, opcoes) {
                     catComSub++;
                 else
                     catSemSub++;
-                const existente = codigo
-                    ? db.prepare(`SELECT id FROM produtos WHERE codigo_barras = ?`).get(codigo)
+                const existente = codigoInterno
+                    ? db.prepare(`SELECT id FROM produtos WHERE codigo_barras = ?`).get(codigoInterno)
                     : undefined;
-                const porNome = existente ? undefined : db.prepare(`SELECT id FROM produtos WHERE lower(replace(nome,' ','')) = ?`).get(chave);
+                const porNome = existente ? undefined : mapaNomesProdutos.get(chave);
                 const agora = new Date().toISOString();
+                const precoParaSalvar = preco > 0 ? preco : null;
                 const dadosSql = [
-                    nome, codigo, null, categoriaId, marcaId, null, preco, estoque, estoqueMin, unidade,
+                    nome, codigoInterno, imagemNex, categoriaId, marcaId, null, precoParaSalvar, estoque, estoqueMin, unidade,
                     inativo ? 0 : 1, descricao, precoPromo, promoAtiva, null, null, null, observacoes,
-                    0, null, null, null, null, null, 1, 0, 1, 1, subcategoriaId, null, null, 0, 0, agora, guidProduto
+                    custo, codigoInterno, null, null, null, null, 1, 0, 1, 1, subcategoriaId, null, null, 0, 0, agora, guidProduto
                 ];
                 const alvo = existente ?? porNome;
                 if (alvo) {
-                    db.prepare(`UPDATE produtos SET nome=?, codigo_barras=?, imagem=?, categoria_id=?, marca_id=?, fornecedor_id=?, preco_venda=?, estoque=?, estoque_minimo=?, unidade=?, ativo=?, descricao=?, preco_promo=?, promocional=?, peso_liq=?, peso_bruto=?, localizacao=?, observacoes=?, preco_custo=?, codigo_interno=?, codigo_extra=?, ncm=?, cest=?, estoque_maximo=?, controla_estoque=?, permite_fracionado=?, publicado=?, catalogo_publicado=?, subcategoria_id=?, preco_atacado1=?, preco_atacado2=?, qtd_min_atacado1=?, qtd_min_atacado2=?, alterado_em=?, nex_uid=? WHERE id=?`).run(...dadosSql, alvo.id);
+                    const alvoId = (alvo && typeof alvo === 'object') ? (alvo as { id: number }).id : (alvo as number);
+                    const precoAtual = db.prepare(`SELECT preco_venda FROM produtos WHERE id = ?`).get(alvoId) as { preco_venda: number } | undefined;
+                    const precoFinal = preco > 0 ? preco : (precoAtual?.preco_venda ?? 0);
+                    db.prepare(`UPDATE produtos SET nome=?, codigo_barras=?, imagem=?, categoria_id=?, marca_id=?, fornecedor_id=?, preco_venda=?, estoque=?, estoque_minimo=?, unidade=?, ativo=?, descricao=?, preco_promo=?, promocional=?, peso_liq=?, peso_bruto=?, localizacao=?, observacoes=?, preco_custo=?, codigo_interno=?, codigo_extra=?, ncm=?, cest=?, estoque_maximo=?, controla_estoque=?, permite_fracionado=?, publicado=?, catalogo_publicado=?, subcategoria_id=?, preco_atacado1=?, preco_atacado2=?, qtd_min_atacado1=?, qtd_min_atacado2=?, alterado_em=?, nex_uid=? WHERE id=?`).run(
+                        ...dadosSql.slice(0, 6), precoFinal, ...dadosSql.slice(7), alvoId
+                    );
                     atualizados++;
                 }
                 else {
-                    db.prepare(`INSERT INTO produtos (nome, codigo_barras, imagem, categoria_id, marca_id, fornecedor_id, preco_venda, estoque, estoque_minimo, unidade, ativo, descricao, preco_promo, promocional, peso_liq, peso_bruto, localizacao, observacoes, preco_custo, codigo_interno, codigo_extra, ncm, cest, estoque_maximo, controla_estoque, permite_fracionado, publicado, catalogo_publicado, subcategoria_id, preco_atacado1, preco_atacado2, qtd_min_atacado1, qtd_min_atacado2, alterado_em, nex_uid)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(...dadosSql);
+                    const novoId = Number(db.prepare(`INSERT INTO produtos (nome, codigo_barras, imagem, categoria_id, marca_id, fornecedor_id, preco_venda, estoque, estoque_minimo, unidade, ativo, descricao, preco_promo, promocional, peso_liq, peso_bruto, localizacao, observacoes, preco_custo, codigo_interno, codigo_extra, ncm, cest, estoque_maximo, controla_estoque, permite_fracionado, publicado, catalogo_publicado, subcategoria_id, preco_atacado1, preco_atacado2, qtd_min_atacado1, qtd_min_atacado2, alterado_em, nex_uid)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(...dadosSql).lastInsertRowid);
+                    mapaNomesProdutos.set(chave, novoId);
                     criados++;
                 }
                 nomesJaImportados.add(chave);
@@ -1593,6 +2047,37 @@ async function importarNexComCarregador(carregar, arquivos, nomeZip, opcoes) {
             atualizarProgresso({ atual: i + 1, mensagem: `Importando produtos do catálogo ${i + 1} de ${dados.produtos.length}...` });
             if ((i + 1) % 200 === 0)
                 await pausar();
+        }
+        // Mapa de preço do catálogo JSON para usar no Produto.nx1 (busca por EAN ou nome normalizado)
+        const precoCatalogoPorEan = new Map();
+        const precoCatalogoPorNome = new Map();
+        const custoCatalogoPorEan = new Map();
+        const custoCatalogoPorNome = new Map();
+        const inativoCatalogoPorEan = new Map();
+        const inativoCatalogoPorNome = new Map();
+        for (const p of dados.produtos) {
+            const preco = extrairPreco(p.SalePrice, p.ListPrice, p.PrecoVenda, p.Price, p.SalePriceText);
+            const custo = extrairPreco(p.CostPrice, p.PurchasePrice, p.PrecoCusto, p.PrecoCompra, p.Cost, p.PrecoMinimo);
+            const inativo2 = (
+                p.Inactive === true || p.Inactive === 1 || p.Inactive === '1' || p.Inactive === 'true' || p.Inactive === 'S' || p.Inactive === 'Sim' ||
+                p.ProductInactive === true || p.ProductInactive === 1 || p.ProductInactive === '1' ||
+                p.Deleted === true || p.Deleted === 1 || p.Deleted === '1' || p.Deleted === 'true' ||
+                p.Excluido === true || p.Excluido === 1 || p.Excluido === '1' || p.Excluido === 'true' ||
+                p.Inativo === true || p.Inativo === 1 || p.Inativo === '1' || p.Inativo === 'true'
+            ) ? 1 : 0;
+            const ean = String(p.ProductCode ?? '').trim();
+            const nome = String(p.ProductName ?? '').trim();
+            const chave = normNome(nome);
+            if (ean) {
+                if (preco > 0) precoCatalogoPorEan.set(ean, preco);
+                if (custo > 0) custoCatalogoPorEan.set(ean, custo);
+                inativoCatalogoPorEan.set(ean, inativo2);
+            }
+            if (nome) {
+                if (preco > 0) precoCatalogoPorNome.set(chave, preco);
+                if (custo > 0) custoCatalogoPorNome.set(chave, custo);
+                inativoCatalogoPorNome.set(chave, inativo2);
+            }
         }
         atualizarProgresso({ ativo: true, etapa: 'produtos_nx1', atual: 0, total: dados.produtosNx1.length, mensagem: 'Importando produtos do Produto.nx1...' });
         let nx1Criados = 0;
@@ -1606,6 +2091,10 @@ async function importarNexComCarregador(carregar, arquivos, nomeZip, opcoes) {
                 const nome = p.nome.trim();
                 if (!nome)
                     continue;
+                if (ehNomeGarbage(nome)) {
+                    nx1Duplicados++;
+                    continue;
+                }
                 const chave = normNome(nome);
                 if (subNomesNorm.has(chave) || catNomesNorm.has(chave)) {
                     produtosNomeSubcat++;
@@ -1615,7 +2104,7 @@ async function importarNexComCarregador(carregar, arquivos, nomeZip, opcoes) {
                 const existente = ean
                     ? db.prepare(`SELECT id FROM produtos WHERE codigo_barras = ?`).get(ean)
                     : undefined;
-                const porNome = existente ? undefined : db.prepare(`SELECT id FROM produtos WHERE lower(replace(nome,' ','')) = ?`).get(chave);
+                const porNome = existente ? undefined : mapaNomesProdutos.get(chave);
                 if (existente || porNome || nomesJaImportados.has(chave)) {
                     nx1Duplicados++;
                     continue;
@@ -1629,8 +2118,15 @@ async function importarNexComCarregador(carregar, arquivos, nomeZip, opcoes) {
                         ?? mapaSubcategorias.get(normNome(p.sub))
                         ?? null;
                 }
-                db.prepare(`INSERT INTO produtos (nome, codigo_barras, categoria_id, subcategoria_id, preco_custo, preco_venda, estoque, estoque_minimo, unidade, ativo, descricao, codigo_extra, controla_estoque, publicado, catalogo_publicado, nex_uid)
-           VALUES (?, ?, ?, ?, 0, 0, 0, 0, 'un', 1, NULL, ?, 0, 0, 0, NULL)`).run(nome, ean, catId, subcategoriaId, p.codigo);
+                const codigoNx1 = p.codigo != null && String(p.codigo).trim() ? String(p.codigo).trim() : (ean || proximoCodigoProduto());
+                // Buscar preço/custo/status no catálogo JSON (por EAN ou nome normalizado)
+                const precoCatalogo = ean ? precoCatalogoPorEan.get(ean) : null;
+                const precoFinal = precoCatalogo ?? (precoCatalogoPorNome.get(chave) ?? 0);
+                const custoFinal = (ean ? custoCatalogoPorEan.get(ean) : null) ?? (custoCatalogoPorNome.get(chave) ?? 0);
+                const inativoNx1 = (ean ? inativoCatalogoPorEan.get(ean) : null) ?? (inativoCatalogoPorNome.get(chave) ?? 0) ?? 0;
+                const novoId = Number(db.prepare(`INSERT INTO produtos (nome, codigo_barras, categoria_id, subcategoria_id, preco_custo, preco_venda, estoque, estoque_minimo, unidade, ativo, descricao, codigo_interno, codigo_extra, controla_estoque, publicado, catalogo_publicado, nex_uid)
+           VALUES (?, ?, ?, ?, ?, ?, 0, 0, 'un', ?, NULL, ?, ?, 0, 0, 0, NULL)`).run(nome, ean, catId, subcategoriaId, custoFinal, precoFinal, inativoNx1 ? 0 : 1, codigoNx1, codigoNx1).lastInsertRowid);
+                mapaNomesProdutos.set(chave, novoId);
                 if (subcategoriaId)
                     nx1ComSub++;
                 else
@@ -1647,6 +2143,14 @@ async function importarNexComCarregador(carregar, arquivos, nomeZip, opcoes) {
         }
         atualizarProgresso({ ativo: true, etapa: 'clientes', atual: 0, total: dados.clientes.length, mensagem: 'Importando clientes...' });
         let clientesCriados = 0;
+        let clientesDedup = 0;
+        // dedup por nome normalizado (a UI não lista por CPF; nomes repetidos poluem a busca)
+        const mapaNomesClientes = new Map();
+        for (const reg of db.prepare(`SELECT id, nome FROM clientes`).all()) {
+            const k = normNome(String(reg.nome));
+            if (k && !mapaNomesClientes.has(k))
+                mapaNomesClientes.set(k, reg.id);
+        }
         for (let i = 0; i < dados.clientes.length; i++) {
             const c = dados.clientes[i];
             try {
@@ -1654,27 +2158,38 @@ async function importarNexComCarregador(carregar, arquivos, nomeZip, opcoes) {
                 if (!nome)
                     continue;
                 const cpf = String(c.cpf ?? '').replace(/\D/g, '') || null;
+                const chaveNome = normNome(nome);
                 const existente = cpf && cpf.length === 11
                     ? db.prepare(`SELECT id FROM clientes WHERE cpf = ?`).get(cpf)
                     : undefined;
+                const porNome = existente ? undefined : mapaNomesClientes.get(chaveNome);
+                const observacoes = c.observacoes != null ? String(c.observacoes).slice(0, 400) : null;
+                const codigoCliente = c.codigo != null && String(c.codigo).trim() ? String(c.codigo).trim() : proximoCodigoCliente();
                 const dadosCli = [
                     nome, c.telefone != null ? String(c.telefone) : null, c.email != null ? String(c.email) : null,
                     c.endereco != null ? String(c.endereco) : null, c.cpf != null ? String(c.cpf) : null,
                     null, null, c.rg != null ? String(c.rg) : null, null, 0, null,
-                    c.observacoes != null ? String(c.observacoes) : null,
+                    observacoes,
                     c.numero != null ? String(c.numero) : null, c.bairro != null ? String(c.bairro) : null,
                     c.cidade != null ? String(c.cidade) : null, c.uf != null ? String(c.uf) : null,
                     c.cep != null ? String(c.cep) : null, c.pai != null ? String(c.pai) : null,
-                    c.mae != null ? String(c.mae) : null, c.codigo != null ? String(c.codigo) : null
+                    c.mae != null ? String(c.mae) : null, codigoCliente
                 ];
+                const alvo = existente ?? porNome;
+                const alvoId = (alvo && typeof alvo === 'object') ? (alvo as { id: number }).id : (alvo as number);
                 const agoraCli = new Date().toISOString();
-                if (existente) {
-                    db.prepare(`UPDATE clientes SET nome=?, telefone=?, email=?, endereco=?, cpf=?, celular=?, data_nascimento=?, rg=?, genero=?, empresa=?, cnpj=?, observacoes=?, numero=?, bairro=?, cidade=?, uf=?, cep=?, pai=?, mae=?, codigo=?, criado_em=? WHERE id=?`).run(...dadosCli, agoraCli, existente.id);
+                if (alvo) {
+                    db.prepare(`UPDATE clientes SET nome=?, telefone=?, email=?, endereco=?, cpf=?, celular=?, data_nascimento=?, rg=?, genero=?, empresa=?, cnpj=?, observacoes=?, numero=?, bairro=?, cidade=?, uf=?, cep=?, pai=?, mae=?, codigo=?, criado_em=? WHERE id=?`).run(...dadosCli, agoraCli, alvoId);
+                    if (!existente && porNome)
+                        clientesDedup++;
+                    if (!mapaNomesClientes.has(chaveNome))
+                        mapaNomesClientes.set(chaveNome, alvoId);
                 }
                 else {
-                    db.prepare(`INSERT INTO clientes (nome, telefone, email, endereco, cpf, celular, data_nascimento, rg, genero, empresa, cnpj, observacoes, numero, bairro, cidade, uf, cep, pai, mae, codigo, criado_em)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(...dadosCli, agoraCli);
+                    const novoId = Number(db.prepare(`INSERT INTO clientes (nome, telefone, email, endereco, cpf, celular, data_nascimento, rg, genero, empresa, cnpj, observacoes, numero, bairro, cidade, uf, cep, pai, mae, codigo, criado_em)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(...dadosCli, agoraCli).lastInsertRowid);
                     clientesCriados++;
+                    mapaNomesClientes.set(chaveNome, novoId);
                 }
             }
             catch (e) {
@@ -1684,35 +2199,73 @@ async function importarNexComCarregador(carregar, arquivos, nomeZip, opcoes) {
             if ((i + 1) % 100 === 0)
                 await pausar();
         }
-        atualizarProgresso({ ativo: true, etapa: 'usuarios', atual: 0, total: dados.usuarios.length, mensagem: 'Importando usuários...' });
+        atualizarProgresso({ ativo: true, etapa: 'usuarios', atual: 0, total: dados.usuarios.length + 1, mensagem: 'Importando usuários...' });
         let usuariosCriados = 0;
+        // Perfil vendedor padrão: mesmas permissões da tela de Usuários (sem ações de admin/gerente).
+        const MODULOS_VENDEDOR = [
+            'caixa_ver_anteriores', 'caixa_suprimento', 'caixa_sangria', 'caixa_abrir_fechar',
+            'caixa_ver_totalizacao', 'caixa_ver_colunas_valores', 'caixa_ver_transacoes', 'caixa_ver_canais_venda',
+            'clientes_cadastrar', 'clientes_acessar', 'clientes_receber_debitos',
+            'gerais_imprimir_exportar', 'gerais_abrir_gaveta',
+            'produtos_acessar', 'produtos_cadastro_rapido',
+            'estoque_acessar', 'estoque_movimentar',
+            'vendas_acessar', 'vendas_editar_pagamento',
+            'relatorios_acessar'
+        ];
+        const mapaOperadorId = new Map();
+        const garantirUsuario = (nome, login, admin) => {
+            const existente = db.prepare(`SELECT id, perfil FROM usuarios WHERE login = ?`).get(login);
+            if (existente) {
+                if (admin)
+                    db.prepare(`UPDATE usuarios SET perfil = 'admin', ativo = 1, usar_web = 1, usar_app = 1 WHERE id = ?`).run(existente.id);
+                return existente.id;
+            }
+            const perfil = admin ? 'admin' : 'vendedor';
+            const senha = admin ? (0, index_1.hashSenha)('admin123') : '';
+            const id = Number(db.prepare(`INSERT INTO usuarios (nome, login, senha_hash, perfil, comissao_percent, ativo, usar_web, usar_app)
+            VALUES (?, ?, ?, ?, 0, 1, 1, 1)`).run(nome, login, senha, perfil).lastInsertRowid);
+            usuariosCriados++;
+            if (!admin) {
+                const insPerm = db.prepare(`INSERT OR IGNORE INTO permissoes (usuario_id, modulo) VALUES (?, ?)`);
+                for (const m of MODULOS_VENDEDOR)
+                    insPerm.run(id, m);
+            }
+            return id;
+        };
+        const liLogin = (s) => String(s).trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9._ -]/g, '').replace(/\s+/g, '_').slice(0, 40) || 'operador';
+        // operadores vistos nas vendas (Tran.nx1). 'admin' (operador do Nex) vira o admin do sistema.
+        for (const nome of [...new Set(dados.vendas.map((v) => String(v.operador ?? '').trim()).filter((x) => x))]) {
+            try {
+                const login = nome.toLowerCase() === 'admin' ? 'admin' : liLogin(nome);
+                const id = garantirUsuario(nome, login, nome.toLowerCase() === 'admin');
+                mapaOperadorId.set(normNome(nome), id);
+                mapaOperadorId.set(nome.toLowerCase(), id);
+            }
+            catch (e) {
+                erros.push(`Operador ${nome}: ${e.message}`);
+            }
+        }
+        // usuários cadastrados do Usuario.nx1 (quando houver)
         for (let i = 0; i < dados.usuarios.length; i++) {
             const u = dados.usuarios[i];
             try {
                 const login = String(u.username ?? '').trim().toLowerCase();
-                if (!login)
+                if (!login || login === 'admin')
                     continue;
                 const nome = String(u.nome ?? u.username ?? '').trim() || login;
-                const email = u.email != null ? String(u.email) : null;
-                const existente = db.prepare(`SELECT id FROM usuarios WHERE login = ?`).get(login);
-                const perfil = u.admin === 1 ? 'admin' : 'vendedor';
-                if (!existente) {
-                    // usuário "admin" sempre nasce com a senha admin123; demais com senha vazia (resetada)
-                    const senha = login === 'admin' ? (0, index_1.hashSenha)('admin123') : '';
-                    db.prepare(`INSERT INTO usuarios (nome, login, senha_hash, perfil, comissao_percent, ativo, usar_web, usar_app)
-            VALUES (?, ?, ?, ?, 0, 1, 1, 1)`).run(nome, login, senha, perfil);
-                    usuariosCriados++;
-                }
-                else if (login === 'admin') {
-                    // garante que o admin do Nex não fique com senha vazia
-                    db.prepare(`UPDATE usuarios SET senha_hash = ?, perfil = 'admin', ativo = 1 WHERE login = 'admin'`).run((0, index_1.hashSenha)('admin123'));
-                }
+                const id = garantirUsuario(nome, login, false);
+                mapaOperadorId.set(normNome(nome), id);
+                mapaOperadorId.set(normNome(login), id);
+                mapaOperadorId.set(login, id);
             }
             catch (e) {
                 erros.push(`Usuário ${String(u.username ?? '')}: ${e.message}`);
             }
-            atualizarProgresso({ atual: i + 1 });
+            atualizarProgresso({ atual: i + 2 });
         }
+        // garante o admin (login para o dono da loja)
+        const adminId = garantirUsuario('Administrador', 'admin', true);
+        mapaOperadorId.set('admin', adminId);
         // Cada número de caixa do Nex agrupa uma sessão (aberto->fechado). As vendas carregam
         // data + número; derivamos a janela da sessão (min/max) das próprias vendas e criamos
         // um caixa real por sessão, guardando número->id para vincular as vendas à página de
@@ -1731,7 +2284,7 @@ async function importarNexComCarregador(carregar, arquivos, nomeZip, opcoes) {
                 continue;
             const s = sessaoPorNumero.get(num);
             if (!s)
-                sessaoPorNumero.set(num, { min: t, max: t });
+                sessaoPorNumero.set(num, { min: t, max: t, ops: new Map(), comItens: false });
             else {
                 if (t < s.min)
                     s.min = t;
@@ -1739,20 +2292,40 @@ async function importarNexComCarregador(carregar, arquivos, nomeZip, opcoes) {
                     s.max = t;
             }
         }
+        // operador dominante + marcador "tem vendas sem data com itens" por sessão
+        for (const vv of dados.vendas) {
+            const v = vv;
+            const num = Number(v.caixa);
+            if (!(num > 0))
+                continue;
+            const s = sessaoPorNumero.get(num);
+            if (s && v.operador) {
+                const op = String(v.operador).trim().toLowerCase();
+                s.ops.set(op, (s.ops.get(op) || 0) + 1);
+            }
+        }
         const toSql = (ms) => new Date(ms).toISOString().replace('T', ' ').slice(0, 19);
+        // data de referência de cada sessão (usada para vendas sem data própria)
+        const dataSessaoPorNumero = new Map();
+        for (const [num, s] of sessaoPorNumero)
+            dataSessaoPorNumero.set(num, toSql(s.min));
         let caixasCriados = 0;
         let caixaCont = 0;
         for (const [num, s] of [...sessaoPorNumero.entries()].sort((a, b) => a[0] - b[0])) {
             try {
                 const abertoEm = toSql(s.min);
                 const fechadoEm = toSql(s.max);
+                const opPrincipal = [...s.ops.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+                const usuarioId = opPrincipal ? (mapaOperadorId.get(normNome(opPrincipal)) ?? mapaOperadorId.get(opPrincipal) ?? null) : null;
                 const ex = db.prepare(`SELECT id FROM caixas WHERE aberto_em = ? AND fechado_em = ?`).get(abertoEm, fechadoEm);
                 if (ex) {
                     caixaIdPorNumero.set(num, ex.id);
+                    if (usuarioId)
+                        db.prepare(`UPDATE caixas SET usuario_id = ?, usuario_fechamento = ? WHERE id = ?`).run(usuarioId, usuarioId, ex.id);
                 }
                 else {
-                    const id = Number(db.prepare(`INSERT INTO caixas (usuario_id, aberto, saldo_inicial, total_vendas, total_sangrias, total_suprimentos, descontos, cancelamentos, qtd_vendas, aberto_em, fechado_em)
-            VALUES (NULL, 0, 0, 0, 0, 0, 0, 0, 0, ?, ?)`).run(abertoEm, fechadoEm).lastInsertRowid);
+                    const id = Number(db.prepare(`INSERT INTO caixas (usuario_id, usuario_fechamento, aberto, saldo_inicial, total_vendas, total_sangrias, total_suprimentos, descontos, cancelamentos, qtd_vendas, aberto_em, fechado_em)
+            VALUES (?, ?, 0, 0, 0, 0, 0, 0, 0, 0, ?, ?)`).run(usuarioId, usuarioId, abertoEm, fechadoEm).lastInsertRowid);
                     caixaIdPorNumero.set(num, id);
                     caixasCriados++;
                 }
@@ -1833,11 +2406,21 @@ async function importarNexComCarregador(carregar, arquivos, nomeZip, opcoes) {
             if (m)
                 vendasJaImportadas.add(Number(m[1]));
         });
+        const vendaIdPorNex = new Map();
+        let vendasDescartadas = 0;
+        let vendasSemDataPropria = 0;
+        // Mapa em memória de produto por código/id: evita um SELECT full-scan por item
+        // (124k itens × milhares de produtos travava a importação em dezenas de minutos).
+        const mapaProdutoInfoFinal = new Map();
+        for (const reg of db.prepare(`SELECT id, nome, codigo_interno FROM produtos`).all()) {
+            mapaProdutoInfoFinal.set(String(reg.id), { id: reg.id, nome: reg.nome });
+            if (reg.codigo_interno != null && reg.codigo_interno !== '')
+                mapaProdutoInfoFinal.set(String(reg.codigo_interno), { id: reg.id, nome: reg.nome });
+        }
         for (let i = 0; i < dados.vendas.length; i++) {
             const v = dados.vendas[i];
             try {
-                const dataIso = String(v.data ?? '');
-                const data = dataIso.replace('T', ' ').replace('Z', '');
+                let dataIso = String(v.data ?? '');
                 const idNex = Number(v.id);
                 if (!(idNex > 0))
                     continue;
@@ -1846,6 +2429,25 @@ async function importarNexComCarregador(carregar, arquivos, nomeZip, opcoes) {
                     continue;
                 const itensVenda = itensDaVenda.get(idNex) || [];
                 const pagsVenda = pagsDaVenda.get(idNex) || [];
+                // documento sem data e sem itens/pagamentos = NÃO é venda (Compra, Ajuste,
+                // Orçamento, tabela de doc. genéricos do Tran). Importá-los inflava o
+                // dashboard (bastava "hoje" virar o dia da importação) e os totais por caixa.
+                const ehVendaReal = itensVenda.length > 0 || pagsVenda.length > 0;
+                if (!ehVendaReal) {
+                    vendasDescartadas++;
+                    continue;
+                }
+                let data = dataIso.replace('T', ' ').replace('Z', '');
+                if (!data) {
+                    const dtSessao = dataSessaoPorNumero.get(Number(v.caixa));
+                    if (!dtSessao) {
+                        vendasDescartadas++;
+                        continue;
+                    }
+                    data = dtSessao;
+                    dataIso = dtSessao;
+                    vendasSemDataPropria++;
+                }
                 if (pagsVenda.length === 0)
                     vendasSemPag++;
                 if (itensVenda.length === 0)
@@ -1855,9 +2457,14 @@ async function importarNexComCarregador(carregar, arquivos, nomeZip, opcoes) {
                 const total = somaItens > 0 ? Math.round(somaItens * 100) / 100 : 0;
                 const subtotal = total;
                 const caixaIdReal = Number(v.caixa) > 0 ? (caixaIdPorNumero.get(Number(v.caixa)) ?? null) : null;
+                const nomeOperador = String(v.operador ?? '').trim();
+                const vendedorId = nomeOperador
+                    ? (mapaOperadorId.get(normNome(nomeOperador)) ?? mapaOperadorId.get(nomeOperador.toLowerCase()) ?? null)
+                    : null;
                 const vendaId = Number(db.prepare(`INSERT INTO vendas (numero, vendedor_id, cliente_id, tipo, subtotal, desconto, total, status, created_at, caixa_id, observacoes)
-          VALUES (?, NULL, NULL, 'balcao', ?, 0, ?, 'concluida', ?, ?, ?)`)
-                    .run(numero, subtotal, total, data || new Date().toISOString().replace('T', ' ').slice(0, 19), caixaIdReal, `Importado do Nex. Data original: ${dataIso}`).lastInsertRowid);
+          VALUES (?, ?, NULL, 'balcao', ?, 0, ?, 'concluida', ?, ?, ?)`)
+                    .run(numero, vendedorId, subtotal, total, data, caixaIdReal, `Importado do Nex. Data original: ${dataIso}`).lastInsertRowid);
+                vendaIdPorNex.set(idNex, vendaId);
                 vendasCriadas++;
                 // itens (com produto, quantidade e preço reais do MovEst)
                 for (const it of itensVenda) {
@@ -1865,9 +2472,7 @@ async function importarNexComCarregador(carregar, arquivos, nomeZip, opcoes) {
                     const quant = Number(it.quant) || 0;
                     const unit = Number(it.unit) || 0;
                     const totIt = Number(it.total) || 0;
-                    const prodEncontrado = produtoNex > 0
-                        ? db.prepare(`SELECT id, nome FROM produtos WHERE codigo_interno = ? OR id = ?`).get(String(produtoNex), produtoNex)
-                        : undefined;
+                    const prodEncontrado = produtoNex > 0 ? mapaProdutoInfoFinal.get(String(produtoNex)) : undefined;
                     const prodId = prodEncontrado?.id ?? null;
                     const nomeProduto = prodId != null && prodEncontrado?.nome ? prodEncontrado.nome : `produto#${produtoNex || 'desconhecido'}`;
                     db.prepare(`INSERT INTO venda_itens (venda_id, produto_id, nome_produto, quantidade, preco_unitario, subtotal)
@@ -1890,6 +2495,70 @@ async function importarNexComCarregador(carregar, arquivos, nomeZip, opcoes) {
             atualizarProgresso({ atual: i + 1, mensagem: `Vendas ${i + 1} de ${dados.vendas.length}...` });
             if ((i + 1) % 200 === 0)
                 await pausar();
+        }
+        // Totais reais por caixa a partir das vendas importadas (a página de caixas
+        // mostra esses valores; antes ficavam sempre zerados).
+        db.prepare(`UPDATE caixas SET
+            total_vendas = COALESCE((SELECT SUM(total) FROM vendas WHERE vendas.caixa_id = caixas.id AND vendas.status != 'cancelada'), 0),
+            descontos = COALESCE((SELECT SUM(desconto) FROM vendas WHERE vendas.caixa_id = caixas.id AND vendas.status != 'cancelada'), 0),
+            qtd_vendas = (SELECT COUNT(*) FROM vendas WHERE vendas.caixa_id = caixas.id AND vendas.status != 'cancelada')`).run();
+        // Movimentações de estoque a partir do MovEst: item vinculado a uma venda
+        // importada = SAÍDA (na data da venda); item de outro documento = ENTRADA.
+        atualizarProgresso({ ativo: true, etapa: 'movimentacoes', atual: 0, total: dados.itens.length, mensagem: `Importando movimentações de estoque (${dados.itens.length})...` });
+        const dataVendaPorId = new Map();
+        for (const reg of db.prepare(`SELECT id, created_at FROM vendas`).all())
+            dataVendaPorId.set(reg.id, String(reg.created_at ?? ''));
+        const insMov = db.prepare(`INSERT INTO movimentacoes (produto_id, tipo, quantidade, motivo, venda_id, criado_em)
+            VALUES (?, ?, ?, 'Importada do Nex (MovEst)', ?, ?)`);
+        let movimentacoesImportadas = 0;
+        for (let i = 0; i < dados.itens.length; i++) {
+            const it = dados.itens[i];
+            try {
+                const quantidade = Number(it.quant);
+                if (!(quantidade > 0))
+                    continue;
+                const produtoId = mapaProdutoNex.get(String(it.produtoNex ?? '')) ?? null;
+                if (!produtoId)
+                    continue;
+                const vendaId = vendaIdPorNex.get(Number(it.tran)) ?? null;
+                const tipo = vendaId ? 'saida' : 'entrada';
+                const criado = vendaId
+                    ? (dataVendaPorId.get(vendaId) ?? null)
+                    : '2000-01-01 00:00:00';
+                insMov.run(produtoId, tipo, quantidade, vendaId, criado);
+                movimentacoesImportadas++;
+            }
+            catch (e) {
+                erros.push(`Movimentação ${String(it.uid ?? '')}: ${e.message}`);
+            }
+            atualizarProgresso({ atual: i + 1 });
+            if ((i + 1) % 500 === 0)
+                await pausar();
+        }
+        // Custo de produto derivado das ENTRADAS do MovEst: itens sem venda
+        // vinculada (compras/ajustes) carregam o valor unitário de entrada, que
+        // é o custo. A última entrada no arquivo vence (ordem ≈ cronológica).
+        const custoPorProduto = new Map();
+        for (let i = 0; i < dados.itens.length; i++) {
+            const it = dados.itens[i];
+            if (!(Number(it.quant) > 0))
+                continue;
+            const vendaId = vendaIdPorNex.get(Number(it.tran)) ?? null;
+            if (vendaId)
+                continue; // só entradas (compra/ajuste) representam custo
+            const produtoId = mapaProdutoNex.get(String(it.produtoNex ?? '')) ?? null;
+            if (!produtoId)
+                continue;
+            const unit = Number(it.unit);
+            if (unit > 0 && unit < 1e6)
+                custoPorProduto.set(produtoId, unit);
+        }
+        const updCusto = db.prepare(`UPDATE produtos SET preco_custo = ? WHERE id = ? AND (preco_custo IS NULL OR preco_custo <= 0)`);
+        let custosAplicados = 0;
+        for (const [pid, custo] of custoPorProduto) {
+            const r = updCusto.run(custo, pid);
+            if (r.changes && r.changes > 0)
+                custosAplicados++;
         }
         atualizarProgresso({ ativo: true, etapa: 'remocoes', atual: 0, total: dados.remocoes.length, mensagem: `Importando histórico de remoções (${dados.remocoes.length})...` });
         let remocoesImportadas = 0;
@@ -1942,13 +2611,33 @@ async function importarNexComCarregador(carregar, arquivos, nomeZip, opcoes) {
             catch { /* ignore */ }
         }
         const nomesSubcategoriasDistintos = new Set(dados.subcategorias.map((s) => normNome(s.nome))).size;
-        // Remove categorias do seed (Cigarros, Charutos, Tabaco, Acessorios) que não fazem parte do Nex
-        db.prepare(`DELETE FROM categorias WHERE nex_uid IS NULL
+        // Quando o Nex traz categorias/subcategorias, as padrões do seed
+        // (Cigarros, Charutos, Tabaco, Acessorios, Bebidas) saem — ficam só as importadas.
+        // Antes de apagar, desvincula produtos e subcategorias que apontavam para elas.
+        if (dados.categorias.length > 0 || dados.subcategorias.length > 0) {
+            db.prepare(`UPDATE produtos SET categoria_id = NULL WHERE categoria_id IN (SELECT id FROM categorias WHERE nex_uid IS NULL)`).run();
+            db.prepare(`UPDATE subcategorias SET categoria_id = NULL WHERE categoria_id IN (SELECT id FROM categorias WHERE nex_uid IS NULL)`).run();
+            db.prepare(`DELETE FROM categorias WHERE nex_uid IS NULL`).run();
+            db.prepare(`DELETE FROM subcategorias WHERE nex_uid IS NULL`).run();
+        }
+        else {
+            // Sem categorias no Nex: apenas limpa as do seed que não estão em uso.
+            db.prepare(`DELETE FROM categorias WHERE nex_uid IS NULL
        AND id NOT IN (SELECT COALESCE(categoria_id, 0) FROM produtos)
        AND id NOT IN (SELECT COALESCE(categoria_id, 0) FROM subcategorias)`).run();
+        }
         db.exec('COMMIT');
-        atualizarProgresso({ ativo: false, etapa: 'concluido', atual: 1, total: 1, mensagem: `Concluído: ${criados} produtos catálogo, ${nx1Criados} Produto.nx1, ${clientesCriados} clientes, ${usuariosCriados} usuários, ${caixasCriados} caixas, ${vendasCriadas} vendas` });
-        (0, servidor_1.registrarLog)('SUCCESS', `Importação Nex concluída: ${criados} produtos de catálogo, ${nx1Criados} Produto.nx1, ${clientesCriados} clientes, ${usuariosCriados} usuários, ${caixasCriados} caixas, ${vendasCriadas} vendas, ${itensImportados} itens, ${pagamentosImportados} pagamentos`);
+        // Persiste os contadores de sequência gerados na importação para manter
+        // consistência com os códigos criados no frontend.
+        try {
+            db.prepare(`INSERT OR IGNORE INTO sequencias (chave, valor) VALUES ('produto_codigo', 0)`).run();
+            db.prepare(`UPDATE sequencias SET valor = ? WHERE chave = 'produto_codigo'`).run(seqProduto);
+            db.prepare(`INSERT OR IGNORE INTO sequencias (chave, valor) VALUES ('cliente_codigo', 0)`).run();
+            db.prepare(`UPDATE sequencias SET valor = ? WHERE chave = 'cliente_codigo'`).run(seqCliente);
+        }
+        catch { /* sequencias pode não existir em bases antigas */ }
+        atualizarProgresso({ ativo: false, etapa: 'concluido', atual: 1, total: 1, mensagem: `Concluído: ${criados} produtos catálogo, ${nx1Criados} Produto.nx1, ${clientesCriados} clientes, ${usuariosCriados} usuários, ${caixasCriados} caixas, ${vendasCriadas} vendas, ${movimentacoesImportadas} movimentações` });
+        (0, servidor_1.registrarLog)('SUCCESS', `Importação Nex concluída: ${criados} produtos de catálogo, ${nx1Criados} Produto.nx1, ${clientesCriados} clientes, ${usuariosCriados} usuários, ${caixasCriados} caixas, ${vendasCriadas} vendas, ${itensImportados} itens, ${pagamentosImportados} pagamentos, ${movimentacoesImportadas} movimentações`);
         const relatorio = {
             modo: 'importacao',
             estrutura: {
@@ -1973,7 +2662,9 @@ async function importarNexComCarregador(carregar, arquivos, nomeZip, opcoes) {
             importado: {
                 produtos: criados,
                 produtosNx1: nx1Criados,
+                fornecedores: mapaFornecedores.size,
                 clientes: clientesCriados,
+                clientesDedup,
                 usuarios: usuariosCriados,
                 caixas: caixasCriados,
                 categorias: dados.categorias.length,
@@ -1984,8 +2675,10 @@ async function importarNexComCarregador(carregar, arquivos, nomeZip, opcoes) {
                 cest: cestImportados,
                 cfop: cfopImportados,
                 vendas: vendasCriadas,
+                vendasDescartadas: vendasDescartadas,
                 itens: itensImportados,
                 pagamentos: pagamentosImportados,
+                movimentacoes: movimentacoesImportadas,
                 remocoes: remocoesImportadas,
                 syslogs: syslogsImportados,
                 terminais: terminaisImportados,
@@ -2008,6 +2701,8 @@ async function importarNexComCarregador(carregar, arquivos, nomeZip, opcoes) {
                 pagamentosSemVenda: dados.pagamentos.length - pagamentosImportados,
                 vendasSemPagamento: vendasSemPag,
                 vendasSemItem: vendasSemItem,
+                documentosNaoVenda: vendasDescartadas,
+                vendasSemDataPropria: vendasSemDataPropria,
                 erros: erros.length
             },
             motivos: erros.slice(0, 200)
@@ -2029,6 +2724,8 @@ async function importarNexComCarregador(carregar, arquivos, nomeZip, opcoes) {
                 produtosNomeDeSubcategoriaDescartados: produtosNomeSubcat,
                 clientes: dados.clientes.length,
                 clientesCriados,
+                clientesDedup,
+                fornecedores: dados.fornecedores.length,
                 usuarios: dados.usuarios.length,
                 usuariosCriados,
                 caixas: dados.caixas.length,
@@ -2042,6 +2739,8 @@ async function importarNexComCarregador(carregar, arquivos, nomeZip, opcoes) {
                 cfop: cfopImportados,
                 vendasEncontradas: dados.vendas.length,
                 vendasCriadas,
+                vendasDescartadas,
+                vendasSemDataPropria,
                 vendasSemPagamento: vendasSemPag,
                 vendasSemItem: vendasSemItem,
                 itensEncontrados: dados.itens.length,
@@ -2253,4 +2952,4 @@ async function analisarNex(zipBuffer, nomeZip) {
     }
 }
 
-export { getProgressoNex, normalizarNome, importarNex, importarNexDeZip, importarNexDePasta, analisarNexDeZip, analisarNex };
+export { getProgressoNex, normalizarNome, importarNex, importarNexDeZip, importarNexDePasta, importarNexDeArquivo, analisarNexDeZip, analisarNex, extrairImagensProdutoNx1 };

@@ -54,6 +54,17 @@ export function registerDbHandlers(): void {
     return sessaoAtual
   })
 
+  ipcMain.handle('auth:sessao', async () => {
+    // Valida o token de sessão diretamente no servidor. Lança (401/erro de rede)
+    // se a sessão foi invalidada — usado pelo terminal para voltar ao login na
+    // hora, inclusive após importações que apagam as sessões.
+    return await servidorClient.authSessao()
+  })
+
+  ipcMain.handle('auth:verificarSenhaSupervisor', async (_e, senha: string) => {
+    return await servidorClient.authVerificarSupervisor(senha)
+  })
+
   ipcMain.handle('auth:usuarios', async () => {
     // Lista pública de usuários para a tela de login (id/nome/login/perfil).
     // Não requer sessão — acessível na LAN como o ping.
@@ -70,6 +81,10 @@ export function registerDbHandlers(): void {
 
   ipcMain.handle('auth:alterarSenha', (_e, usuarioId: number, novaSenha: string) => {
     return servidorClient.authAlterarSenha(usuarioId, novaSenha)
+  })
+
+  ipcMain.handle('auth:alterarMinhaSenha', (_e, senhaAtual: string, novaSenha: string) => {
+    return servidorClient.authAlterarMinhaSenha(senhaAtual, novaSenha)
   })
 
   ipcMain.handle('auth:atualizarUsuario', (_e, dados: { usuarioId: number; nome: string; login: string; perfil: string; comissao: number; senha?: string }) => {
@@ -175,7 +190,7 @@ export function registerDbHandlers(): void {
       filters: [{ name: 'JSON', extensions: ['json'] }]
     })
     if (res.canceled || !res.filePath) return { ok: false, erro: 'Cancelado' }
-    const zonas = await servidorClient.all(`SELECT id, nome, preco, poligono, ativo FROM zonas_entrega ORDER BY id`)
+    const zonas = await servidorClient.all(`SELECT id, nome, preco, poligono, ativo, ceps FROM zonas_entrega ORDER BY id`)
     await writeFile(res.filePath, JSON.stringify(zonas, null, 2), 'utf-8')
     return { ok: true, arquivo: res.filePath }
   })
@@ -190,16 +205,21 @@ export function registerDbHandlers(): void {
     if (res.canceled || res.filePaths.length === 0) return { ok: false, erro: 'Cancelado' }
     const caminho = res.filePaths[0]
     const texto = await readFile(caminho, 'utf-8')
-    const dados = JSON.parse(texto) as { nome: string; preco: number; poligono: string; ativo?: number }[]
+    const dados = JSON.parse(texto) as { nome: string; preco: number; poligono: string; ativo?: number; ceps?: string | string[] }[]
     if (!Array.isArray(dados) || dados.length === 0) {
       return { ok: false, erro: 'Arquivo sem zonas' }
     }
     let importadas = 0
     for (const z of dados) {
       if (!z.nome || !z.poligono) continue
+      const cepsValor = Array.isArray(z.ceps)
+        ? JSON.stringify(z.ceps)
+        : typeof z.ceps === 'string' && z.ceps
+          ? z.ceps
+          : '[]'
       await servidorClient.run(
-        `INSERT INTO zonas_entrega (nome, preco, poligono, ativo) VALUES (?, ?, ?, ?)`,
-        [z.nome, Number(z.preco) || 0, z.poligono, z.ativo === 0 ? 0 : 1]
+        `INSERT INTO zonas_entrega (nome, preco, poligono, ativo, ceps) VALUES (?, ?, ?, ?, ?)`,
+        [z.nome, Number(z.preco) || 0, z.poligono, z.ativo === 0 ? 0 : 1, cepsValor]
       )
       importadas++
     }
@@ -386,6 +406,38 @@ export function registerDbHandlers(): void {
     return servidorClient.pedidosCancelar(pedidoId, usuarioId)
   })
 
+  ipcMain.handle('pedidosOnline:puxar', () => {
+    return servidorClient.pedidosOnlinePuxar()
+  })
+
+  ipcMain.handle('pedidosOnline:listar', (_e, filtro?: { busca?: string; status?: string; de?: string; ate?: string }) => {
+    return servidorClient.pedidosOnlineListar(filtro)
+  })
+
+  ipcMain.handle('pedidosOnline:detalhe', (_e, id: string) => {
+    return servidorClient.pedidosOnlineDetalhe(id)
+  })
+
+  ipcMain.handle('pedidosOnline:status', (_e, id: string, status: string) => {
+    return servidorClient.pedidosOnlineStatus(id, status)
+  })
+
+  ipcMain.handle('catalogo:status', () => {
+    return servidorClient.catalogoStatus()
+  })
+
+  ipcMain.handle('catalogo:repair', () => {
+    return servidorClient.catalogoRepair()
+  })
+
+  ipcMain.handle('catalogo:syncStatus', () => {
+    return servidorClient.catalogoSyncStatus()
+  })
+
+  ipcMain.handle('catalogo:autoSync', (_e, dados: { ativo?: boolean; intervalo_seg?: number }) => {
+    return servidorClient.catalogoAutoSync(dados)
+  })
+
   ipcMain.handle('servidor:apiKeyGet', async () => {
     return servidorClient.apiKeyGet()
   })
@@ -412,6 +464,28 @@ export function registerDbHandlers(): void {
 
   ipcMain.handle('estoque:inventarioCancelar', (_e, dados: { inventario_id: number }) => {
     return servidorClient.estoqueInventarioCancelar(dados ?? { inventario_id: 0 })
+  })
+  ipcMain.handle('estoque:compraCancelar', (_e, dados: { compra_id: number; usuario_id?: number | null }) => {
+    return servidorClient.estoqueCompraCancelar(dados ?? { compra_id: 0 })
+  })
+  ipcMain.handle('nfe:lerXml', async () => {
+    const win = BrowserWindow.getFocusedWindow()
+    const res = await dialog.showOpenDialog(win ?? undefined!, {
+      title: 'Selecionar XML de Nota Fiscal',
+      filters: [
+        { name: 'Arquivos XML de NF-e', extensions: ['xml'] },
+        { name: 'Todos os arquivos', extensions: ['*'] }
+      ],
+      properties: ['openFile']
+    })
+    if (res.canceled || res.filePaths.length === 0) return { ok: false, erro: 'Nenhum arquivo selecionado.' }
+    const caminho = res.filePaths[0]
+    try {
+      const texto = await readFile(caminho, 'utf-8')
+      return { ok: true, arquivo: caminho, conteudo: texto }
+    } catch (err) {
+      return { ok: false, arquivo: caminho, erro: `Não foi possível ler o XML: ${(err as Error).message}` }
+    }
   })
 
   ipcMain.handle('whatsapp:get', (_e, path: string) => {

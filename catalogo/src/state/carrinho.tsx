@@ -7,7 +7,7 @@ export interface ItemCarrinho {
   nome: string
   preco: number
   quantidade: number
-  imagem: number | null
+  imagem: number | string | null
 }
 
 interface CarrinhoContexto {

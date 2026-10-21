@@ -1,12 +1,14 @@
-// Testes de integração do módulo WhatsApp (roda em Node 24 com type-stripping)
-// Cria banco in-memory com schema completo e valida queries, upserts, pedidos, carrinho
+// Testes de integração do módulo WhatsApp
+// Harness: roda contra o build compilado (out/server/whatsapp) porque os módulos
+// em src usam specifiers ESM '.js' que o Node não resolve quando executa .ts direto.
+// Requer build do servidor (npm run build:servidor) antes de rodar.
 
 import { DatabaseSync } from 'node:sqlite'
-import { normalizeForSearch } from '../src/whatsapp/normalize.ts'
-import { getAvailableCatalog, invalidateProductCache } from '../src/whatsapp/product-cache.ts'
-import * as order from '../src/whatsapp/order.ts'
-import * as service from '../src/whatsapp/service.ts'
-import * as settings from '../src/whatsapp/settings.ts'
+import { normalizeForSearch } from '../out/server/whatsapp/normalize.js'
+import { getAvailableCatalog, invalidateProductCache } from '../out/server/whatsapp/product-cache.js'
+import * as order from '../out/server/whatsapp/order.js'
+import * as service from '../out/server/whatsapp/service.js'
+import * as settings from '../out/server/whatsapp/settings.js'
 
 let passou = 0
 let falhou = 0

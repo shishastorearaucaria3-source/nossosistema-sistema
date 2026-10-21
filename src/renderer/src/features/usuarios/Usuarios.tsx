@@ -5,6 +5,7 @@ interface LinhaUsuario {
   id: number
   nome: string
   login: string
+  email: string | null
   perfil: string
   comissao_percent: number
   ativo: number
@@ -142,6 +143,7 @@ const usuarioVazio = {
   id: 0,
   nome: '',
   login: '',
+  email: '',
   senha: '',
   perfil: 'vendedor',
   comissao: '',
@@ -164,10 +166,19 @@ export default function Usuarios() {
   const [expandidos, setExpandidos] = useState<Record<string, boolean>>({ caixa: true, clientes: true })
   const [souAdmin, setSouAdmin] = useState(false)
   const [souGerente, setSouGerente] = useState(false)
+  const [menuAbertoId, setMenuAbertoId] = useState<number | null>(null)
+
+  useEffect(() => {
+    const fechar = (e: MouseEvent) => {
+      if (!(e.target as HTMLElement).closest('.usuario-acoes-menu')) setMenuAbertoId(null)
+    }
+    window.addEventListener('mousedown', fechar)
+    return () => window.removeEventListener('mousedown', fechar)
+  }, [])
 
   const carregar = useCallback(async () => {
     const rows = (await getDbApi().all(
-      `SELECT id, nome, login, perfil, comissao_percent, ativo, usar_web, usar_app, limitar_desconto, desconto_max_percent FROM usuarios ORDER BY perfil, nome`
+      `SELECT id, nome, login, email, perfil, comissao_percent, ativo, usar_web, usar_app, limitar_desconto, desconto_max_percent FROM usuarios ORDER BY perfil, nome`
     )) as unknown as LinhaUsuario[]
     setUsuarios(rows)
   }, [])
@@ -209,6 +220,7 @@ export default function Usuarios() {
         login: form.login.trim(),
         perfil: form.perfil,
         comissao: Number(form.comissao) || 0,
+        email: form.email.trim() || undefined,
         senha: form.senha || undefined
       })
       if (res.ok) {
@@ -241,7 +253,8 @@ export default function Usuarios() {
       login: form.login.trim(),
       senha: form.senha,
       perfil: form.perfil,
-      comissao: Number(form.comissao) || 0
+      comissao: Number(form.comissao) || 0,
+      email: form.email.trim() || undefined
     })
     if (res.ok && res.id != null) {
       await getAuthApi().atualizarOpcoes({
@@ -265,6 +278,7 @@ export default function Usuarios() {
       id: u.id,
       nome: u.nome,
       login: u.login,
+      email: u.email ?? '',
       senha: '',
       perfil: u.perfil,
       comissao: String(u.comissao_percent),
@@ -389,6 +403,9 @@ export default function Usuarios() {
       </label>
       <label>Login
         <input value={form.login} onChange={(e) => setForm({ ...form, login: e.target.value })} />
+      </label>
+      <label>E-mail
+        <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="opcional" />
       </label>
       <label>Senha {form.id && <small className="nota-config">(deixe vazio para manter)</small>}
         <input type="password" value={form.senha} onChange={(e) => setForm({ ...form, senha: e.target.value })} />
@@ -559,6 +576,7 @@ export default function Usuarios() {
           <tr>
             <th>Nome</th>
             <th>Login</th>
+            <th>E-mail</th>
             <th>Perfil</th>
             <th>Comissão</th>
             <th>Acesso</th>
@@ -571,20 +589,28 @@ export default function Usuarios() {
             <tr key={u.id}>
               <td>{u.nome}</td>
               <td>{u.login}</td>
+              <td>{u.email ?? '—'}</td>
               <td>{u.perfil}</td>
               <td>{u.comissao_percent}%</td>
               <td>{u.perfil === 'admin' ? 'Todas' : 'Conforme permissões'}</td>
               <td>{u.ativo ? 'Ativo' : 'Inativo'}</td>
               <td className="td-acoes">
-                <button className="btn-mini" onClick={() => editarUsuario(u)} disabled={bloqueadoPorSerAdmin(u)}>Editar</button>
-                <button className="btn-mini" onClick={() => abrirPermissoes(u)} disabled={bloqueadoPorSerAdmin(u)}>Permissões</button>
-                <button className="btn-mini" onClick={() => alterarSenha(u)} disabled={bloqueadoPorSerAdmin(u)}>Senha</button>
-                <button className="btn-mini" onClick={() => ativarDesativar(u)} disabled={bloqueadoPorSerAdmin(u)}>
-                  {u.ativo ? 'Desativar' : 'Ativar'}
-                </button>
-                {u.perfil !== 'admin' && (
-                  <button className="btn-mini btn-danger" onClick={() => deletarUsuario(u)} disabled={bloqueadoPorSerAdmin(u)}>Deletar</button>
-                )}
+                <div className="usuario-acoes-menu">
+                  <button className="btn-icone" title="Ações" onClick={() => setMenuAbertoId(menuAbertoId === u.id ? null : u.id)}>⋯</button>
+                  {menuAbertoId === u.id && (
+                    <div className="dropdown-filtro-menu">
+                      <button className="dropdown-filtro-item" onClick={() => { setMenuAbertoId(null); editarUsuario(u) }} disabled={bloqueadoPorSerAdmin(u)}>Editar</button>
+                      <button className="dropdown-filtro-item" onClick={() => { setMenuAbertoId(null); abrirPermissoes(u) }} disabled={bloqueadoPorSerAdmin(u)}>Permissões</button>
+                      <button className="dropdown-filtro-item" onClick={() => { setMenuAbertoId(null); alterarSenha(u) }} disabled={bloqueadoPorSerAdmin(u)}>Senha</button>
+                      <button className="dropdown-filtro-item" onClick={() => { setMenuAbertoId(null); ativarDesativar(u) }} disabled={bloqueadoPorSerAdmin(u)}>
+                        {u.ativo ? 'Desativar' : 'Ativar'}
+                      </button>
+                      {u.perfil !== 'admin' && (
+                        <button className="dropdown-filtro-item dropdown-filtro-item-perigo" onClick={() => { setMenuAbertoId(null); deletarUsuario(u) }} disabled={bloqueadoPorSerAdmin(u)}>Deletar</button>
+                      )}
+                    </div>
+                  )}
+                </div>
               </td>
             </tr>
           ))}

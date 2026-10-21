@@ -9,6 +9,20 @@ interface Zona {
   preco: number
   poligono: string
   ativo: number
+  ceps: string
+}
+
+// Converte a entrada textual de CEPs em lista limpa de prefixos.
+function parseCeps(texto: string): string[] {
+  const lista: string[] = []
+  const partes = (texto || '').split(/[\s,;]+/)
+  for (const parte of partes) {
+    const digitos = parte.replace(/\D/g, '')
+    if (digitos.length >= 3 && digitos.length <= 8 && !lista.includes(digitos)) {
+      lista.push(digitos)
+    }
+  }
+  return lista
 }
 
 interface PontoDesenhado {
@@ -33,6 +47,7 @@ export default function Zonas() {
   const [numPontos, setNumPontos] = useState(0)
   const [nome, setNome] = useState('')
   const [preco, setPreco] = useState('')
+  const [ceps, setCeps] = useState('')
   const [mensagem, setMensagem] = useState('')
   const definindoLojaRef = useRef(false)
   const lojaMarkerRef = useRef<L.Marker | null>(null)
@@ -60,7 +75,7 @@ export default function Zonas() {
     poligonosZonasRef.current.forEach((p) => p.layer.remove())
     poligonosZonasRef.current = []
     const rows = (await getDbApi().all(
-      `SELECT id, nome, preco, poligono, ativo FROM zonas_entrega ORDER BY nome`
+      `SELECT id, nome, preco, poligono, ativo, ceps FROM zonas_entrega ORDER BY nome`
     )) as unknown as Zona[]
     setZonas(rows)
     rows.forEach((z, i) => {
@@ -221,6 +236,7 @@ export default function Zonas() {
     setEditandoId(z.id)
     setNome(z.nome)
     setPreco(String(z.preco))
+    setCeps(String(z.ceps ?? ''))
     setModoDesenho(true)
     definindoLojaRef.current = false
     const pts = JSON.parse(z.poligono) as { lat: number; lng: number }[]
@@ -233,6 +249,7 @@ export default function Zonas() {
       setEditandoId(null)
       setNome('')
       setPreco('')
+      setCeps('')
     }
     const ativo = !modoDesenho
     setModoDesenho(ativo)
@@ -267,6 +284,7 @@ export default function Zonas() {
     setEditandoId(null)
     setNome('')
     setPreco('')
+    setCeps('')
     limparDesenho()
     setModoDesenho(false)
     setMensagem('')
@@ -282,22 +300,24 @@ export default function Zonas() {
       return
     }
     const poligono = JSON.stringify(pontosRef.current.map((p) => ({ lat: p.latlng.lat, lng: p.latlng.lng })))
+    const cepsJson = JSON.stringify(parseCeps(ceps))
     if (editandoIdRef.current) {
       await getDbApi().run(
-        `UPDATE zonas_entrega SET nome = ?, preco = ?, poligono = ? WHERE id = ?`,
-        [nome.trim(), Number(preco), poligono, editandoIdRef.current]
+        `UPDATE zonas_entrega SET nome = ?, preco = ?, poligono = ?, ceps = ? WHERE id = ?`,
+        [nome.trim(), Number(preco), poligono, cepsJson, editandoIdRef.current]
       )
       setMensagem(`Zona "${nome.trim()}" atualizada!`)
     } else {
       await getDbApi().run(
-        `INSERT INTO zonas_entrega (nome, preco, poligono) VALUES (?, ?, ?)`,
-        [nome.trim(), Number(preco), poligono]
+        `INSERT INTO zonas_entrega (nome, preco, poligono, ceps) VALUES (?, ?, ?, ?)`,
+        [nome.trim(), Number(preco), poligono, cepsJson]
       )
       setMensagem('Zona criada! Pode continuar — clique em "+ Desenhar zona" para criar outra.')
     }
     setEditandoId(null)
     setNome('')
     setPreco('')
+    setCeps('')
     limparDesenho()
     setModoDesenho(false)
     await carregarZonas()
@@ -434,6 +454,15 @@ export default function Zonas() {
               </p>
               <input placeholder="Nome (ex: Centro)" value={nome} onChange={(e) => setNome(e.target.value)} />
               <input type="number" step="0.01" placeholder="Taxa R$ (ex: 5.00)" value={preco} onChange={(e) => setPreco(e.target.value)} />
+              <input
+                placeholder="CEPs (ex: 01310, 01320 ou 01310100) separados por espaço/vírgula"
+                value={ceps}
+                onChange={(e) => setCeps(e.target.value)}
+              />
+              <p className="nota-config">
+                CEPs desta zona para o catálogo online: prefixos (3 a 8 dígitos) ou CEPs completos.
+                O cliente informa o CEP e a zona é identificada automaticamente.
+              </p>
               <div className="modal-acoes">
                 <button className="btn-secundario" onClick={cancelarEdicao}>Cancelar</button>
                 <button className="btn-secundario" onClick={limparDesenho}>Limpar pontos</button>
@@ -449,6 +478,9 @@ export default function Zonas() {
               <div>
                 <strong>{z.nome}</strong>
                 <span>R$ {z.preco.toFixed(2)} • {z.ativo ? 'ativa' : 'inativa'}</span>
+                {Array.isArray(z.ceps) && z.ceps.length > 0 && (
+                  <span> • CEPs: {(z.ceps as string[]).join(', ')}</span>
+                )}
               </div>
               <div className="td-acoes">
                 <button className="btn-mini" onClick={() => editarZona(z)}>Editar</button>

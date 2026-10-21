@@ -1,0 +1,479 @@
+/* ============================================================
+   LAYOUT — app shell, sidebar, nav, header, page wrapper
+   ============================================================ */
+
+/* — App shell — */
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--borda);
+}
+
+.header-esquerda {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.btn-hamburguer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  background: var(--bg3);
+  border: 1px solid var(--borda);
+  border-radius: 6px;
+  color: var(--texto2);
+  cursor: pointer;
+}
+
+.btn-hamburguer:hover {
+  color: var(--texto);
+  background: var(--borda);
+}
+
+.app-header h1 {
+  font-size: 17px;
+  color: var(--texto);
+}
+
+.loja-nome {
+  color: var(--texto2);
+  font-size: 14px;
+}
+
+.header-direita {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.usuario-logado {
+  font-size: 13px;
+  color: var(--texto);
+}
+
+.perfil-badge {
+  font-size: 11px;
+  background: var(--bg3);
+  border: 1px solid var(--borda);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: var(--texto2);
+}
+
+.perfil-badge-btn {
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+
+.perfil-badge-btn:hover {
+  background: var(--primaria);
+  color: #fff;
+}
+
+.msg-backup {
+  font-size: 11px;
+  color: var(--verde);
+  padding: 6px 8px;
+  background: var(--bg3);
+  border-radius: 6px;
+  margin-bottom: 4px;
+  word-break: break-all;
+}
+
+/* — Avatar / dropdown de usuário (header) — */
+/* (continuará com linhas 9162+) */
+
+/* — Sidebar — */
+.app-corpo {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+.sidebar {
+  width: 220px;
+  background: var(--bg2);
+  border-right: 1px solid var(--borda);
+  padding: 10px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
+  transition: width 0.2s ease;
+}
+
+.sidebar.recolhida {
+  width: 56px;
+}
+
+.sidebar-grupo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sidebar-separador {
+  border-top: 1px solid var(--borda);
+  margin: 8px 4px;
+}
+
+/* — Nav items — */
+.nav-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 9px 10px;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  color: var(--texto2);
+  cursor: pointer;
+  font-size: 14px;
+  text-align: left;
+}
+
+.nav-item-corpo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.nav-icone {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+}
+
+.nav-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nav-item:hover {
+  background: var(--bg3);
+  color: var(--texto);
+}
+
+.nav-item.ativo {
+  background: var(--primaria);
+  color: #fff;
+  font-weight: 600;
+}
+
+.sidebar.recolhida .nav-item {
+  justify-content: center;
+  padding: 9px;
+}
+
+.sidebar.recolhida .nav-label {
+  display: none;
+}
+
+.nav-item kbd {
+  font-size: 11px;
+  background: rgba(0, 0, 0, 0.15);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: inherit;
+}
+
+/* — Main / Page wrapper — */
+.main {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.page {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  padding-bottom: 40px;
+}
+
+.page-header {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  margin-bottom: 16px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.page-header h2 {
+  font-size: 20px;
+  margin-right: 8px;
+}
+
+.page-acoes {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* — Busca global — */
+.busca {
+  padding: 9px 12px;
+  background: var(--bg3);
+  border: 1px solid var(--borda);
+  border-radius: 6px;
+  color: var(--texto);
+  min-width: 220px;
+}
+
+/* — Botões legados — */
+.btn-primario {
+  padding: 12px 20px;
+  background: var(--primaria);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35);
+  transition: background 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
+}
+
+.btn-primario:hover {
+  background: var(--primaria-escura);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.45);
+}
+
+.btn-primario:active {
+  transform: translateY(1px);
+}
+
+.btn-primario:disabled {
+  background: var(--borda);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.btn-secundario {
+  padding: 9px 14px;
+  background: var(--bg3);
+  border: 1px solid var(--borda);
+  border-radius: 6px;
+  color: var(--texto);
+  cursor: pointer;
+}
+
+.btn-mini {
+  padding: 5px 10px;
+  background: var(--bg3);
+  border: 1px solid var(--borda);
+  border-radius: 5px;
+  color: var(--texto);
+  cursor: pointer;
+  font-size: 12px;
+}
+
+/* — Tabela legada — */
+.tabela {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.tabela th {
+  text-align: left;
+  padding: 10px;
+  color: var(--texto2);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--borda);
+  white-space: nowrap;
+}
+
+.tabela td {
+  padding: 10px;
+  border-bottom: 1px solid var(--borda);
+}
+
+.tabela tr:hover td {
+  background: var(--bg2);
+}
+
+.tabela-scroll-h {
+  overflow-x: auto;
+}
+
+.tabela-redimensao {
+  table-layout: fixed;
+}
+
+.tabela-redimensao th {
+  position: relative;
+}
+
+.tabela-redimensao th .th-redim-alca {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  cursor: col-resize;
+  user-select: none;
+  touch-action: none;
+}
+
+.tabela-redimensao th .th-redim-alca::after {
+  content: '';
+  position: absolute;
+  right: 3px;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  background: var(--borda);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.tabela-redimensao th:hover .th-redim-alca::after {
+  opacity: 1;
+}
+
+.tabela-redimensao th .th-redim-alca:hover::after {
+  background: var(--primario, var(--verde));
+  opacity: 1;
+}
+
+.col-drag {
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.col-drag:active {
+  cursor: grabbing;
+}
+
+/* — Modal legado — */
+
+.modal-data {
+  color: var(--texto2);
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+.modal-resumo {
+  margin-top: 14px;
+  border-top: 1px solid var(--borda);
+  padding-top: 10px;
+}
+
+
+.segmented {
+  display: flex;
+  background: var(--bg3);
+  border: 1px solid var(--borda);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.segmented button {
+  padding: 8px 14px;
+  background: none;
+  border: none;
+  color: var(--texto2);
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.segmented button.ativo {
+  background: var(--primaria);
+  color: #fff;
+  font-weight: 600;
+}
+
+
+
+
+
+/* — Resultados inline — */
+.resultados-inline {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 12px;
+}
+
+.resultados-inline button {
+  text-align: left;
+  padding: 8px 12px;
+  background: var(--bg3);
+  border: none;
+  border-bottom: 1px solid var(--borda);
+  color: var(--texto);
+  cursor: pointer;
+}
+
+.resultados-inline button:hover {
+  background: var(--primaria);
+  color: #fff;
+}
+
+
+
+
+
+
+
+
+
+/* — Dropdown filtro — */
+.dropdown-filtro {
+  position: relative;
+}
+
+.dropdown-filtro-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 30;
+  background: var(--bg2);
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  min-width: 220px;
+}
+
+.dropdown-filtro-item {
+  text-align: left;
+  padding: 8px 10px;
+  border: none;
+  background: transparent;
+  color: var(--texto);
+  font-size: 13px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.dropdown-filtro-item:hover {
+  background: var(--bg3);
+}
+
+.dropdown-filtro-item.ativo {
+  background: var(--primaria);
+  color: #fff;
+}

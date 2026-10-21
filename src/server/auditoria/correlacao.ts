@@ -39,6 +39,7 @@ export interface IndiceNX {
   porData: Map<string, TranRegistro[]>     // vendas indexadas por dia
   totalPorVenda: Map<number, number>       // soma de itens MovEst por venda
   pagamentosPorVenda: Map<number, string[]>
+  maxId: number                            // maior id presente no Tran.nx1
 }
 
 export function montarIndiceNX(
@@ -47,14 +48,16 @@ export function montarIndiceNX(
   pagamentosPorVenda: Map<number, string[]>,
 ): IndiceNX {
   const porData = new Map<string, TranRegistro[]>()
+  let maxId = 0
   for (const reg of porId.values()) {
+    if (reg.id > maxId) maxId = reg.id
     if (reg.tranNome !== 'Venda' || !reg.dataHora) continue
     const dia = reg.dataHora.slice(0, 10)
     let arr = porData.get(dia)
     if (!arr) { arr = []; porData.set(dia, arr) }
     arr.push(reg)
   }
-  return { porId, porData, totalPorVenda, pagamentosPorVenda }
+  return { porId, porData, totalPorVenda, pagamentosPorVenda, maxId }
 }
 
 function fmt(v: number): string {
@@ -95,7 +98,8 @@ export function correlacionar(
   // estratégia secundária
   const candidatos = buscarCandidatos(xlsVenda, indice, ehC)
   if (candidatos.length === 0) {
-    return { ...base(xlsVenda), confianca: 'NÃO ENCONTRADA', criterios: [`sem candidato em Tran.nx1 (data ${xlsVenda.dataISO ?? '∅'}, total ${fmt(xlsVenda.totalFinal)}, ${xlsVenda.meioPagto || 'pagto ∅'})`] }
+    const extras = explicarNaoEncontrada(xlsVenda.id, idNum, ehC, indice)
+    return { ...base(xlsVenda), confianca: 'NÃO ENCONTRADA', criterios: [`sem candidato em Tran.nx1 (data ${xlsVenda.dataISO ?? '∅'}, total ${fmt(xlsVenda.totalFinal)}, ${xlsVenda.meioPagto || 'pagto ∅'})`, ...extras] }
   }
   const melhor = candidatos[0]
   for (const c of melhor.criterios) criterios.push(c)
@@ -109,7 +113,7 @@ export function correlacionar(
     return { ...base(xlsVenda), confianca: 'AMBÍGUA', criterios: [...criterios, `${candidatos.length} candidatos empatados`], candidatos }
   }
   if (melhor.score < 6) {
-    return { ...base(xlsVenda), confianca: 'NÃO ENCONTRADA', criterios: [...criterios, 'melhor candidato abaixo do limiar'] }
+    return { ...base(xlsVenda), confianca: 'NÃO ENCONTRADA', criterios: [...criterios, 'melhor candidato abaixo do limiar', ...explicarNaoEncontrada(xlsVenda.id, idNum, ehC, indice)] }
   }
   return { ...base(xlsVenda), nxId: melhor.nxId, confianca: 'PROVÁVEL', criterios }
 }
@@ -154,4 +158,27 @@ function umaContem(a: string, b: string): boolean {
   const na = a.toLowerCase()
   const nb = b.toLowerCase()
   return na.includes(nb) || nb.includes(na)
+}
+
+/**
+ * Explica o motivo de uma venda XLS não encontrar candidato no Tran.nx1:
+ *  - No.Tran acima do último id do backup (exportação mais recente que o NX);
+ *  - No.Tran com sufixo (-C, -1, -2, -W: terminais/canceladas secundárias);
+ *  - No.Tran numérico presente no Tran, mas sem rótulo de venda.
+ */
+function explicarNaoEncontrada(id: string, idNum: number, ehC: boolean, indice: IndiceNX): string[] {
+  const out: string[] = []
+  if (idNum > 0) {
+    if (idNum > indice.maxId) out.push(`No.Tran ${idNum} acima do último id do Tran.nx1 (${indice.maxId}) — venda mais recente que o backup NX`)
+    const reg = indice.porId.get(idNum)
+    if (reg) {
+      out.push(`registro ${idNum} existe no Tran.nx1 mas sem rótulo de venda (tranNome=${reg.tranNome ?? 'null'})`)
+      if (!reg.tranNome && indice.totalPorVenda.has(idNum) === false) out.push('sem itens positivos no MovEst — provavelmente não é uma venda (cancelamento/complemento)')
+    } else if (ehC) {
+      out.push('No.Tran com sufixo "-C" (venda marked cancelada no Nex) — sem registro correspondente no Tran')
+    }
+  } else if (!ehC) {
+    out.push('No.Tran não numérico (sufixo de terminal secundário) — não casa com id global do Tran')
+  }
+  return out
 }
